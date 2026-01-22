@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Flame, BarChart3, Trophy, User, Calendar, Code } from 'lucide-react';
+import { Flame, BarChart3, User, Calendar, Code, Dumbbell } from 'lucide-react';
 
 interface MobileNavigationProps {
   activeTab: string;
@@ -11,7 +11,7 @@ const tabs = [
   { id: 'today', label: 'Today', icon: Calendar },
   { id: 'challenges', label: 'Challenges', icon: Flame },
   { id: 'code-hub', label: 'Code', icon: Code },
-  { id: 'analytics', label: 'Stats', icon: BarChart3 },
+  { id: 'fitness-hub', label: 'Fitness', icon: Dumbbell },
   { id: 'profile', label: 'Profile', icon: User },
 ];
 
