@@ -5,3 +5,4 @@ export { FloatingCTA } from './FloatingCTA';
 export { WeeklySparkline } from './WeeklySparkline';
 export { TodayHero } from './TodayHero';
 export { ChallengeListCard } from './ChallengeListCard';
+export { RadarProgressGraph } from './RadarProgressGraph';
