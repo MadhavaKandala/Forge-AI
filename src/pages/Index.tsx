@@ -6,7 +6,7 @@ import { Header } from '@/components/Header';
 import { EmptyState } from '@/components/EmptyState';
 import { ChallengeCard } from '@/components/ChallengeCard';
 import { CreateChallengeDialog } from '@/components/CreateChallengeDialog';
-import { CheckInDialog } from '@/components/CheckInDialog';
+import { CategorySpecificCheckIn } from '@/components/CheckIn';
 import { ChallengeDetails } from '@/components/ChallengeDetails';
 import { QuoteCard } from '@/components/QuoteCard';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
@@ -292,7 +292,7 @@ const Index = () => {
         onCreate={handleCreate}
       />
 
-      <CheckInDialog
+      <CategorySpecificCheckIn
         challenge={selectedChallenge}
         open={checkInDialogOpen}
         onOpenChange={setCheckInDialogOpen}
