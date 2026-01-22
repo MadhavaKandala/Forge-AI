@@ -1,18 +1,25 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* 100-Day Challenge Tracker Design System
-   Theme: Energetic flame colors with calming teal progress indicators
-   All colors in HSL */
+/* 100-Day Challenge Tracker - Premium Design System
+   Theme: Dark-first glass morphism with flame accents
+   Awwwards-caliber visual language */
 
 @layer base {
   :root {
-    /* Core palette - Warm & Energetic */
+    /* Background Layers (light mode) */
     --background: 220 20% 97%;
+    --background-deep: 220 18% 94%;
+    --surface-1: 0 0% 100%;
+    --surface-2: 220 15% 98%;
+    --surface-3: 220 12% 96%;
+    
     --foreground: 220 25% 10%;
+    --foreground-muted: 220 12% 40%;
+    --foreground-subtle: 220 10% 55%;
 
     --card: 0 0% 100%;
     --card-foreground: 220 25% 10%;
@@ -20,19 +27,19 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 25% 10%;
 
-    /* Primary - Flame Orange/Amber */
-    --primary: 24 95% 53%;
+    /* Primary - Flame Orange */
+    --primary: 24 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Deep Teal for Progress */
-    --secondary: 168 76% 36%;
+    /* Secondary - Deep Teal */
+    --secondary: 168 80% 36%;
     --secondary-foreground: 0 0% 100%;
 
     --muted: 220 14% 92%;
     --muted-foreground: 220 10% 45%;
 
-    /* Accent - Warm Gold */
-    --accent: 38 92% 50%;
+    /* Accent - Warm Amber */
+    --accent: 38 95% 50%;
     --accent-foreground: 220 25% 10%;
 
     --destructive: 0 84% 60%;
@@ -40,101 +47,130 @@
 
     --border: 220 14% 88%;
     --input: 220 14% 88%;
-    --ring: 24 95% 53%;
+    --ring: 24 100% 50%;
 
     --radius: 0.75rem;
 
     /* Streak colors - Fire progression */
-    --streak-start: 24 95% 53%;
-    --streak-mid: 38 92% 50%;
-    --streak-hot: 12 90% 55%;
+    --streak-start: 24 100% 50%;
+    --streak-mid: 38 95% 50%;
+    --streak-hot: 12 90% 50%;
     --streak-legendary: 280 80% 55%;
 
     /* Heatmap colors - Teal progression */
     --heatmap-empty: 220 14% 92%;
     --heatmap-light: 168 50% 75%;
     --heatmap-medium: 168 65% 55%;
-    --heatmap-dark: 168 76% 36%;
-    --heatmap-max: 168 85% 28%;
+    --heatmap-dark: 168 80% 36%;
+    --heatmap-max: 168 90% 28%;
 
     /* Category colors */
-    --category-coding: 240 60% 55%;
-    --category-fitness: 340 75% 55%;
-    --category-reading: 160 60% 45%;
-    --category-learning: 280 65% 55%;
-    --category-productivity: 38 92% 50%;
-    --category-creativity: 300 65% 55%;
-    --category-health: 140 60% 45%;
+    --category-coding: 215 90% 55%;
+    --category-fitness: 340 80% 55%;
+    --category-reading: 35 85% 50%;
+    --category-learning: 280 75% 55%;
+    --category-productivity: 38 95% 50%;
+    --category-creativity: 320 80% 55%;
+    --category-health: 145 65% 45%;
     --category-other: 220 14% 50%;
 
+    /* Glass effects */
+    --glass-bg: hsla(0, 0%, 100%, 0.7);
+    --glass-border: hsla(220, 20%, 50%, 0.12);
+    --glass-blur: blur(20px);
+
     /* Gradients */
-    --gradient-fire: linear-gradient(135deg, hsl(24, 95%, 53%) 0%, hsl(38, 92%, 50%) 50%, hsl(12, 90%, 55%) 100%);
-    --gradient-streak: linear-gradient(135deg, hsl(24, 95%, 53%) 0%, hsl(12, 90%, 55%) 100%);
-    --gradient-progress: linear-gradient(135deg, hsl(168, 76%, 36%) 0%, hsl(168, 85%, 28%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(220, 20%, 98%) 100%);
+    --gradient-flame: linear-gradient(135deg, hsl(24, 100%, 50%) 0%, hsl(38, 95%, 50%) 50%, hsl(12, 90%, 50%) 100%);
+    --gradient-teal: linear-gradient(135deg, hsl(168, 80%, 36%) 0%, hsl(168, 90%, 28%) 100%);
+    --gradient-legendary: linear-gradient(135deg, hsl(280, 80%, 55%) 0%, hsl(320, 75%, 55%) 100%);
+    --gradient-glass: linear-gradient(135deg, hsla(0, 0%, 100%, 0.08) 0%, hsla(0, 0%, 100%, 0.02) 100%);
 
     /* Shadows */
-    --shadow-soft: 0 4px 20px -4px hsl(220 25% 10% / 0.08);
-    --shadow-glow: 0 0 30px -5px hsl(24 95% 53% / 0.3);
-    --shadow-card: 0 4px 30px -8px hsl(220 25% 10% / 0.1);
+    --shadow-sm: 0 1px 2px hsla(220, 25%, 10%, 0.05), 0 1px 3px hsla(220, 25%, 10%, 0.08);
+    --shadow-md: 0 4px 6px hsla(220, 25%, 10%, 0.07), 0 2px 4px hsla(220, 25%, 10%, 0.04);
+    --shadow-lg: 0 10px 25px hsla(220, 25%, 10%, 0.1), 0 6px 10px hsla(220, 25%, 10%, 0.05);
+    --shadow-xl: 0 20px 40px hsla(220, 25%, 10%, 0.12), 0 15px 20px hsla(220, 25%, 10%, 0.06);
+    --shadow-glow-flame: 0 0 30px hsla(24, 100%, 50%, 0.25), 0 0 60px hsla(24, 100%, 50%, 0.1);
+    --shadow-glow-teal: 0 0 30px hsla(168, 80%, 45%, 0.25), 0 0 60px hsla(168, 80%, 45%, 0.1);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 220 25% 25%;
-    --sidebar-primary: 24 95% 53%;
+    --sidebar-primary: 24 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 14% 95%;
     --sidebar-accent-foreground: 220 25% 10%;
     --sidebar-border: 220 14% 90%;
-    --sidebar-ring: 24 95% 53%;
+    --sidebar-ring: 24 100% 50%;
   }
 
   .dark {
-    --background: 220 25% 8%;
-    --foreground: 220 14% 95%;
+    /* Background Layers (dark mode) - Premium deep backgrounds */
+    --background: 225 25% 6%;
+    --background-deep: 225 28% 4%;
+    --surface-1: 225 22% 9%;
+    --surface-2: 225 20% 12%;
+    --surface-3: 225 18% 16%;
 
-    --card: 220 25% 12%;
-    --card-foreground: 220 14% 95%;
+    --foreground: 220 15% 95%;
+    --foreground-muted: 220 12% 65%;
+    --foreground-subtle: 220 10% 45%;
 
-    --popover: 220 25% 12%;
-    --popover-foreground: 220 14% 95%;
+    --card: 225 22% 9%;
+    --card-foreground: 220 15% 95%;
 
-    --primary: 24 95% 55%;
-    --primary-foreground: 220 25% 8%;
+    --popover: 225 22% 9%;
+    --popover-foreground: 220 15% 95%;
 
-    --secondary: 168 70% 42%;
-    --secondary-foreground: 220 25% 8%;
+    /* Primary - Brighter flame for dark mode */
+    --primary: 24 100% 55%;
+    --primary-foreground: 225 25% 6%;
 
-    --muted: 220 20% 18%;
+    /* Secondary - Brighter teal */
+    --secondary: 168 75% 45%;
+    --secondary-foreground: 225 25% 6%;
+
+    --muted: 225 20% 15%;
     --muted-foreground: 220 14% 60%;
 
-    --accent: 38 92% 55%;
-    --accent-foreground: 220 25% 8%;
+    /* Accent - Warm amber */
+    --accent: 38 95% 55%;
+    --accent-foreground: 225 25% 6%;
 
-    --destructive: 0 70% 50%;
+    --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 20% 20%;
-    --input: 220 20% 20%;
-    --ring: 24 95% 55%;
+    --border: 225 18% 16%;
+    --input: 225 18% 16%;
+    --ring: 24 100% 55%;
 
-    --heatmap-empty: 220 20% 18%;
+    /* Heatmap - Adjusted for dark mode */
+    --heatmap-empty: 225 20% 15%;
     --heatmap-light: 168 40% 25%;
     --heatmap-medium: 168 55% 35%;
     --heatmap-dark: 168 65% 42%;
-    --heatmap-max: 168 70% 50%;
+    --heatmap-max: 168 75% 50%;
 
-    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.4);
-    --shadow-glow: 0 0 30px -5px hsl(24 95% 55% / 0.4);
-    --shadow-card: 0 4px 30px -8px hsl(0 0% 0% / 0.3);
+    /* Glass effects - Dark mode */
+    --glass-bg: hsla(225, 22%, 9%, 0.75);
+    --glass-border: hsla(0, 0%, 100%, 0.08);
+    --glass-blur: blur(24px);
 
-    --sidebar-background: 220 25% 10%;
+    /* Shadows - Dark mode */
+    --shadow-sm: 0 1px 2px hsla(0, 0%, 0%, 0.3), 0 1px 3px hsla(0, 0%, 0%, 0.2);
+    --shadow-md: 0 4px 6px hsla(0, 0%, 0%, 0.25), 0 2px 4px hsla(0, 0%, 0%, 0.15);
+    --shadow-lg: 0 10px 25px hsla(0, 0%, 0%, 0.35), 0 6px 10px hsla(0, 0%, 0%, 0.2);
+    --shadow-xl: 0 20px 40px hsla(0, 0%, 0%, 0.4), 0 15px 20px hsla(0, 0%, 0%, 0.25);
+    --shadow-glow-flame: 0 0 30px hsla(24, 100%, 55%, 0.35), 0 0 60px hsla(24, 100%, 55%, 0.15);
+    --shadow-glow-teal: 0 0 30px hsla(168, 75%, 45%, 0.35), 0 0 60px hsla(168, 75%, 45%, 0.15);
+
+    --sidebar-background: 225 25% 8%;
     --sidebar-foreground: 220 14% 90%;
-    --sidebar-primary: 24 95% 55%;
-    --sidebar-primary-foreground: 220 25% 8%;
-    --sidebar-accent: 220 20% 15%;
+    --sidebar-primary: 24 100% 55%;
+    --sidebar-primary-foreground: 225 25% 6%;
+    --sidebar-accent: 225 20% 12%;
     --sidebar-accent-foreground: 220 14% 95%;
-    --sidebar-border: 220 20% 18%;
-    --sidebar-ring: 24 95% 55%;
+    --sidebar-border: 225 18% 16%;
+    --sidebar-ring: 24 100% 55%;
   }
 }
 
@@ -149,39 +185,111 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   }
 }
 
 @layer utilities {
-  .text-gradient-fire {
-    background: var(--gradient-fire);
+  /* Text gradients */
+  .text-gradient-flame {
+    background: var(--gradient-flame);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  .bg-gradient-fire {
-    background: var(--gradient-fire);
+  .text-gradient-teal {
+    background: var(--gradient-teal);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
-  .bg-gradient-streak {
-    background: var(--gradient-streak);
+  /* Background gradients */
+  .bg-gradient-flame {
+    background: var(--gradient-flame);
   }
 
-  .bg-gradient-progress {
-    background: var(--gradient-progress);
+  .bg-gradient-teal {
+    background: var(--gradient-teal);
   }
 
+  .bg-gradient-legendary {
+    background: var(--gradient-legendary);
+  }
+
+  /* Glass morphism */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+  }
+
+  .glass-card {
+    @apply glass rounded-2xl;
+  }
+
+  .glass-nav {
+    background: hsla(var(--background), 0.85);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+  }
+
+  /* Shadows */
   .shadow-glow {
-    box-shadow: var(--shadow-glow);
+    box-shadow: var(--shadow-glow-flame);
+  }
+
+  .shadow-glow-teal {
+    box-shadow: var(--shadow-glow-teal);
   }
 
   .shadow-card {
-    box-shadow: var(--shadow-card);
+    box-shadow: var(--shadow-md);
   }
 
   .shadow-soft {
-    box-shadow: var(--shadow-soft);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .shadow-elevated {
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Interactive states */
+  .hover-lift {
+    @apply transition-all duration-200;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .hover-glow {
+    @apply transition-all duration-200;
+  }
+  .hover-glow:hover {
+    box-shadow: var(--shadow-glow-flame);
+  }
+
+  .press-scale {
+    @apply transition-transform duration-100 active:scale-[0.98];
+  }
+
+  /* Safe area for notched phones */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+
+  /* Stat number styling */
+  .stat-number {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
 }
