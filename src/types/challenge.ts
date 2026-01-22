@@ -12,11 +12,23 @@ export type ChallengeDifficulty = 'easy' | 'medium' | 'hard';
 
 export type ChallengeStatus = 'active' | 'completed' | 'abandoned';
 
+export type ChallengeVisibility = 'private' | 'public';
+
+export interface Evidence {
+  type: 'photo' | 'link' | 'voice';
+  url: string;
+  caption?: string;
+}
+
 export interface CheckIn {
   id: string;
   date: string; // ISO date string YYYY-MM-DD
   notes?: string;
   link?: string;
+  photos?: string[]; // Base64 or URLs
+  voiceNote?: string; // Base64 audio
+  isRetroactive?: boolean;
+  mood?: 'great' | 'good' | 'okay' | 'struggling';
   createdAt: string;
 }
 
@@ -27,6 +39,7 @@ export interface Challenge {
   description?: string;
   goalTarget?: string;
   difficulty: ChallengeDifficulty;
+  visibility: ChallengeVisibility;
   startDate: string; // ISO date string
   status: ChallengeStatus;
   checkIns: CheckIn[];
@@ -38,37 +51,126 @@ export interface Achievement {
   day: number;
   name: string;
   badge: string;
+  description: string;
   unlockedAt?: string;
 }
 
+export interface UserStats {
+  totalChallenges: number;
+  completedChallenges: number;
+  totalDaysCompleted: number;
+  longestStreak: number;
+  averageStreak: number;
+  categoryBreakdown: Record<ChallengeCategory, number>;
+  completionRate: number;
+}
+
+export interface WeeklyStats {
+  weekStart: string;
+  checkInsCount: number;
+  consistencyScore: number;
+  streakMaintained: boolean;
+}
+
 export const ACHIEVEMENTS: Achievement[] = [
-  { day: 7, name: 'Week Warrior', badge: '🏅' },
-  { day: 14, name: 'Halfway Ready', badge: '🎯' },
-  { day: 21, name: 'Habit Formed', badge: '💪' },
-  { day: 30, name: 'One Month Beast', badge: '🔥' },
-  { day: 50, name: 'Unstoppable', badge: '⭐' },
-  { day: 75, name: 'Champion', badge: '👑' },
-  { day: 100, name: '100 Day Legend', badge: '🏆' },
+  { day: 7, name: 'Week Warrior', badge: '🏅', description: 'Completed your first week!' },
+  { day: 14, name: 'Halfway Ready', badge: '🎯', description: 'Two weeks of dedication!' },
+  { day: 21, name: 'Habit Formed', badge: '💪', description: 'Science says habits form in 21 days!' },
+  { day: 30, name: 'One Month Beast', badge: '🔥', description: 'A full month of consistency!' },
+  { day: 50, name: 'Unstoppable', badge: '⭐', description: 'Halfway to legendary status!' },
+  { day: 75, name: 'Champion', badge: '👑', description: 'Three quarters of the way there!' },
+  { day: 100, name: '100 Day Legend', badge: '🏆', description: 'You achieved the impossible!' },
 ];
 
-export const CATEGORY_CONFIG: Record<ChallengeCategory, { label: string; emoji: string; color: string }> = {
-  coding: { label: 'Coding', emoji: '💻', color: 'category-coding' },
-  fitness: { label: 'Fitness', emoji: '💪', color: 'category-fitness' },
-  reading: { label: 'Reading', emoji: '📚', color: 'category-reading' },
-  learning: { label: 'Learning', emoji: '🧠', color: 'category-learning' },
-  productivity: { label: 'Productivity', emoji: '⚡', color: 'category-productivity' },
-  creativity: { label: 'Creativity', emoji: '🎨', color: 'category-creativity' },
-  health: { label: 'Health', emoji: '🥗', color: 'category-health' },
-  other: { label: 'Other', emoji: '🎯', color: 'category-other' },
+export const CATEGORY_CONFIG: Record<ChallengeCategory, { 
+  label: string; 
+  emoji: string; 
+  color: string;
+  tips: string[];
+  placeholder: string;
+}> = {
+  coding: { 
+    label: 'Coding', 
+    emoji: '💻', 
+    color: 'category-coding',
+    tips: ['Solve one problem daily', 'Build projects', 'Review code'],
+    placeholder: 'e.g., Solve 100 LeetCode problems'
+  },
+  fitness: { 
+    label: 'Fitness', 
+    emoji: '💪', 
+    color: 'category-fitness',
+    tips: ['Start with 15 minutes', 'Track your progress', 'Rest days matter'],
+    placeholder: 'e.g., 100 days of 30-min workouts'
+  },
+  reading: { 
+    label: 'Reading', 
+    emoji: '📚', 
+    color: 'category-reading',
+    tips: ['Read 20 pages daily', 'Mix fiction & non-fiction', 'Take notes'],
+    placeholder: 'e.g., Read 12 books in 100 days'
+  },
+  learning: { 
+    label: 'Learning', 
+    emoji: '🧠', 
+    color: 'category-learning',
+    tips: ['Learn one concept daily', 'Practice immediately', 'Teach others'],
+    placeholder: 'e.g., Master a new language'
+  },
+  productivity: { 
+    label: 'Productivity', 
+    emoji: '⚡', 
+    color: 'category-productivity',
+    tips: ['Use time blocks', 'Eliminate distractions', 'Review weekly'],
+    placeholder: 'e.g., Wake up at 5 AM daily'
+  },
+  creativity: { 
+    label: 'Creativity', 
+    emoji: '🎨', 
+    color: 'category-creativity',
+    tips: ['Create without judgment', 'Share your work', 'Find inspiration'],
+    placeholder: 'e.g., Write 500 words daily'
+  },
+  health: { 
+    label: 'Health', 
+    emoji: '🥗', 
+    color: 'category-health',
+    tips: ['Hydrate first thing', 'Prep meals ahead', 'Track sleep'],
+    placeholder: 'e.g., Meditate 10 minutes daily'
+  },
+  other: { 
+    label: 'Other', 
+    emoji: '🎯', 
+    color: 'category-other',
+    tips: ['Define clear goals', 'Be consistent', 'Celebrate wins'],
+    placeholder: 'e.g., Practice gratitude daily'
+  },
 };
 
 export const MOTIVATIONAL_QUOTES = [
-  "The secret of getting ahead is getting started.",
-  "Small daily improvements lead to stunning results.",
-  "Consistency is more important than perfection.",
-  "Every day is a chance to get better.",
-  "Success is the sum of small efforts repeated daily.",
-  "You don't have to be great to start, but you have to start to be great.",
-  "The habit of today shapes the you of tomorrow.",
-  "Progress, not perfection.",
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain", dayRange: [1, 7] },
+  { text: "Small daily improvements lead to stunning results.", author: "Robin Sharma", dayRange: [1, 7] },
+  { text: "Consistency is more important than perfection.", author: "Unknown", dayRange: [1, 100] },
+  { text: "Every day is a chance to get better.", author: "Unknown", dayRange: [1, 100] },
+  { text: "Success is the sum of small efforts repeated daily.", author: "Robert Collier", dayRange: [1, 100] },
+  { text: "You don't have to be great to start, but you have to start to be great.", author: "Zig Ziglar", dayRange: [1, 14] },
+  { text: "The habit of today shapes the you of tomorrow.", author: "Unknown", dayRange: [14, 30] },
+  { text: "Progress, not perfection.", author: "Unknown", dayRange: [1, 100] },
+  { text: "You're building momentum! Keep pushing!", author: "100 Days", dayRange: [7, 14] },
+  { text: "Week 1 down! You're crushing it!", author: "100 Days", dayRange: [7, 14] },
+  { text: "The habit is sticking! You're amazing!", author: "100 Days", dayRange: [21, 30] },
+  { text: "Halfway there! Don't stop now!", author: "100 Days", dayRange: [50, 60] },
+  { text: "You're in the home stretch! Legendary status awaits!", author: "100 Days", dayRange: [75, 90] },
+  { text: "Almost there! You're about to make history!", author: "100 Days", dayRange: [90, 100] },
+  { text: "You did it! You're a legend!", author: "100 Days", dayRange: [100, 100] },
+  { text: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln", dayRange: [1, 100] },
+  { text: "The only bad workout is the one that didn't happen.", author: "Unknown", dayRange: [1, 100] },
+  { text: "Champions keep playing until they get it right.", author: "Billie Jean King", dayRange: [30, 100] },
 ];
+
+export const MOOD_CONFIG = {
+  great: { emoji: '🤩', label: 'Great', color: 'text-green-500' },
+  good: { emoji: '😊', label: 'Good', color: 'text-blue-500' },
+  okay: { emoji: '😐', label: 'Okay', color: 'text-yellow-500' },
+  struggling: { emoji: '😔', label: 'Struggling', color: 'text-red-500' },
+};

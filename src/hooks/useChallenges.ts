@@ -33,6 +33,7 @@ export function useChallenges() {
       ...challenge,
       id: crypto.randomUUID(),
       status: 'active',
+      visibility: challenge.visibility || 'private',
       checkIns: [],
       createdAt: now,
       updatedAt: now,
