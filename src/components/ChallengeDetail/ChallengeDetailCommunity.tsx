@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import { Challenge, CATEGORY_CONFIG } from '@/types/challenge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { GlassCard } from '@/components/dashboard/GlassCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,6 +20,7 @@ import {
   Medal,
   Crown,
   Star,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -135,220 +137,248 @@ export function ChallengeDetailCommunity({ challenge }: ChallengeDetailCommunity
       title: "Generating image...",
       description: "Your shareable card is being created.",
     });
-    // In a real implementation, this would generate an image
   };
 
   return (
     <div className="space-y-6">
       {/* Share Your Progress */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
+      <GlassCard>
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
             <Share2 className="w-5 h-5 text-primary" />
-            Share Your Progress
-          </CardTitle>
-          <CardDescription>
-            Let the world know about your {categoryConfig.label} journey!
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Share Card Preview */}
-          <div className="mb-4 p-4 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 border">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="text-3xl">{categoryConfig.emoji}</div>
+          </div>
+          <div>
+            <h3 className="font-semibold">Share Your Progress</h3>
+            <p className="text-sm text-muted-foreground">Let the world know about your journey!</p>
+          </div>
+        </div>
+
+        {/* Share Card Preview */}
+        <motion.div 
+          className="mb-5 p-5 rounded-2xl bg-gradient-to-br from-primary/20 via-secondary/10 to-primary/5 border border-white/10 relative overflow-hidden"
+          whileHover={{ scale: 1.01 }}
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/20 to-transparent rounded-full blur-2xl" />
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-4">
+              <motion.div 
+                className="text-4xl"
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                {categoryConfig.emoji}
+              </motion.div>
               <div>
-                <h3 className="font-bold">100 Days of {categoryConfig.label}</h3>
+                <h3 className="font-bold text-lg">100 Days of {categoryConfig.label}</h3>
                 <p className="text-sm text-muted-foreground">{challenge.name}</p>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="p-2 rounded bg-background/50">
-                <p className="text-xl font-bold">{challenge.checkIns.length}</p>
+              <div className="p-3 rounded-xl glass">
+                <p className="text-2xl font-bold font-display">{challenge.checkIns.length}</p>
                 <p className="text-xs text-muted-foreground">Days</p>
               </div>
-              <div className="p-2 rounded bg-background/50">
-                <p className="text-xl font-bold">{calculateStreak(challenge)}🔥</p>
+              <div className="p-3 rounded-xl glass">
+                <p className="text-2xl font-bold font-display">{calculateStreak(challenge)}🔥</p>
                 <p className="text-xs text-muted-foreground">Streak</p>
               </div>
-              <div className="p-2 rounded bg-background/50">
-                <p className="text-xl font-bold">{Math.round(challenge.checkIns.length)}%</p>
+              <div className="p-3 rounded-xl glass">
+                <p className="text-2xl font-bold font-display">{challenge.checkIns.length}%</p>
                 <p className="text-xs text-muted-foreground">Complete</p>
               </div>
             </div>
           </div>
+        </motion.div>
 
-          {/* Share Buttons */}
-          <div className="flex flex-wrap gap-2">
+        {/* Share Buttons */}
+        <div className="flex flex-wrap gap-2">
+          {[
+            { platform: 'twitter' as const, icon: Twitter, label: 'Twitter' },
+            { platform: 'linkedin' as const, icon: Linkedin, label: 'LinkedIn' },
+          ].map((btn) => (
+            <motion.div key={btn.platform} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button 
+                variant="outline" 
+                className="gap-2 flex-1 sm:flex-none glass rounded-xl hover:bg-white/10"
+                onClick={() => handleShare(btn.platform)}
+              >
+                <btn.icon className="w-4 h-4" />
+                {btn.label}
+              </Button>
+            </motion.div>
+          ))}
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <Button 
               variant="outline" 
-              className="gap-2 flex-1 sm:flex-none"
-              onClick={() => handleShare('twitter')}
-            >
-              <Twitter className="w-4 h-4" />
-              Twitter
-            </Button>
-            <Button 
-              variant="outline" 
-              className="gap-2 flex-1 sm:flex-none"
-              onClick={() => handleShare('linkedin')}
-            >
-              <Linkedin className="w-4 h-4" />
-              LinkedIn
-            </Button>
-            <Button 
-              variant="outline" 
-              className="gap-2 flex-1 sm:flex-none"
+              className="gap-2 flex-1 sm:flex-none glass rounded-xl hover:bg-white/10"
               onClick={() => handleShare('copy')}
             >
-              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
               {copied ? 'Copied!' : 'Copy Link'}
             </Button>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <Button 
               variant="outline" 
-              className="gap-2 flex-1 sm:flex-none"
+              className="gap-2 flex-1 sm:flex-none glass rounded-xl hover:bg-white/10"
               onClick={handleDownloadCard}
             >
               <Download className="w-4 h-4" />
               Download Card
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </motion.div>
+        </div>
+      </GlassCard>
 
       {/* Leaderboard */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
+      <GlassCard>
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
             <Trophy className="w-5 h-5 text-yellow-500" />
-            {categoryConfig.label} Leaderboard
-          </CardTitle>
-          <CardDescription>
-            See how you rank among other challengers
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeLeaderboardTab} onValueChange={setActiveLeaderboardTab}>
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="streak" className="gap-2">
-                <Flame className="w-4 h-4" />
-                By Streak
-              </TabsTrigger>
-              <TabsTrigger value="days" className="gap-2">
-                <Star className="w-4 h-4" />
-                By Days
-              </TabsTrigger>
-            </TabsList>
+          </div>
+          <div>
+            <h3 className="font-semibold">{categoryConfig.label} Leaderboard</h3>
+            <p className="text-sm text-muted-foreground">See how you rank among challengers</p>
+          </div>
+        </div>
 
-            <TabsContent value={activeLeaderboardTab} className="mt-0">
-              <div ref={leaderboardRef} className="space-y-2">
-                {leaderboardData.slice(0, 8).map((user, index) => (
-                  <div 
-                    key={user.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                      user.isCurrentUser 
-                        ? 'bg-primary/10 border border-primary/20' 
-                        : 'bg-muted/50 hover:bg-muted'
-                    }`}
-                  >
-                    {/* Rank */}
-                    <div className="w-8 flex justify-center shrink-0">
-                      {getRankIcon(index + 1)}
-                    </div>
+        <Tabs value={activeLeaderboardTab} onValueChange={setActiveLeaderboardTab}>
+          <TabsList className="grid w-full grid-cols-2 mb-5 glass rounded-xl h-11 p-1">
+            <TabsTrigger value="streak" className="gap-2 rounded-lg data-[state=active]:bg-white/10">
+              <Flame className="w-4 h-4" />
+              By Streak
+            </TabsTrigger>
+            <TabsTrigger value="days" className="gap-2 rounded-lg data-[state=active]:bg-white/10">
+              <Star className="w-4 h-4" />
+              By Days
+            </TabsTrigger>
+          </TabsList>
 
-                    {/* Avatar & Name */}
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage src={user.avatar} />
-                      <AvatarFallback className="text-xs">
-                        {user.name.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className={`flex-1 font-medium truncate ${user.isCurrentUser ? 'text-primary' : ''}`}>
-                      {user.name}
-                      {user.isCurrentUser && (
-                        <Badge variant="outline" className="ml-2 text-xs">You</Badge>
-                      )}
-                    </span>
-
-                    {/* Stats */}
-                    <div className="text-right">
-                      <p className="font-bold">
-                        {activeLeaderboardTab === 'streak' ? `${user.streak}🔥` : user.days}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {activeLeaderboardTab === 'streak' ? 'streak' : 'days'}
-                      </p>
-                    </div>
+          <TabsContent value={activeLeaderboardTab} className="mt-0">
+            <div ref={leaderboardRef} className="space-y-2">
+              {leaderboardData.slice(0, 8).map((user, index) => (
+                <motion.div 
+                  key={user.id}
+                  className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
+                    user.isCurrentUser 
+                      ? 'glass border-2 border-primary/30 shadow-glow' 
+                      : 'glass border border-white/5 hover:border-white/10'
+                  }`}
+                  whileHover={{ x: 4 }}
+                >
+                  {/* Rank */}
+                  <div className="w-8 flex justify-center shrink-0">
+                    {getRankIcon(index + 1)}
                   </div>
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+
+                  {/* Avatar & Name */}
+                  <Avatar className="w-9 h-9 border-2 border-white/10">
+                    <AvatarImage src={user.avatar} />
+                    <AvatarFallback className="text-xs bg-muted">
+                      {user.name.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className={`flex-1 font-medium truncate ${user.isCurrentUser ? 'text-primary' : ''}`}>
+                    {user.name}
+                    {user.isCurrentUser && (
+                      <Badge className="ml-2 text-xs bg-primary/20 text-primary border-0">You</Badge>
+                    )}
+                  </span>
+
+                  {/* Stats */}
+                  <div className="text-right">
+                    <p className="font-bold font-display">
+                      {activeLeaderboardTab === 'streak' ? `${user.streak}🔥` : user.days}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {activeLeaderboardTab === 'streak' ? 'streak' : 'days'}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </GlassCard>
 
       {/* Community Members */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
+      <GlassCard>
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center">
             <Users className="w-5 h-5 text-secondary" />
-            Challenge Community
-          </CardTitle>
-          <CardDescription>
-            {MOCK_MEMBERS.length + 1} people taking this challenge
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {MOCK_MEMBERS.map((member) => (
-              <div 
-                key={member.id}
-                className="p-3 rounded-lg bg-muted/50 text-center hover:bg-muted transition-colors"
-              >
-                <Avatar className="w-12 h-12 mx-auto mb-2">
-                  <AvatarImage src={member.avatar} />
-                  <AvatarFallback>
-                    {member.name.split(' ').map(n => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
-                <p className="text-sm font-medium truncate">{member.name}</p>
-                <div className="flex items-center justify-center gap-1 mt-1">
-                  <Badge 
-                    variant="outline" 
-                    className={`text-xs ${
-                      member.status === 'completed' 
-                        ? 'bg-green-500/10 text-green-500 border-green-500/20'
-                        : ''
-                    }`}
-                  >
-                    Day {member.day}
-                  </Badge>
-                </div>
-              </div>
-            ))}
           </div>
+          <div>
+            <h3 className="font-semibold">Challenge Community</h3>
+            <p className="text-sm text-muted-foreground">{MOCK_MEMBERS.length + 1} people taking this challenge</p>
+          </div>
+        </div>
 
-          <div className="mt-4 text-center">
-            <Button variant="outline" className="gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {MOCK_MEMBERS.map((member, index) => (
+            <motion.div 
+              key={member.id}
+              className="p-4 rounded-xl glass border border-white/5 text-center hover:border-white/10 transition-all"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              whileHover={{ y: -2, scale: 1.02 }}
+            >
+              <Avatar className="w-14 h-14 mx-auto mb-3 border-2 border-white/10">
+                <AvatarImage src={member.avatar} />
+                <AvatarFallback className="bg-muted">
+                  {member.name.split(' ').map(n => n[0]).join('')}
+                </AvatarFallback>
+              </Avatar>
+              <p className="text-sm font-medium truncate">{member.name}</p>
+              <div className="flex items-center justify-center gap-1 mt-2">
+                <Badge 
+                  variant="outline" 
+                  className={`text-xs glass ${
+                    member.status === 'completed' 
+                      ? 'bg-green-500/10 text-green-500 border-green-500/20'
+                      : ''
+                  }`}
+                >
+                  Day {member.day}
+                </Badge>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="mt-5 text-center">
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Button variant="outline" className="gap-2 glass rounded-xl hover:bg-white/10">
               <Users className="w-4 h-4" />
               View All Members
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </motion.div>
+        </div>
+      </GlassCard>
 
       {/* Join Community CTA */}
-      <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 border-0">
-        <CardContent className="p-6 text-center">
-          <Trophy className="w-10 h-10 mx-auto mb-3 text-primary" />
-          <h3 className="text-lg font-bold mb-2">Compete & Connect</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Join the global community of {categoryConfig.label.toLowerCase()} challengers
+      <GlassCard className="relative overflow-hidden border-0 bg-gradient-to-r from-primary/20 via-secondary/10 to-primary/10">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-primary/20 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-secondary/20 to-transparent rounded-full blur-2xl" />
+        <div className="relative text-center py-4">
+          <motion.div
+            animate={{ rotate: [0, 5, -5, 0], scale: [1, 1.05, 1] }}
+            transition={{ duration: 3, repeat: Infinity }}
+          >
+            <Trophy className="w-12 h-12 mx-auto mb-4 text-primary" />
+          </motion.div>
+          <h3 className="text-xl font-bold mb-2">Compete & Connect</h3>
+          <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
+            Join the global community of {categoryConfig.label.toLowerCase()} challengers and share your journey
           </p>
-          <Button className="bg-gradient-fire hover:opacity-90">
-            Enable Public Profile
-          </Button>
-        </CardContent>
-      </Card>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Button className="bg-gradient-fire hover:opacity-90 rounded-xl shadow-glow font-semibold px-6">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Enable Public Profile
+            </Button>
+          </motion.div>
+        </div>
+      </GlassCard>
     </div>
   );
 }

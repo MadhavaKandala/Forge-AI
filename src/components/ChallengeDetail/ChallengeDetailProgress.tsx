@@ -1,7 +1,8 @@
 import { useEffect, useRef, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import { Challenge, ACHIEVEMENTS, MOOD_CONFIG } from '@/types/challenge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/dashboard/GlassCard';
 import { Badge } from '@/components/ui/badge';
 import { HeatmapCalendar } from '@/components/HeatmapCalendar';
 import { AchievementBadge } from '@/components/AchievementBadge';
@@ -12,8 +13,8 @@ import {
   Trophy,
   Calendar,
   Star,
+  Sparkles,
 } from 'lucide-react';
-import { format, differenceInDays, parseISO } from 'date-fns';
 
 interface ChallengeDetailProgressProps {
   challenge: Challenge;
@@ -72,156 +73,185 @@ export function ChallengeDetailProgress({ challenge }: ChallengeDetailProgressPr
   return (
     <div className="space-y-6">
       {/* Milestone Timeline */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
+      <GlassCard>
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
             <Trophy className="w-5 h-5 text-primary" />
-            Milestone Timeline
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div ref={timelineRef} className="relative">
-            {/* Timeline line */}
-            <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
+          </div>
+          <div>
+            <h3 className="font-semibold">Milestone Timeline</h3>
+            <p className="text-sm text-muted-foreground">Your journey to 100 days</p>
+          </div>
+        </div>
+        
+        <div ref={timelineRef} className="relative">
+          {/* Timeline line */}
+          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/50 via-border to-border" />
+          
+          {MILESTONES.map((milestone, index) => {
+            const isCompleted = currentDay >= milestone.day;
+            const isCurrent = currentDay >= milestone.day && 
+              (index === MILESTONES.length - 1 || currentDay < MILESTONES[index + 1].day);
             
-            {MILESTONES.map((milestone, index) => {
-              const isCompleted = currentDay >= milestone.day;
-              const isCurrent = currentDay >= milestone.day && 
-                (index === MILESTONES.length - 1 || currentDay < MILESTONES[index + 1].day);
-              
-              return (
-                <div 
-                  key={milestone.day}
-                  className={`relative flex items-start gap-4 pb-6 last:pb-0 ${
-                    !isCompleted ? 'opacity-50' : ''
-                  }`}
-                >
-                  {/* Icon */}
-                  <div className={`relative z-10 flex items-center justify-center w-8 h-8 rounded-full ${
-                    isCompleted 
-                      ? isCurrent 
-                        ? 'bg-gradient-fire shadow-glow' 
-                        : 'bg-green-500/20 border-2 border-green-500'
-                      : 'bg-muted border-2 border-border'
-                  }`}>
-                    {isCompleted ? (
-                      <span className="text-sm">{milestone.icon}</span>
-                    ) : (
-                      <Circle className="w-4 h-4 text-muted-foreground" />
+            return (
+              <motion.div 
+                key={milestone.day}
+                className={`relative flex items-start gap-4 pb-6 last:pb-0 ${
+                  !isCompleted ? 'opacity-40' : ''
+                }`}
+                whileHover={isCompleted ? { x: 4 } : {}}
+              >
+                {/* Icon */}
+                <div className={`relative z-10 flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300 ${
+                  isCompleted 
+                    ? isCurrent 
+                      ? 'bg-gradient-fire shadow-glow' 
+                      : 'bg-green-500/20 border-2 border-green-500'
+                    : 'glass border border-white/10'
+                }`}>
+                  {isCompleted ? (
+                    <span className="text-sm">{milestone.icon}</span>
+                  ) : (
+                    <Circle className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </div>
+                
+                {/* Content */}
+                <div className="flex-1 pt-0.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`font-semibold ${isCurrent ? 'text-primary' : ''}`}>
+                      {milestone.label}
+                    </span>
+                    <Badge variant="outline" className="text-xs glass">
+                      Day {milestone.day}
+                    </Badge>
+                    {isCurrent && (
+                      <Badge className="bg-primary/20 text-primary border-0 text-xs gap-1">
+                        <Flame className="w-3 h-3" />
+                        Current
+                      </Badge>
                     )}
                   </div>
-                  
-                  {/* Content */}
-                  <div className="flex-1 pt-0.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold">{milestone.label}</span>
-                      <Badge variant="outline" className="text-xs">
-                        Day {milestone.day}
-                      </Badge>
-                      {isCurrent && (
-                        <Badge className="bg-primary/20 text-primary border-0 text-xs">
-                          <Flame className="w-3 h-3 mr-1" />
-                          Current
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {milestone.description}
-                    </p>
-                  </div>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {milestone.description}
+                  </p>
                 </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+              </motion.div>
+            );
+          })}
+        </div>
+      </GlassCard>
 
       {/* Achievements */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
+      <GlassCard>
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
             <Star className="w-5 h-5 text-yellow-500" />
-            Achievements
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-            {ACHIEVEMENTS.map((achievement) => (
+          </div>
+          <div>
+            <h3 className="font-semibold">Achievements</h3>
+            <p className="text-sm text-muted-foreground">
+              {ACHIEVEMENTS.filter(a => currentDay >= a.day).length} of {ACHIEVEMENTS.length} unlocked
+            </p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-3">
+          {ACHIEVEMENTS.map((achievement) => (
+            <motion.div
+              key={achievement.day}
+              whileHover={{ scale: 1.1, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
               <AchievementBadge
-                key={achievement.day}
                 achievement={achievement}
                 unlocked={currentDay >= achievement.day}
                 size="sm"
               />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </motion.div>
+          ))}
+        </div>
+      </GlassCard>
 
       {/* Activity Heatmap */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
+      <GlassCard>
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center">
             <Calendar className="w-5 h-5 text-secondary" />
-            Activity Heatmap
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <HeatmapCalendar challenge={challenge} weeks={14} />
-        </CardContent>
-      </Card>
+          </div>
+          <div>
+            <h3 className="font-semibold">Activity Heatmap</h3>
+            <p className="text-sm text-muted-foreground">Your check-in history</p>
+          </div>
+        </div>
+        
+        <HeatmapCalendar challenge={challenge} weeks={14} />
+      </GlassCard>
 
       {/* Weekly Grid View */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">100 Days Grid</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {weeklyData.slice(0, 10).map((week) => (
-              <div key={week.weekNum} className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground w-12 shrink-0">
-                  Week {week.weekNum}
-                </span>
-                <div className="flex gap-1 flex-1">
-                  {week.days.map((checkIn, dayIndex) => {
-                    const dayNum = (week.weekNum - 1) * 7 + dayIndex + 1;
-                    const isCompleted = checkIn !== null;
-                    const isFuture = dayNum > currentDay + 1;
-                    
-                    return (
-                      <div
-                        key={dayIndex}
-                        className={`w-6 h-6 sm:w-8 sm:h-8 rounded flex items-center justify-center text-xs transition-all ${
-                          isCompleted
-                            ? checkIn?.mood 
-                              ? MOOD_CONFIG[checkIn.mood]?.color?.replace('text-', 'bg-') + '/20'
-                              : 'bg-green-500/20 text-green-500'
-                            : isFuture
-                            ? 'bg-muted/30 text-muted-foreground/30'
-                            : 'bg-muted text-muted-foreground'
-                        }`}
-                        title={isCompleted ? `Day ${dayNum} - ${checkIn?.notes || 'Completed'}` : `Day ${dayNum}`}
-                      >
-                        {isCompleted ? (
-                          <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
-                        ) : (
-                          dayNum <= 100 ? dayNum : ''
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-            {weeklyData.length > 10 && (
-              <p className="text-xs text-center text-muted-foreground pt-2">
-                + {weeklyData.length - 10} more weeks
-              </p>
-            )}
+      <GlassCard>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <div>
+              <h3 className="font-semibold">100 Days Grid</h3>
+              <p className="text-sm text-muted-foreground">Visual progress tracker</p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+          <Badge variant="outline" className="glass">
+            {currentDay}/100 days
+          </Badge>
+        </div>
+        
+        <div className="space-y-3">
+          {weeklyData.slice(0, 10).map((week) => (
+            <div key={week.weekNum} className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground w-14 shrink-0 font-medium">
+                Week {week.weekNum}
+              </span>
+              <div className="flex gap-1.5 flex-1">
+                {week.days.map((checkIn, dayIndex) => {
+                  const dayNum = (week.weekNum - 1) * 7 + dayIndex + 1;
+                  const isCompleted = checkIn !== null;
+                  const isFuture = dayNum > currentDay + 1;
+                  const isToday = dayNum === currentDay + 1;
+                  
+                  return (
+                    <motion.div
+                      key={dayIndex}
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-xs transition-all ${
+                        isCompleted
+                          ? 'bg-gradient-to-br from-green-500/30 to-green-500/10 text-green-500 border border-green-500/20'
+                          : isToday
+                          ? 'bg-primary/20 border-2 border-primary/50 animate-pulse'
+                          : isFuture
+                          ? 'bg-muted/20 text-muted-foreground/30 border border-white/5'
+                          : 'bg-muted/50 text-muted-foreground border border-white/5'
+                      }`}
+                      title={isCompleted ? `Day ${dayNum} - ${checkIn?.notes || 'Completed'}` : `Day ${dayNum}`}
+                      whileHover={{ scale: 1.15 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      {isCompleted ? (
+                        <CheckCircle2 className="w-4 h-4" />
+                      ) : (
+                        dayNum <= 100 ? dayNum : ''
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          {weeklyData.length > 10 && (
+            <p className="text-xs text-center text-muted-foreground pt-2">
+              + {weeklyData.length - 10} more weeks
+            </p>
+          )}
+        </div>
+      </GlassCard>
     </div>
   );
 }
