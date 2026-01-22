@@ -82,66 +82,94 @@ export const ACHIEVEMENTS: Achievement[] = [
   { day: 100, name: '100 Day Legend', badge: '🏆', description: 'You achieved the impossible!' },
 ];
 
+// Solo Levelling-inspired category config with neon colors
 export const CATEGORY_CONFIG: Record<ChallengeCategory, { 
   label: string; 
   emoji: string; 
   color: string;
+  neonColor: string;
+  glowClass: string;
+  gradientClass: string;
   tips: string[];
   placeholder: string;
 }> = {
   coding: { 
-    label: 'Coding', 
+    label: 'Code', 
     emoji: '💻', 
-    color: 'category-coding',
+    color: '#00D9FF',
+    neonColor: 'neon-cyan',
+    glowClass: 'glow-cyan',
+    gradientClass: 'bg-gradient-coding',
     tips: ['Solve one problem daily', 'Build projects', 'Review code'],
     placeholder: 'e.g., Solve 100 LeetCode problems'
   },
   fitness: { 
     label: 'Fitness', 
     emoji: '💪', 
-    color: 'category-fitness',
+    color: '#FF1654',
+    neonColor: 'neon-pink',
+    glowClass: 'glow-pink',
+    gradientClass: 'bg-gradient-fitness',
     tips: ['Start with 15 minutes', 'Track your progress', 'Rest days matter'],
     placeholder: 'e.g., 100 days of 30-min workouts'
   },
   reading: { 
     label: 'Reading', 
     emoji: '📚', 
-    color: 'category-reading',
+    color: '#A78BFA',
+    neonColor: 'neon-purple',
+    glowClass: 'glow-purple',
+    gradientClass: 'bg-gradient-reading',
     tips: ['Read 20 pages daily', 'Mix fiction & non-fiction', 'Take notes'],
     placeholder: 'e.g., Read 12 books in 100 days'
   },
   learning: { 
     label: 'Learning', 
     emoji: '🧠', 
-    color: 'category-learning',
+    color: '#10B981',
+    neonColor: 'neon-emerald',
+    glowClass: 'glow-emerald',
+    gradientClass: 'bg-gradient-learning',
     tips: ['Learn one concept daily', 'Practice immediately', 'Teach others'],
     placeholder: 'e.g., Master a new language'
   },
   productivity: { 
     label: 'Productivity', 
     emoji: '⚡', 
-    color: 'category-productivity',
+    color: '#F59E0B',
+    neonColor: 'neon-gold',
+    glowClass: 'glow-gold',
+    gradientClass: 'bg-gradient-creativity',
     tips: ['Use time blocks', 'Eliminate distractions', 'Review weekly'],
     placeholder: 'e.g., Wake up at 5 AM daily'
   },
   creativity: { 
-    label: 'Creativity', 
-    emoji: '🎨', 
-    color: 'category-creativity',
+    label: 'Writing', 
+    emoji: '✍️', 
+    color: '#FCD34D',
+    neonColor: 'neon-gold',
+    glowClass: 'glow-gold',
+    gradientClass: 'bg-gradient-creativity',
     tips: ['Create without judgment', 'Share your work', 'Find inspiration'],
     placeholder: 'e.g., Write 500 words daily'
   },
   health: { 
     label: 'Health', 
     emoji: '🥗', 
-    color: 'category-health',
+    color: '#10B981',
+    neonColor: 'neon-emerald',
+    glowClass: 'glow-emerald',
+    gradientClass: 'bg-gradient-learning',
     tips: ['Hydrate first thing', 'Prep meals ahead', 'Track sleep'],
     placeholder: 'e.g., Meditate 10 minutes daily'
   },
   other: { 
     label: 'Other', 
     emoji: '🎯', 
-    color: 'category-other',
+    color: '#9CA3AF',
+    neonColor: 'neon-cyan',
+    glowClass: 'glow-cyan',
+    gradientClass: 'bg-gradient-neon',
     tips: ['Define clear goals', 'Be consistent', 'Celebrate wins'],
     placeholder: 'e.g., Practice gratitude daily'
   },
@@ -169,8 +197,8 @@ export const MOTIVATIONAL_QUOTES = [
 ];
 
 export const MOOD_CONFIG = {
-  great: { emoji: '🤩', label: 'Great', color: 'text-green-500' },
-  good: { emoji: '😊', label: 'Good', color: 'text-blue-500' },
-  okay: { emoji: '😐', label: 'Okay', color: 'text-yellow-500' },
-  struggling: { emoji: '😔', label: 'Struggling', color: 'text-red-500' },
+  great: { emoji: '🤩', label: 'Great', color: 'text-neon-emerald' },
+  good: { emoji: '😊', label: 'Good', color: 'text-neon-cyan' },
+  okay: { emoji: '😐', label: 'Okay', color: 'text-neon-gold' },
+  struggling: { emoji: '😔', label: 'Struggling', color: 'text-neon-pink' },
 };
