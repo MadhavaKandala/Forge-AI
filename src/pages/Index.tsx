@@ -21,9 +21,10 @@ import { ChallengeSummary } from '@/components/ChallengeSummary';
 import { MobileNavigation } from '@/components/MobileNavigation';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { CodeHub } from '@/components/Hubs/CodeHub';
+import { FitnessHub } from '@/components/Hubs/FitnessHub';
 import { ChallengeDetailPage } from '@/components/ChallengeDetail';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Flame, Trophy, BarChart3, User, Settings, Calendar, Code } from 'lucide-react';
+import { Flame, Trophy, BarChart3, User, Settings, Calendar, Code, Dumbbell } from 'lucide-react';
 
 const Index = () => {
   const {
@@ -187,7 +188,7 @@ const Index = () => {
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             {/* Desktop Tabs */}
-            <TabsList className="hidden md:grid w-full grid-cols-7 h-12">
+            <TabsList className="hidden md:grid w-full grid-cols-8 h-12">
               <TabsTrigger value="today" className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 Today
@@ -199,6 +200,10 @@ const Index = () => {
               <TabsTrigger value="code-hub" className="flex items-center gap-2">
                 <Code className="w-4 h-4" />
                 Code Hub
+              </TabsTrigger>
+              <TabsTrigger value="fitness-hub" className="flex items-center gap-2">
+                <Dumbbell className="w-4 h-4" />
+                Fitness Hub
               </TabsTrigger>
               <TabsTrigger value="analytics" className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4" />
@@ -247,6 +252,14 @@ const Index = () => {
             {/* Code Hub Tab */}
             <TabsContent value="code-hub">
               <CodeHub 
+                challenges={challenges} 
+                onNavigateBack={() => setActiveTab('challenges')}
+              />
+            </TabsContent>
+
+            {/* Fitness Hub Tab */}
+            <TabsContent value="fitness-hub">
+              <FitnessHub 
                 challenges={challenges} 
                 onNavigateBack={() => setActiveTab('challenges')}
               />
