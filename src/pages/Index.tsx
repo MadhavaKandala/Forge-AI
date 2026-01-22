@@ -21,6 +21,7 @@ import { ChallengeSummary } from '@/components/ChallengeSummary';
 import { MobileNavigation } from '@/components/MobileNavigation';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { CodeHub } from '@/components/Hubs/CodeHub';
+import { ChallengeDetailPage } from '@/components/ChallengeDetail';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Flame, Trophy, BarChart3, User, Settings, Calendar, Code } from 'lucide-react';
 
@@ -44,6 +45,7 @@ const Index = () => {
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [unlockedAchievement, setUnlockedAchievement] = useState<typeof ACHIEVEMENTS[number] | null>(null);
   const [activeTab, setActiveTab] = useState('today');
+  const [viewingChallengeDetail, setViewingChallengeDetail] = useState<Challenge | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const totalChallenges = activeChallenges.length + completedChallenges.length;
@@ -60,8 +62,37 @@ const Index = () => {
   }, [isLoaded]);
 
   const handleViewDetails = (challenge: Challenge) => {
-    setSelectedChallenge(challenge);
-    setDetailsOpen(true);
+    // Use new full-page detail view
+    setViewingChallengeDetail(challenge);
+  };
+
+  // Handler for check-in from detail page
+  const handleDetailPageCheckIn = (notes?: string, link?: string) => {
+    if (viewingChallengeDetail) {
+      const newDayCount = viewingChallengeDetail.checkIns.length + 1;
+      const milestone = ACHIEVEMENTS.find(a => a.day === newDayCount);
+      
+      if (milestone) {
+        setUnlockedAchievement(milestone);
+        setTimeout(() => setCelebrationOpen(true), 500);
+      }
+
+      // Check for 100-day completion
+      if (newDayCount === 100) {
+        updateChallenge(viewingChallengeDetail.id, { status: 'completed' });
+        setTimeout(() => {
+          setSelectedChallenge({ ...viewingChallengeDetail, checkIns: [...viewingChallengeDetail.checkIns, { id: '', date: '', createdAt: '' }] });
+          setSummaryOpen(true);
+        }, 1500);
+      }
+      
+      checkIn(viewingChallengeDetail.id, notes, link);
+      // Update the viewing challenge with new data
+      const updatedChallenge = challenges.find(c => c.id === viewingChallengeDetail.id);
+      if (updatedChallenge) {
+        setViewingChallengeDetail(updatedChallenge);
+      }
+    }
   };
 
   const handleCheckInClick = (challengeId: string) => {
@@ -108,6 +139,37 @@ const Index = () => {
           </div>
           <p className="text-muted-foreground">Loading your challenges...</p>
         </div>
+      </div>
+    );
+  }
+
+  // If viewing a challenge detail page, show it instead of the main dashboard
+  if (viewingChallengeDetail) {
+    // Get the latest challenge data
+    const latestChallenge = challenges.find(c => c.id === viewingChallengeDetail.id) || viewingChallengeDetail;
+    
+    return (
+      <div className="min-h-screen bg-background">
+        <ChallengeDetailPage
+          challenge={latestChallenge}
+          onBack={() => setViewingChallengeDetail(null)}
+          onCheckIn={handleDetailPageCheckIn}
+        />
+        
+        {/* Celebration Dialog */}
+        <ConfettiCelebration
+          open={celebrationOpen}
+          onOpenChange={setCelebrationOpen}
+          achievement={unlockedAchievement}
+          challengeName={latestChallenge.name}
+          dayCount={latestChallenge.checkIns.length + 1}
+        />
+
+        <ChallengeSummary
+          challenge={latestChallenge}
+          open={summaryOpen}
+          onOpenChange={setSummaryOpen}
+        />
       </div>
     );
   }
