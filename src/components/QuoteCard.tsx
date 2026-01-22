@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { MOTIVATIONAL_QUOTES } from '@/types/challenge';
-import { Quote } from 'lucide-react';
+import { Quote, Sparkles } from 'lucide-react';
 
 export function QuoteCard() {
   const quote = useMemo(() => {
@@ -14,13 +14,30 @@ export function QuoteCard() {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative p-6 rounded-2xl bg-gradient-to-br from-muted/50 to-muted border border-border/50 overflow-hidden"
+      className="glass-card p-5 relative overflow-hidden group"
     >
-      <Quote className="absolute top-4 right-4 w-8 h-8 text-muted-foreground/20" />
-      <p className="text-lg font-medium leading-relaxed relative z-10">
-        "{quote.text}"
-      </p>
-      <p className="text-sm text-muted-foreground mt-3">— {quote.author}</p>
+      {/* Decorative elements */}
+      <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full blur-2xl opacity-50 group-hover:opacity-70 transition-opacity" />
+      
+      <div className="relative z-10">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-primary" />
+          </div>
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Daily Inspiration</span>
+        </div>
+        
+        <Quote className="w-6 h-6 text-primary/20 mb-2" />
+        
+        <p className="text-base font-medium leading-relaxed">
+          {quote.text}
+        </p>
+        
+        <p className="text-sm text-muted-foreground mt-3 flex items-center gap-1">
+          <span className="w-4 h-px bg-muted-foreground/30" />
+          {quote.author}
+        </p>
+      </div>
     </motion.div>
   );
 }
