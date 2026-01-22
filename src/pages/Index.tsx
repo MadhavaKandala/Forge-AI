@@ -27,7 +27,8 @@ import {
   GlassCard, 
   GlowingStatCard, 
   ChallengeListCard, 
-  FloatingCTA 
+  FloatingCTA,
+  RadarProgressGraph
 } from '@/components/dashboard';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -277,6 +278,17 @@ const Index = () => {
 
             {/* ========== TODAY TAB ========== */}
             <TabsContent value="today" className="space-y-5 mt-0">
+              {/* Solo Levelling Radar Graph - Dashboard Centerpiece */}
+              <GlassCard className="p-6 glow-cyan">
+                <RadarProgressGraph 
+                  challenges={challenges}
+                  onAxisClick={(category) => {
+                    if (category === 'coding') setActiveTab('code-hub');
+                    else if (category === 'fitness') setActiveTab('fitness-hub');
+                  }}
+                />
+              </GlassCard>
+
               <div className="grid lg:grid-cols-3 gap-5">
                 {/* Main content */}
                 <div className="lg:col-span-2 space-y-5">
