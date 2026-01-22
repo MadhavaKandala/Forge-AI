@@ -159,40 +159,47 @@ export function CategorySpecificCheckIn({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">{categoryConfig.emoji}</span>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto glass-card border-border/50">
+        <DialogHeader className="pb-2">
+          <div className="flex items-center gap-4">
+            <div 
+              className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+              style={{ backgroundColor: `${categoryConfig.color}15` }}
+            >
+              {categoryConfig.emoji}
+            </div>
             <div>
-              <DialogTitle className="font-display">
+              <DialogTitle className="text-lg font-bold">
                 {categoryConfig.label} Check-In
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-sm">
                 Day {challenge.checkIns.length + 1} of {challenge.name}
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="space-y-4 pt-2">
+        <div className="space-y-5 pt-2">
           {/* Date Picker for Retroactive Check-ins */}
-          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm">Check-in Date:</span>
+          <div className="flex items-center justify-between p-4 rounded-xl glass border-border/50">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
+                <CalendarIcon className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <div>
+                <span className="text-sm font-medium">Check-in Date</span>
+                {isRetroactive && (
+                  <p className="text-xs text-muted-foreground">Retroactive entry</p>
+                )}
+              </div>
             </div>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
+                <Button variant="outline" size="sm" className="gap-2 glass border-border/50">
                   {format(selectedDate, 'MMM d, yyyy')}
-                  {isRetroactive && (
-                    <Badge variant="secondary" className="text-xs">
-                      Retroactive
-                    </Badge>
-                  )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
+              <PopoverContent className="w-auto p-0 glass-card" align="end">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
@@ -210,9 +217,9 @@ export function CategorySpecificCheckIn({
 
           {/* Existing Check-in Warning */}
           {existingCheckIn && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-600 dark:text-yellow-400">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span className="text-sm">
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+              <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
+              <span className="text-sm text-amber-600 dark:text-amber-400">
                 You already have a check-in for this date. New submission will update it.
               </span>
             </div>
@@ -220,9 +227,9 @@ export function CategorySpecificCheckIn({
 
           {/* Validation Error */}
           {validationError && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span className="text-sm">{validationError}</span>
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20">
+              <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
+              <span className="text-sm text-destructive">{validationError}</span>
             </div>
           )}
 
