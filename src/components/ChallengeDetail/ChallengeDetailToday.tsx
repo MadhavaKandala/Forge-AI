@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import { Challenge } from '@/types/challenge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { GlassCard } from '@/components/dashboard/GlassCard';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,7 @@ import {
   Sparkles,
   Clock,
   Zap,
+  Quote,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -79,7 +81,6 @@ export function ChallengeDetailToday({
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    // Simulate async operation
     await new Promise(resolve => setTimeout(resolve, 500));
     onCheckIn(notes || undefined, link || undefined);
     setNotes('');
@@ -93,32 +94,36 @@ export function ChallengeDetailToday({
       value: streak, 
       icon: Flame, 
       suffix: '🔥',
-      color: 'text-primary',
-      bgColor: 'bg-primary/10',
+      gradient: 'from-primary/20 to-primary/5',
+      iconColor: 'text-primary',
+      glow: true,
     },
     { 
       label: 'Best Streak', 
       value: bestStreak, 
       icon: Target, 
       suffix: '',
-      color: 'text-secondary',
-      bgColor: 'bg-secondary/10',
+      gradient: 'from-secondary/20 to-secondary/5',
+      iconColor: 'text-secondary',
+      glow: false,
     },
     { 
       label: 'Days Done', 
       value: challenge.checkIns.length, 
       icon: Calendar, 
       suffix: '/100',
-      color: 'text-muted-foreground',
-      bgColor: 'bg-muted',
+      gradient: 'from-muted to-muted/50',
+      iconColor: 'text-muted-foreground',
+      glow: false,
     },
     { 
       label: '7-Day Consistency', 
       value: consistencyScore, 
       icon: TrendingUp, 
       suffix: '%',
-      color: consistencyScore >= 70 ? 'text-green-500' : 'text-yellow-500',
-      bgColor: consistencyScore >= 70 ? 'bg-green-500/10' : 'bg-yellow-500/10',
+      gradient: consistencyScore >= 70 ? 'from-green-500/20 to-green-500/5' : 'from-yellow-500/20 to-yellow-500/5',
+      iconColor: consistencyScore >= 70 ? 'text-green-500' : 'text-yellow-500',
+      glow: consistencyScore >= 70,
     },
   ];
 
@@ -126,113 +131,133 @@ export function ChallengeDetailToday({
     <div className="space-y-6">
       {/* Stats Grid */}
       <div ref={statsRef} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {stats.map((stat) => (
-          <Card key={stat.label} className={`${stat.bgColor} border-0`}>
-            <CardContent className="p-4 text-center">
-              <stat.icon className={`w-5 h-5 mx-auto mb-2 ${stat.color}`} />
-              <p className="text-2xl font-bold">
-                {stat.value}{stat.suffix}
-              </p>
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
-            </CardContent>
-          </Card>
+        {stats.map((stat, index) => (
+          <motion.div
+            key={stat.label}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <GlassCard 
+              className={`bg-gradient-to-br ${stat.gradient} ${stat.glow ? 'shadow-glow' : ''}`}
+              padding="sm"
+            >
+              <div className="text-center">
+                <stat.icon className={`w-5 h-5 mx-auto mb-2 ${stat.iconColor}`} />
+                <p className="text-2xl font-bold font-display">
+                  {stat.value}{stat.suffix}
+                </p>
+                <p className="text-xs text-muted-foreground">{stat.label}</p>
+              </div>
+            </GlassCard>
+          </motion.div>
         ))}
       </div>
 
       {/* Progress Bar */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Overall Progress</span>
-            <span className="text-sm text-muted-foreground">{progress}% complete</span>
-          </div>
+      <GlassCard>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-medium">Overall Progress</span>
+          <Badge variant="outline" className="glass">
+            {progress}% complete
+          </Badge>
+        </div>
+        <div className="relative">
           <Progress value={progress} className="h-3" />
-          <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-            <span>Day 1</span>
-            <span>Day 50</span>
-            <span>Day 100</span>
-          </div>
-        </CardContent>
-      </Card>
+          <div 
+            className="absolute top-0 h-3 rounded-full bg-gradient-to-r from-primary/50 to-transparent blur-sm"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <div className="flex justify-between mt-3 text-xs text-muted-foreground">
+          <span>Day 1</span>
+          <span className="text-primary font-medium">Day {challenge.checkIns.length}</span>
+          <span>Day 100</span>
+        </div>
+      </GlassCard>
 
       {/* Check-in Form or Completed Status */}
       <div ref={formRef}>
         {checkedIn ? (
-          <Card className="bg-green-500/5 border-green-500/20">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <Check className="w-5 h-5 text-green-500" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg text-green-500">Checked in today!</CardTitle>
-                  <CardDescription>
-                    Great job maintaining your streak
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {todayCheckIn && (
-                <>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="w-4 h-4" />
-                    <span>
-                      Checked in at {format(new Date(todayCheckIn.createdAt), 'h:mm a')}
-                    </span>
-                  </div>
-                  {todayCheckIn.notes && (
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-sm">{todayCheckIn.notes}</p>
-                    </div>
-                  )}
-                  {todayCheckIn.link && (
-                    <a 
-                      href={todayCheckIn.link} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-primary hover:underline"
-                    >
-                      <LinkIcon className="w-4 h-4" />
-                      {todayCheckIn.link}
-                    </a>
-                  )}
-                </>
-              )}
-              <div className="pt-3 border-t">
+          <GlassCard className="border-green-500/20 bg-gradient-to-br from-green-500/10 to-green-500/5">
+            <div className="flex items-center gap-3 mb-4">
+              <motion.div 
+                className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', delay: 0.2 }}
+              >
+                <Check className="w-6 h-6 text-green-500" />
+              </motion.div>
+              <div>
+                <h3 className="text-lg font-semibold text-green-500">Checked in today!</h3>
                 <p className="text-sm text-muted-foreground">
-                  Come back tomorrow to continue your {streak + 1}-day streak!
+                  Great job maintaining your streak
                 </p>
               </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="border-primary/20">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-gradient-fire flex items-center justify-center">
-                    <Zap className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">Check In Now</CardTitle>
-                    <CardDescription>
-                      Day {challenge.checkIns.length + 1} of your journey
-                    </CardDescription>
-                  </div>
+            </div>
+            
+            {todayCheckIn && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Clock className="w-4 h-4" />
+                  <span>
+                    Checked in at {format(new Date(todayCheckIn.createdAt), 'h:mm a')}
+                  </span>
                 </div>
-                {streak > 0 && (
-                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                    🔥 {streak} day streak at risk!
-                  </Badge>
+                {todayCheckIn.notes && (
+                  <div className="p-4 rounded-xl glass">
+                    <p className="text-sm">{todayCheckIn.notes}</p>
+                  </div>
                 )}
+                {todayCheckIn.link && (
+                  <a 
+                    href={todayCheckIn.link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-primary hover:underline"
+                  >
+                    <LinkIcon className="w-4 h-4" />
+                    {todayCheckIn.link}
+                  </a>
+                )}
+                <div className="pt-3 border-t border-white/5">
+                  <p className="text-sm text-muted-foreground">
+                    Come back tomorrow to continue your <span className="text-primary font-medium">{streak + 1}-day streak!</span>
+                  </p>
+                </div>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            )}
+          </GlassCard>
+        ) : (
+          <GlassCard className="border-primary/20" glow glowColor="flame">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <motion.div 
+                  className="w-12 h-12 rounded-full bg-gradient-fire flex items-center justify-center shadow-glow"
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <Zap className="w-6 h-6 text-white" />
+                </motion.div>
+                <div>
+                  <h3 className="text-lg font-semibold">Check In Now</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Day {challenge.checkIns.length + 1} of your journey
+                  </p>
+                </div>
+              </div>
+              {streak > 0 && (
+                <Badge className="bg-primary/20 text-primary border-primary/30 animate-pulse">
+                  🔥 {streak} day streak at risk!
+                </Badge>
+              )}
+            </div>
+
+            <div className="space-y-5">
               {/* Notes */}
               <div className="space-y-2">
-                <Label htmlFor="notes" className="flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4" />
+                <Label htmlFor="notes" className="flex items-center gap-2 text-sm">
+                  <MessageSquare className="w-4 h-4 text-muted-foreground" />
                   What did you accomplish today?
                 </Label>
                 <Textarea
@@ -240,14 +265,14 @@ export function ChallengeDetailToday({
                   placeholder="Share your progress, learnings, or challenges..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="min-h-[100px] resize-none"
+                  className="min-h-[100px] resize-none bg-white/5 border-white/10 focus:border-primary/50 rounded-xl"
                 />
               </div>
 
               {/* Link */}
               <div className="space-y-2">
-                <Label htmlFor="link" className="flex items-center gap-2">
-                  <LinkIcon className="w-4 h-4" />
+                <Label htmlFor="link" className="flex items-center gap-2 text-sm">
+                  <LinkIcon className="w-4 h-4 text-muted-foreground" />
                   Add a link (optional)
                 </Label>
                 <Input
@@ -256,45 +281,56 @@ export function ChallengeDetailToday({
                   placeholder="https://github.com/..."
                   value={link}
                   onChange={(e) => setLink(e.target.value)}
+                  className="bg-white/5 border-white/10 focus:border-primary/50 rounded-xl"
                 />
               </div>
 
               {/* Submit Button */}
-              <Button 
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="w-full bg-gradient-fire hover:opacity-90 font-semibold h-12"
+              <motion.div
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
               >
-                {isSubmitting ? (
-                  <span className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 animate-spin" />
-                    Saving...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    🔥 Complete Day {challenge.checkIns.length + 1}
-                  </span>
-                )}
-              </Button>
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-fire hover:opacity-90 font-semibold h-12 rounded-xl shadow-glow"
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      🔥 Complete Day {challenge.checkIns.length + 1}
+                    </span>
+                  )}
+                </Button>
+              </motion.div>
 
               <p className="text-xs text-center text-muted-foreground">
                 Pro tip: Consistency beats perfection. Even small progress counts!
               </p>
-            </CardContent>
-          </Card>
+            </div>
+          </GlassCard>
         )}
       </div>
 
       {/* Motivational Quote */}
-      <Card className="bg-muted/30">
-        <CardContent className="p-4 text-center">
-          <Sparkles className="w-5 h-5 mx-auto mb-2 text-primary" />
-          <p className="text-sm italic text-muted-foreground">
-            "The only way to do great work is to love what you do."
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">— Steve Jobs</p>
-        </CardContent>
-      </Card>
+      <GlassCard className="relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-full blur-2xl" />
+        <div className="relative flex items-start gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            <Quote className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm italic text-foreground/80">
+              "The only way to do great work is to love what you do."
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">— Steve Jobs</p>
+          </div>
+        </div>
+      </GlassCard>
     </div>
   );
 }
