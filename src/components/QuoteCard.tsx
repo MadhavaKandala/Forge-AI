@@ -18,9 +18,9 @@ export function QuoteCard() {
     >
       <Quote className="absolute top-4 right-4 w-8 h-8 text-muted-foreground/20" />
       <p className="text-lg font-medium leading-relaxed relative z-10">
-        "{quote}"
+        "{quote.text}"
       </p>
-      <p className="text-sm text-muted-foreground mt-3">Daily Motivation</p>
+      <p className="text-sm text-muted-foreground mt-3">— {quote.author}</p>
     </motion.div>
   );
 }
