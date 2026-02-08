@@ -1,4 +1,4 @@
-export type ChallengeCategory = 
+export type ChallengeCategory =
   | 'coding'
   | 'fitness'
   | 'reading'
@@ -55,6 +55,66 @@ export interface Achievement {
   unlockedAt?: string;
 }
 
+export interface FitnessRecord {
+  id: string;
+  name: string;
+  value: string;
+  unit: string;
+  icon: string;
+  date: string; // ISO date
+  isRecent: boolean;
+}
+
+export interface BodyMetric {
+  start: number;
+  current: number;
+  goal: number;
+  unit: string;
+}
+
+export interface FitnessProfile {
+  records: FitnessRecord[];
+  metrics: {
+    weight: BodyMetric;
+    bodyFat: BodyMetric;
+    muscle: BodyMetric;
+  };
+  photos: {
+    id: string;
+    date: string;
+    url: string;
+    weight: number;
+  }[];
+}
+
+export interface CodingLanguage {
+  name: string;
+  percentage: number;
+  color: string;
+}
+
+export interface GitHubStats {
+  username: string;
+  commits: number;
+  pullRequests: number;
+  contributions: number;
+  streak: number;
+  isConnected: boolean;
+}
+
+export interface CodingProfile {
+  bestTimeToCode: string; // e.g., "9:00 PM - 11:00 PM"
+  averageSessionDuration: string; // e.g., "1h 45m"
+  languages: CodingLanguage[];
+  github: GitHubStats;
+}
+
+export interface UserProfile {
+  name: string;
+  fitness: FitnessProfile;
+  coding: CodingProfile;
+}
+
 export interface UserStats {
   totalChallenges: number;
   completedChallenges: number;
@@ -83,9 +143,9 @@ export const ACHIEVEMENTS: Achievement[] = [
 ];
 
 // Solo Levelling-inspired category config with neon colors
-export const CATEGORY_CONFIG: Record<ChallengeCategory, { 
-  label: string; 
-  emoji: string; 
+export const CATEGORY_CONFIG: Record<ChallengeCategory, {
+  label: string;
+  emoji: string;
   color: string;
   neonColor: string;
   glowClass: string;
@@ -93,9 +153,9 @@ export const CATEGORY_CONFIG: Record<ChallengeCategory, {
   tips: string[];
   placeholder: string;
 }> = {
-  coding: { 
-    label: 'Code', 
-    emoji: '💻', 
+  coding: {
+    label: 'Code',
+    emoji: '💻',
     color: '#00D9FF',
     neonColor: 'neon-cyan',
     glowClass: 'glow-cyan',
@@ -103,9 +163,9 @@ export const CATEGORY_CONFIG: Record<ChallengeCategory, {
     tips: ['Solve one problem daily', 'Build projects', 'Review code'],
     placeholder: 'e.g., Solve 100 LeetCode problems'
   },
-  fitness: { 
-    label: 'Fitness', 
-    emoji: '💪', 
+  fitness: {
+    label: 'Fitness',
+    emoji: '💪',
     color: '#FF1654',
     neonColor: 'neon-pink',
     glowClass: 'glow-pink',
@@ -113,9 +173,9 @@ export const CATEGORY_CONFIG: Record<ChallengeCategory, {
     tips: ['Start with 15 minutes', 'Track your progress', 'Rest days matter'],
     placeholder: 'e.g., 100 days of 30-min workouts'
   },
-  reading: { 
-    label: 'Reading', 
-    emoji: '📚', 
+  reading: {
+    label: 'Reading',
+    emoji: '📚',
     color: '#A78BFA',
     neonColor: 'neon-purple',
     glowClass: 'glow-purple',
@@ -123,9 +183,9 @@ export const CATEGORY_CONFIG: Record<ChallengeCategory, {
     tips: ['Read 20 pages daily', 'Mix fiction & non-fiction', 'Take notes'],
     placeholder: 'e.g., Read 12 books in 100 days'
   },
-  learning: { 
-    label: 'Learning', 
-    emoji: '🧠', 
+  learning: {
+    label: 'Learning',
+    emoji: '🧠',
     color: '#10B981',
     neonColor: 'neon-emerald',
     glowClass: 'glow-emerald',
@@ -133,9 +193,9 @@ export const CATEGORY_CONFIG: Record<ChallengeCategory, {
     tips: ['Learn one concept daily', 'Practice immediately', 'Teach others'],
     placeholder: 'e.g., Master a new language'
   },
-  productivity: { 
-    label: 'Productivity', 
-    emoji: '⚡', 
+  productivity: {
+    label: 'Productivity',
+    emoji: '⚡',
     color: '#F59E0B',
     neonColor: 'neon-gold',
     glowClass: 'glow-gold',
@@ -143,9 +203,9 @@ export const CATEGORY_CONFIG: Record<ChallengeCategory, {
     tips: ['Use time blocks', 'Eliminate distractions', 'Review weekly'],
     placeholder: 'e.g., Wake up at 5 AM daily'
   },
-  creativity: { 
-    label: 'Writing', 
-    emoji: '✍️', 
+  creativity: {
+    label: 'Writing',
+    emoji: '✍️',
     color: '#FCD34D',
     neonColor: 'neon-gold',
     glowClass: 'glow-gold',
@@ -153,9 +213,9 @@ export const CATEGORY_CONFIG: Record<ChallengeCategory, {
     tips: ['Create without judgment', 'Share your work', 'Find inspiration'],
     placeholder: 'e.g., Write 500 words daily'
   },
-  health: { 
-    label: 'Health', 
-    emoji: '🥗', 
+  health: {
+    label: 'Health',
+    emoji: '🥗',
     color: '#10B981',
     neonColor: 'neon-emerald',
     glowClass: 'glow-emerald',
@@ -163,9 +223,9 @@ export const CATEGORY_CONFIG: Record<ChallengeCategory, {
     tips: ['Hydrate first thing', 'Prep meals ahead', 'Track sleep'],
     placeholder: 'e.g., Meditate 10 minutes daily'
   },
-  other: { 
-    label: 'Other', 
-    emoji: '🎯', 
+  other: {
+    label: 'Other',
+    emoji: '🎯',
     color: '#9CA3AF',
     neonColor: 'neon-cyan',
     glowClass: 'glow-cyan',
