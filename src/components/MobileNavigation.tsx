@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Flame, BarChart3, User, Calendar, Code, Dumbbell, Trophy } from 'lucide-react';
+import { Flame, BarChart3, User, Calendar, Trophy } from 'lucide-react';
 
 interface MobileNavigationProps {
   activeTab: string;
@@ -17,54 +17,38 @@ const tabs = [
 
 export function MobileNavigation({ activeTab, onTabChange }: MobileNavigationProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
-      {/* Glass background with blur */}
-      <div className="absolute inset-0 glass-nav" />
-      
-      {/* Safe area padding for notched phones */}
-      <div className="relative flex items-center justify-around px-1 pb-safe pt-1.5">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden pb-safe bg-card border-t border-border">
+      <div className="flex items-center justify-between px-2">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
-          
+
           return (
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                'relative flex flex-col items-center justify-center min-w-[56px] py-2 px-2 rounded-xl transition-all',
-                isActive ? 'text-primary' : 'text-muted-foreground'
+                'relative flex flex-col items-center justify-center flex-1 h-[60px] pb-1 transition-colors',
+                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              {/* Active indicator background */}
+              {/* Active indicator line at top */}
               {isActive && (
                 <motion.div
                   layoutId="mobileActiveTab"
-                  className="absolute inset-1 bg-primary/10 rounded-xl"
-                  initial={false}
-                  transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}
+                  className="absolute top-0 w-8 h-1 bg-primary rounded-b-full"
+                  transition={{ type: 'spring', bounce: 0.15, duration: 0.3 }}
                 />
               )}
-              
-              {/* Glow effect for challenges tab when active */}
-              {isActive && tab.id === 'challenges' && (
-                <motion.div
-                  className="absolute top-0 w-10 h-10 bg-primary rounded-full blur-xl opacity-30"
-                  animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.4, 0.2] }}
-                  transition={{ duration: 2.5, repeat: Infinity }}
-                />
-              )}
-              
-              <Icon 
+
+              <Icon
+                strokeWidth={isActive ? 2.5 : 2}
                 className={cn(
-                  'w-5 h-5 relative z-10 transition-all duration-200',
-                  isActive && 'scale-110'
-                )} 
+                  'w-6 h-6 mb-1 transition-transform duration-200',
+                  isActive ? 'scale-110' : 'scale-100'
+                )}
               />
-              <span className={cn(
-                'text-[10px] mt-0.5 font-medium relative z-10 transition-all',
-                isActive && 'font-semibold'
-              )}>
+              <span className="text-[10px] font-medium leading-none">
                 {tab.label}
               </span>
             </button>

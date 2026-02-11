@@ -18,7 +18,7 @@ interface CategorySpecificCheckInProps {
   challenge: Challenge | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCheckIn: (notes?: string, link?: string, date?: string) => void;
+  onCheckIn: (notes?: string, link?: string, date?: string, mood?: 'great' | 'good' | 'okay' | 'struggling') => void;
 }
 
 export function CategorySpecificCheckIn({
@@ -64,7 +64,7 @@ export function CategorySpecificCheckIn({
     // Calculate day count for milestone check
     const newDayCount = challenge.checkIns.length + 1;
     const milestone = ACHIEVEMENTS.find(a => a.day === newDayCount);
-    
+
     if (milestone) {
       setUnlockedAchievement(milestone);
     }
@@ -80,7 +80,8 @@ export function CategorySpecificCheckIn({
     onCheckIn(
       checkInData.notes,
       checkInData.link,
-      format(selectedDate, 'yyyy-MM-dd')
+      format(selectedDate, 'yyyy-MM-dd'),
+      checkInData.mood
     );
 
     setShowSuccess(true);
@@ -116,12 +117,12 @@ export function CategorySpecificCheckIn({
               {isRetroactive ? 'Retroactive Check-in Saved!' : `Day ${challenge.checkIns.length + 1} Complete!`}
             </h2>
             <p className="text-muted-foreground">
-              {isRetroactive 
+              {isRetroactive
                 ? `Added check-in for ${format(selectedDate, 'MMM d, yyyy')}`
                 : 'Keep the streak going! 🔥'
               }
             </p>
-            
+
             {unlockedAchievement && (
               <motion.div
                 initial={{ y: 20, opacity: 0 }}
@@ -162,7 +163,7 @@ export function CategorySpecificCheckIn({
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto glass-card border-border/50">
         <DialogHeader className="pb-2">
           <div className="flex items-center gap-4">
-            <div 
+            <div
               className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
               style={{ backgroundColor: `${categoryConfig.color}15` }}
             >
@@ -204,8 +205,8 @@ export function CategorySpecificCheckIn({
                   mode="single"
                   selected={selectedDate}
                   onSelect={(date) => date && setSelectedDate(date)}
-                  disabled={(date) => 
-                    isBefore(today, startOfDay(date)) || 
+                  disabled={(date) =>
+                    isBefore(today, startOfDay(date)) ||
                     isBefore(startOfDay(date), challengeStartDate)
                   }
                   initialFocus

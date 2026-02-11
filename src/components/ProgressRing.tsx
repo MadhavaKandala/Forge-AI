@@ -9,12 +9,12 @@ interface ProgressRingProps {
   children?: React.ReactNode;
 }
 
-export function ProgressRing({ 
-  progress, 
-  size = 120, 
+export function ProgressRing({
+  progress,
+  size = 120,
   strokeWidth = 8,
   className,
-  children 
+  children
 }: ProgressRingProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
@@ -31,7 +31,7 @@ export function ProgressRing({
           strokeWidth={strokeWidth}
           stroke="currentColor"
           fill="none"
-          className="text-muted"
+          className="text-muted/30"
         />
         {/* Progress circle */}
         <motion.circle
@@ -39,9 +39,10 @@ export function ProgressRing({
           cy={size / 2}
           r={radius}
           strokeWidth={strokeWidth}
-          stroke="url(#progressGradient)"
+          stroke="currentColor"
           fill="none"
           strokeLinecap="round"
+          className="text-primary"
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: offset }}
           transition={{ duration: 1, ease: 'easeOut' }}
@@ -49,12 +50,6 @@ export function ProgressRing({
             strokeDasharray: circumference,
           }}
         />
-        <defs>
-          <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="hsl(var(--secondary))" />
-            <stop offset="100%" stopColor="hsl(var(--primary))" />
-          </linearGradient>
-        </defs>
       </svg>
       {children && (
         <div className="absolute inset-0 flex items-center justify-center">

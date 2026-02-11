@@ -7,23 +7,24 @@ import { format, subDays, isSameDay, parseISO } from 'date-fns';
 interface WeeklySparklineProps {
   challenges: Challenge[];
   className?: string;
+  height?: number;
 }
 
-export function WeeklySparkline({ challenges, className }: WeeklySparklineProps) {
+export function WeeklySparkline({ challenges, className, height = 40 }: WeeklySparklineProps) {
   const weekData = useMemo(() => {
     const today = new Date();
     const days = [];
-    
+
     for (let i = 6; i >= 0; i--) {
       const date = subDays(today, i);
       const dateStr = format(date, 'yyyy-MM-dd');
       const dayLabel = format(date, 'EEE').charAt(0);
       const isToday = i === 0;
-      
+
       // Count how many challenges were checked in on this day
       let checkedIn = 0;
       const total = challenges.filter(c => c.status === 'active').length;
-      
+
       challenges.forEach(challenge => {
         challenge.checkIns.forEach(checkIn => {
           if (checkIn.date.startsWith(dateStr)) {
@@ -31,9 +32,9 @@ export function WeeklySparkline({ challenges, className }: WeeklySparklineProps)
           }
         });
       });
-      
+
       const progress = total > 0 ? (checkedIn / total) * 100 : 0;
-      
+
       days.push({
         date,
         dateStr,
@@ -46,7 +47,7 @@ export function WeeklySparkline({ challenges, className }: WeeklySparklineProps)
         isEmpty: total === 0,
       });
     }
-    
+
     return days;
   }, [challenges]);
 
@@ -55,7 +56,10 @@ export function WeeklySparkline({ challenges, className }: WeeklySparklineProps)
       {weekData.map((day, i) => (
         <div key={day.dateStr} className="flex flex-col items-center gap-1 flex-1">
           {/* Bar */}
-          <div className="relative h-10 w-full flex items-end justify-center">
+          <div
+            className="relative w-full flex items-end justify-center"
+            style={{ height }}
+          >
             <motion.div
               className={cn(
                 'w-full max-w-[20px] rounded-t-md transition-colors',
@@ -66,7 +70,7 @@ export function WeeklySparkline({ challenges, className }: WeeklySparklineProps)
                 day.isToday && !day.isComplete && day.progress < 100 && 'animate-pulse',
               )}
               initial={{ height: 0 }}
-              animate={{ height: day.isEmpty ? 4 : Math.max(4, day.progress * 0.4) }}
+              animate={{ height: day.isEmpty ? height * 0.1 : Math.max(height * 0.1, (day.progress / 100) * height) }}
               transition={{ delay: i * 0.05, duration: 0.4, ease: 'easeOut' }}
             />
             {/* Today indicator */}
@@ -78,7 +82,7 @@ export function WeeklySparkline({ challenges, className }: WeeklySparklineProps)
               />
             )}
           </div>
-          
+
           {/* Day label */}
           <span className={cn(
             'text-[10px]',

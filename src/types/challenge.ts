@@ -109,10 +109,55 @@ export interface CodingProfile {
   github: GitHubStats;
 }
 
+export interface Book {
+  id: string;
+  title: string;
+  author: string;
+  coverUrl?: string;
+  totalPages: number;
+  currentPage: number;
+  status: 'to-read' | 'reading' | 'completed';
+  rating?: number;
+  startedAt?: string;
+  finishedAt?: string;
+}
+
+export interface ReadingSession {
+  id: string;
+  bookId: string;
+  pagesRead: number;
+  durationMinutes?: number;
+  date: string;
+}
+
+export interface ReadingProfile {
+  books: Book[];
+  sessions: ReadingSession[];
+  dailyGoalPages: number;
+  annualGoalBooks: number;
+}
+
+export interface JournalEntry {
+  id: string;
+  date: string;
+  mood: 'great' | 'good' | 'okay' | 'struggling';
+  title?: string;
+  content: string;
+  tags?: string[];
+  createdAt: string;
+}
+
+export interface MindfulnessProfile {
+  journalEntries: JournalEntry[];
+  streak: number;
+}
+
 export interface UserProfile {
   name: string;
   fitness: FitnessProfile;
   coding: CodingProfile;
+  reading: ReadingProfile;
+  mindfulness: MindfulnessProfile;
 }
 
 export interface UserStats {

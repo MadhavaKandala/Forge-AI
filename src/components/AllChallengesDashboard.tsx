@@ -8,11 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Flame, 
-  Trophy, 
-  Target, 
-  TrendingUp, 
+import {
+  Flame,
+  Trophy,
+  Target,
+  TrendingUp,
   Plus,
   Filter,
   ArrowUpDown,
@@ -38,13 +38,13 @@ interface AllChallengesDashboardProps {
 type SortOption = 'streak' | 'progress' | 'recent' | 'name';
 type FilterOption = 'all' | ChallengeCategory;
 
-export function AllChallengesDashboard({ 
-  challenges, 
+export function AllChallengesDashboard({
+  challenges,
   onViewDetails,
   onCheckIn,
-  onCreateChallenge 
+  onCreateChallenge
 }: AllChallengesDashboardProps) {
-  const { getStreak, getProgress, hasCheckedInToday, getBestStreak } = useChallenges();
+  const { getStreak, getProgress, hasCheckedInToday } = useChallenges();
   const [sortBy, setSortBy] = useState<SortOption>('streak');
   const [filterBy, setFilterBy] = useState<FilterOption>('all');
   const statsRef = useRef<HTMLDivElement>(null);
@@ -55,13 +55,13 @@ export function AllChallengesDashboard({
       gsap.fromTo(
         statsRef.current.children,
         { opacity: 0, y: 20, scale: 0.95 },
-        { 
-          opacity: 1, 
-          y: 0, 
+        {
+          opacity: 1,
+          y: 0,
           scale: 1,
-          duration: 0.5, 
+          duration: 0.5,
           stagger: 0.1,
-          ease: 'power3.out' 
+          ease: 'power3.out'
         }
       );
     }
@@ -73,11 +73,11 @@ export function AllChallengesDashboard({
     const completed = challenges.filter(c => c.status === 'completed');
     const todayPending = active.filter(c => !hasCheckedInToday(c.id));
     const todayDone = active.filter(c => hasCheckedInToday(c.id));
-    
+
     const allStreaks = challenges.map(c => getStreak(c));
     const longestStreak = Math.max(...allStreaks, 0);
     const combinedStreak = allStreaks.reduce((sum, s) => sum + s, 0);
-    
+
     const avgProgress = challenges.length > 0
       ? Math.round(challenges.reduce((sum, c) => sum + getProgress(c), 0) / challenges.length)
       : 0;
@@ -87,7 +87,7 @@ export function AllChallengesDashboard({
     const weekStart = new Date(now);
     weekStart.setDate(now.getDate() - now.getDay());
     weekStart.setHours(0, 0, 0, 0);
-    
+
     let weeklyCheckIns = 0;
     challenges.forEach(c => {
       c.checkIns.forEach(ci => {
@@ -95,7 +95,7 @@ export function AllChallengesDashboard({
       });
     });
     const expectedWeekly = active.length * (now.getDay() + 1);
-    const weeklyConsistency = expectedWeekly > 0 
+    const weeklyConsistency = expectedWeekly > 0
       ? Math.min(100, Math.round((weeklyCheckIns / expectedWeekly) * 100))
       : 0;
 
@@ -114,12 +114,12 @@ export function AllChallengesDashboard({
   // Filter and sort challenges
   const displayedChallenges = useMemo(() => {
     let filtered = [...challenges];
-    
+
     // Filter
     if (filterBy !== 'all') {
       filtered = filtered.filter(c => c.category === filterBy);
     }
-    
+
     // Sort
     switch (sortBy) {
       case 'streak':
@@ -129,7 +129,7 @@ export function AllChallengesDashboard({
         filtered.sort((a, b) => getProgress(b) - getProgress(a));
         break;
       case 'recent':
-        filtered.sort((a, b) => 
+        filtered.sort((a, b) =>
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         );
         break;
@@ -137,36 +137,36 @@ export function AllChallengesDashboard({
         filtered.sort((a, b) => a.name.localeCompare(b.name));
         break;
     }
-    
+
     return filtered;
   }, [challenges, filterBy, sortBy, getStreak, getProgress]);
 
   const summaryCards = [
-    { 
-      label: 'Active', 
-      value: stats.totalActive, 
-      icon: Flame, 
+    {
+      label: 'Active',
+      value: stats.totalActive,
+      icon: Flame,
       color: 'text-primary',
       bgColor: 'bg-primary/10'
     },
-    { 
-      label: 'Today Done', 
-      value: `${stats.todayDone}/${stats.totalActive}`, 
-      icon: CheckCircle2, 
+    {
+      label: 'Today Done',
+      value: `${stats.todayDone}/${stats.totalActive}`,
+      icon: CheckCircle2,
       color: 'text-secondary',
       bgColor: 'bg-secondary/10'
     },
-    { 
-      label: 'Best Streak', 
-      value: stats.longestStreak, 
-      icon: TrendingUp, 
+    {
+      label: 'Best Streak',
+      value: stats.longestStreak,
+      icon: TrendingUp,
       color: 'text-orange-500',
       bgColor: 'bg-orange-500/10'
     },
-    { 
-      label: 'Weekly', 
-      value: `${stats.weeklyConsistency}%`, 
-      icon: Calendar, 
+    {
+      label: 'Weekly',
+      value: `${stats.weeklyConsistency}%`,
+      icon: Calendar,
       color: 'text-accent',
       bgColor: 'bg-accent/10'
     },
@@ -177,7 +177,7 @@ export function AllChallengesDashboard({
       {/* Summary Cards */}
       <div ref={statsRef} className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {summaryCards.map((card) => (
-          <Card key={card.label} className="border-none shadow-card">
+          <Card key={card.label} className="border-border/50 shadow-sm">
             <CardContent className="p-4">
               <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center mb-2', card.bgColor)}>
                 <card.icon className={cn('w-5 h-5', card.color)} />
@@ -204,8 +204,8 @@ export function AllChallengesDashboard({
                 All Categories
               </DropdownMenuItem>
               {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
-                <DropdownMenuItem 
-                  key={key} 
+                <DropdownMenuItem
+                  key={key}
                   onClick={() => setFilterBy(key as ChallengeCategory)}
                 >
                   {config.emoji} {config.label}
@@ -238,7 +238,7 @@ export function AllChallengesDashboard({
           </DropdownMenu>
         </div>
 
-        <Button onClick={onCreateChallenge} className="bg-gradient-fire hover:opacity-90 gap-2">
+        <Button onClick={onCreateChallenge} className="gap-2">
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">New Challenge</span>
         </Button>
@@ -268,14 +268,13 @@ export function AllChallengesDashboard({
                 const isCompleted = challenge.status === 'completed';
 
                 return (
-                  <motion.div
+                  <div
                     key={challenge.id}
                     className="p-4 flex items-center gap-4 hover:bg-muted/50 transition-colors cursor-pointer"
                     onClick={() => onViewDetails(challenge)}
-                    whileHover={{ x: 4 }}
                   >
                     {/* Category icon */}
-                    <div 
+                    <div
                       className="w-10 h-10 rounded-lg flex items-center justify-center text-lg shrink-0"
                       style={{ backgroundColor: `${config.color}20` }}
                     >
@@ -293,7 +292,7 @@ export function AllChallengesDashboard({
                       <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                         <span>Day {challenge.checkIns.length}/100</span>
                         {streak > 0 && (
-                          <span className="flex items-center gap-1">
+                          <span className="flex items-center gap-1 text-orange-500 font-medium">
                             {streak}🔥
                           </span>
                         )}
@@ -313,7 +312,7 @@ export function AllChallengesDashboard({
                         variant={checkedIn ? 'secondary' : 'default'}
                         className={cn(
                           'shrink-0',
-                          !checkedIn && 'bg-gradient-fire hover:opacity-90'
+                          !checkedIn && ''
                         )}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -324,7 +323,7 @@ export function AllChallengesDashboard({
                         {checkedIn ? '✓ Done' : 'Check In'}
                       </Button>
                     )}
-                  </motion.div>
+                  </div>
                 );
               })}
 
@@ -332,9 +331,9 @@ export function AllChallengesDashboard({
                 <div className="p-12 text-center text-muted-foreground">
                   <Target className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>No challenges found</p>
-                  <Button 
-                    onClick={onCreateChallenge} 
-                    variant="link" 
+                  <Button
+                    onClick={onCreateChallenge}
+                    variant="link"
                     className="mt-2"
                   >
                     Create your first challenge

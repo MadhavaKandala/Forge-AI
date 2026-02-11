@@ -7,9 +7,10 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { GlassCard } from './GlassCard';
 import { WeeklySparkline } from './WeeklySparkline';
-import { Clock, Sparkles, CheckCircle2, Flame } from 'lucide-react';
+import { Clock, Sparkles, CheckCircle2, Flame, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface TodayHeroProps {
   challenges: Challenge[];
@@ -23,6 +24,7 @@ export function TodayHero({ challenges, onQuickCheckIn }: TodayHeroProps) {
   // Time-based greeting
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
+    if (hour < 5) return 'Good night'; // Late night grinder
     if (hour < 12) return 'Good morning';
     if (hour < 17) return 'Good afternoon';
     return 'Good evening';
@@ -33,8 +35,8 @@ export function TodayHero({ challenges, onQuickCheckIn }: TodayHeroProps) {
     const active = challenges.filter(c => c.status === 'active');
     const pendingList = active.filter(c => !hasCheckedInToday(c.id));
     const completedList = active.filter(c => hasCheckedInToday(c.id));
-    const progressPercent = active.length > 0 
-      ? Math.round((completedList.length / active.length) * 100) 
+    const progressPercent = active.length > 0
+      ? Math.round((completedList.length / active.length) * 100)
       : 0;
 
     return {
@@ -58,137 +60,140 @@ export function TodayHero({ challenges, onQuickCheckIn }: TodayHeroProps) {
   useEffect(() => {
     if (containerRef.current) {
       gsap.fromTo(
-        containerRef.current.querySelectorAll('.animate-in'),
-        { opacity: 0, y: 15 },
-        { 
-          opacity: 1, 
-          y: 0, 
-          duration: 0.5, 
-          stagger: 0.08, 
-          ease: 'power3.out' 
+        containerRef.current.querySelectorAll('.stagger-in'),
+        { opacity: 0, y: 20 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          stagger: 0.1,
+          ease: 'power3.out'
         }
       );
     }
   }, []);
 
   return (
-    <div ref={containerRef} className="space-y-4">
+    <div ref={containerRef} className="space-y-4 md:space-y-6">
       {/* Main Hero Card */}
-      <GlassCard 
-        variant="elevated" 
+      <GlassCard
+        variant="elevated"
         padding="lg"
-        className="animate-in relative overflow-hidden"
+        className="stagger-in relative overflow-hidden group"
       >
-        {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 pointer-events-none" />
-        
-        <div className="relative z-10 space-y-4">
-          {/* Header row */}
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                {greeting}! 👋
-              </h2>
-              <p className="text-muted-foreground text-sm mt-1">
-                {format(new Date(), 'EEEE, MMMM d')}
-              </p>
-            </div>
-            
-            {/* Stats badges */}
-            <div className="flex items-center gap-2">
+        {/* Dynamic Background Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background/40 to-secondary/10 opacity-50 group-hover:opacity-70 transition-opacity duration-500" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
+          <div className="space-y-2 flex-1">
+            <div className="flex items-center gap-2 md:gap-3 mb-1">
+              <Badge variant="outline" className="rounded-full px-2 py-0.5 md:px-3 md:py-1 border-white/10 bg-white/5 backdrop-blur-md text-[10px] md:text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                {format(new Date(), 'MMMM d, yyyy')}
+              </Badge>
               {combinedStreak > 0 && (
-                <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary border-primary/20">
-                  <Flame className="w-3 h-3" />
-                  {combinedStreak}
-                </Badge>
-              )}
-              {!allDone && pending.length > 0 && (
-                <Badge variant="outline" className="gap-1">
-                  <Clock className="w-3 h-3" />
-                  {pending.length} to go
-                </Badge>
+                <div className="flex items-center gap-1.5 text-orange-500 font-bold text-xs md:text-sm animate-pulse-slow">
+                  <Flame className="w-3.5 h-3.5 md:w-4 md:h-4 fill-orange-500" />
+                  <span>{combinedStreak} Day Streak</span>
+                </div>
               )}
             </div>
+
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-white/90 to-white/50 pb-1 md:pb-2">
+              {greeting}
+            </h2>
+
+            <p className="text-muted-foreground text-base md:text-lg max-w-md leading-relaxed">
+              {allDone
+                ? "You've crushed all your goals for today. Time to recharge! ⚡"
+                : `You have ${pending.length} challenges waiting for you. Let's get to work.`}
+            </p>
           </div>
 
-          {/* Progress section */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Today's progress</span>
-              <span className="font-semibold stat-number">{completed.length}/{totalActive}</span>
+          {!allDone && (
+            <div className="w-full md:w-auto min-w-[200px] space-y-2 md:space-y-3 bg-white/5 p-3 md:p-4 rounded-xl border border-white/10 backdrop-blur-sm">
+              <div className="flex justify-between items-center text-sm">
+                <span className="font-medium text-white/80">Daily Progress</span>
+                <span className="font-mono text-primary">{progress}%</span>
+              </div>
+              <Progress value={progress} className="h-1.5 md:h-2" indicatorClassName="bg-gradient-to-r from-primary to-secondary" />
+              <div className="flex text-xs text-muted-foreground justify-between">
+                <span>{completed.length} Completed</span>
+                <span>{totalActive} Total</span>
+              </div>
             </div>
-            <div className="relative">
-              <Progress value={progress} className="h-2.5" />
-              {/* Glow effect on progress */}
-              {progress > 0 && progress < 100 && (
-                <motion.div
-                  className="absolute top-0 h-2.5 bg-primary/30 rounded-full blur-sm"
-                  style={{ width: `${progress}%` }}
-                  animate={{ opacity: [0.5, 0.8, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                />
-              )}
-            </div>
-          </div>
+          )}
+        </div>
+      </GlassCard>
 
-          {/* All done celebration */}
-          <AnimatePresence>
-            {allDone && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="p-4 rounded-xl bg-gradient-to-r from-secondary/10 to-primary/10 border border-secondary/20 text-center"
-              >
-                <Sparkles className="w-6 h-6 mx-auto text-secondary mb-2" />
-                <p className="font-semibold text-secondary">All done for today!</p>
-                <p className="text-sm text-muted-foreground">Great job keeping your streaks alive 🔥</p>
-              </motion.div>
+      {/* Action Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+        {/* Next Up / Actions */}
+        <GlassCard padding="md" className="stagger-in flex flex-col justify-between h-full min-h-[140px] md:min-h-[160px]">
+          <div className="flex items-center justify-between mb-3 md:mb-4">
+            <h3 className="font-bold text-base md:text-lg flex items-center gap-2">
+              <Clock className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+              Up Next
+            </h3>
+            {pending.length > 0 && (
+              <Badge variant="secondary" className="bg-primary/20 text-primary hover:bg-primary/30 transition-colors">
+                {pending.length} Remaining
+              </Badge>
             )}
-          </AnimatePresence>
-        </div>
-      </GlassCard>
+          </div>
 
-      {/* Weekly Sparkline */}
-      <GlassCard padding="md" className="animate-in">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            This Week
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {completed.length}/{totalActive} today
-          </span>
-        </div>
-        <WeeklySparkline challenges={challenges} />
-      </GlassCard>
+          <div className="space-y-2 md:space-y-3">
+            {pending.length > 0 ? (
+              pending.slice(0, 2).map((challenge) => {
+                const config = CATEGORY_CONFIG[challenge.category];
+                return (
+                  <motion.div
+                    key={challenge.id}
+                    whileHover={{ x: 4 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center justify-between p-2 md:p-3 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group"
+                    onClick={() => onQuickCheckIn?.(challenge.id)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg md:text-xl filter drop-shadow-lg">{config.emoji}</span>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm text-foreground/90 group-hover:text-primary transition-colors truncate">{challenge.name}</p>
+                        <p className="text-[10px] md:text-xs text-muted-foreground">Day {challenge.checkIns.length + 1}</p>
+                      </div>
+                    </div>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 md:h-8 md:w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    </Button>
+                  </motion.div>
+                )
+              })
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                <CheckCircle2 className="w-8 h-8 md:w-10 md:h-10 mx-auto text-green-500/50 mb-2" />
+                <p>All caught up!</p>
+              </div>
+            )}
 
-      {/* Quick Action Pills (challenges needing check-in) */}
-      {pending.length > 0 && pending.length <= 4 && (
-        <div className="animate-in flex flex-wrap gap-2">
-          {pending.slice(0, 4).map((challenge) => {
-            const config = CATEGORY_CONFIG[challenge.category];
-            return (
-              <motion.button
-                key={challenge.id}
-                onClick={() => onQuickCheckIn?.(challenge.id)}
-                className={cn(
-                  'flex items-center gap-2 px-3 py-2 rounded-xl',
-                  'glass hover-lift press-scale',
-                  'text-sm font-medium'
-                )}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <span>{config.emoji}</span>
-                <span className="truncate max-w-[120px]">{challenge.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  Day {challenge.checkIns.length + 1}
-                </span>
-              </motion.button>
-            );
-          })}
-        </div>
-      )}
+            {pending.length > 2 && (
+              <p className="text-[10px] md:text-xs text-center text-muted-foreground mt-1 md:mt-2">
+                +{pending.length - 2} more challenges
+              </p>
+            )}
+          </div>
+        </GlassCard>
+
+        {/* Weekly Trend */}
+        <GlassCard padding="md" className="stagger-in h-full min-h-[140px] md:min-h-[160px]">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-bold text-base md:text-lg flex items-center gap-2">
+              <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-secondary" />
+              Weekly Velocity
+            </h3>
+          </div>
+          <div className="h-[80px] md:h-[100px] w-full mt-2">
+            <WeeklySparkline challenges={challenges} height={80} />
+          </div>
+        </GlassCard>
+      </div>
     </div>
   );
 }

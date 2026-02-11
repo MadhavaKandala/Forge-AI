@@ -101,8 +101,8 @@ export function CreateChallengeDialog({ open, onOpenChange, onCreate }: CreateCh
                       onClick={() => setCategory(key)}
                       className={cn(
                         'flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all',
-                        category === key 
-                          ? 'border-primary bg-primary/10' 
+                        category === key
+                          ? 'border-primary bg-primary/10'
                           : 'border-border hover:border-primary/50'
                       )}
                     >
@@ -113,10 +113,10 @@ export function CreateChallengeDialog({ open, onOpenChange, onCreate }: CreateCh
                 </div>
               </div>
 
-              <Button 
-                onClick={() => setStep(2)} 
+              <Button
+                onClick={() => setStep(2)}
                 disabled={!name.trim()}
-                className="w-full bg-gradient-fire hover:opacity-90"
+                className="w-full"
               >
                 Continue
               </Button>
@@ -191,9 +191,9 @@ export function CreateChallengeDialog({ open, onOpenChange, onCreate }: CreateCh
                 <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
                   Back
                 </Button>
-                <Button 
-                  onClick={handleCreate} 
-                  className="flex-1 bg-gradient-fire hover:opacity-90"
+                <Button
+                  onClick={handleCreate}
+                  className="flex-1"
                 >
                   🔥 Start Challenge
                 </Button>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Challenge, CheckIn, ChallengeStatus, UserProfile } from '@/types/challenge';
+import { Challenge, CheckIn, UserProfile } from '@/types/challenge';
+import { format, differenceInCalendarDays, startOfDay, parse } from 'date-fns';
 
 const STORAGE_KEY = 'challenge-tracker-data';
 const PROFILE_KEY = 'challenge-tracker-profile';
@@ -29,6 +30,16 @@ export function useChallenges() {
         streak: 0,
         isConnected: false,
       },
+    },
+    reading: {
+      books: [],
+      sessions: [],
+      dailyGoalPages: 20,
+      annualGoalBooks: 12,
+    },
+    mindfulness: {
+      journalEntries: [],
+      streak: 0,
     },
   });
   const [isLoaded, setIsLoaded] = useState(false);
@@ -77,149 +88,183 @@ export function useChallenges() {
     };
     setChallenges(prev => [...prev, newChallenge]);
     return newChallenge;
-    const updateUserProfile = useCallback((updates: Partial<UserProfile> | ((prev: UserProfile) => Partial<UserProfile>)) => {
-      setUserProfile(prev => {
-        const newValues = typeof updates === 'function' ? updates(prev) : updates;
-        return { ...prev, ...newValues };
-      });
-    }, []);
+  }, []);
 
+  const updateUserProfile = useCallback((updates: Partial<UserProfile> | ((prev: UserProfile) => Partial<UserProfile>)) => {
+    setUserProfile(prev => {
+      const newValues = typeof updates === 'function' ? updates(prev) : updates;
+      return { ...prev, ...newValues };
+    });
+  }, []);
 
+  const updateChallenge = useCallback((id: string, updates: Partial<Challenge>) => {
+    setChallenges(prev => prev.map(c =>
+      c.id === id ? { ...c, ...updates, updatedAt: new Date().toISOString() } : c
+    ));
+  }, []);
 
-    const updateChallenge = useCallback((id: string, updates: Partial<Challenge>) => {
-      setChallenges(prev => prev.map(c =>
-        c.id === id ? { ...c, ...updates, updatedAt: new Date().toISOString() } : c
-      ));
-    }, []);
+  const deleteChallenge = useCallback((id: string) => {
+    setChallenges(prev => prev.filter(c => c.id !== id));
+  }, []);
 
-    const deleteChallenge = useCallback((id: string) => {
-      setChallenges(prev => prev.filter(c => c.id !== id));
-    }, []);
+  const checkIn = useCallback((challengeId: string, notes?: string, link?: string, mood?: 'great' | 'good' | 'okay' | 'struggling') => {
+    // Use local date for check-in
+    const today = format(new Date(), 'yyyy-MM-dd');
 
-    const checkIn = useCallback((challengeId: string, notes?: string, link?: string) => {
-      const today = new Date().toISOString().split('T')[0];
+    setChallenges(prev => prev.map(c => {
+      if (c.id !== challengeId) return c;
 
-      setChallenges(prev => prev.map(c => {
-        if (c.id !== challengeId) return c;
+      // Prevent duplicate check-ins for the same day
+      if (c.checkIns.some(ci => ci.date === today)) {
+        return c;
+      }
 
-        // Prevent duplicate check-ins for the same day
-        if (c.checkIns.some(ci => ci.date === today)) {
-          return c;
+      const newCheckIn: CheckIn = {
+        id: crypto.randomUUID(),
+        date: today,
+        notes,
+        link,
+        mood,
+        createdAt: new Date().toISOString(),
+      };
+
+      return {
+        ...c,
+        checkIns: [...c.checkIns, newCheckIn],
+        updatedAt: new Date().toISOString(),
+      };
+    }));
+
+    // If there's a mood or notes, add to mindfulness journal
+    if (mood || notes) {
+      setUserProfile(prev => ({
+        ...prev,
+        mindfulness: {
+          ...prev.mindfulness,
+          journalEntries: [
+            ...prev.mindfulness.journalEntries,
+            {
+              id: crypto.randomUUID(),
+              date: new Date().toISOString(),
+              mood: mood || 'okay',
+              content: notes || '',
+              createdAt: new Date().toISOString(),
+            }
+          ]
         }
-
-        const newCheckIn: CheckIn = {
-          id: crypto.randomUUID(),
-          date: today,
-          notes,
-          link,
-          createdAt: new Date().toISOString(),
-        };
-
-        return {
-          ...c,
-          checkIns: [...c.checkIns, newCheckIn],
-          updatedAt: new Date().toISOString(),
-        };
       }));
-    }, []);
+    }
+  }, []);
 
-    const hasCheckedInToday = useCallback((challengeId: string) => {
-      const today = new Date().toISOString().split('T')[0];
-      const challenge = challenges.find(c => c.id === challengeId);
-      return challenge?.checkIns.some(ci => ci.date === today) ?? false;
-    }, [challenges]);
+  const hasCheckedInToday = useCallback((challengeId: string) => {
+    if (!challenges.length) return false;
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const challenge = challenges.find(c => c.id === challengeId);
+    return challenge?.checkIns.some(ci => ci.date === today) ?? false;
+  }, [challenges]);
 
-    const getStreak = useCallback((challenge: Challenge) => {
-      if (challenge.checkIns.length === 0) return 0;
+  // Optimized streak calculation
+  const getStreak = useCallback((challenge: Challenge) => {
+    if (!challenge.checkIns.length) return 0;
 
-      const sortedDates = [...challenge.checkIns]
-        .map(ci => ci.date)
-        .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+    // Unique dates sorted descending
+    const sortedDates = [...new Set(challenge.checkIns.map(ci => ci.date))]
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
-      const today = new Date().toISOString().split('T')[0];
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    if (sortedDates.length === 0) return 0;
 
-      // Check if streak is still active (checked in today or yesterday)
-      if (sortedDates[0] !== today && sortedDates[0] !== yesterday) {
-        return 0;
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const yesterday = format(new Date(Date.now() - 86400000), 'yyyy-MM-dd');
+
+    // If most recent check-in is not today or yesterday, streak is broken
+    if (sortedDates[0] !== today && sortedDates[0] !== yesterday) {
+      return 0;
+    }
+
+    let streak = 1;
+    // Parse the most recent date string into a Date object (midnight local time)
+    let currentDate = parse(sortedDates[0], 'yyyy-MM-dd', new Date());
+
+    for (let i = 1; i < sortedDates.length; i++) {
+      // Subtract 1 day from current date
+      const prevDate = new Date(currentDate);
+      prevDate.setDate(prevDate.getDate() - 1);
+
+      // Format back to string (local time) to compare with stored string
+      const expectedPrevDateStr = format(prevDate, 'yyyy-MM-dd');
+
+      if (sortedDates[i] === expectedPrevDateStr) {
+        streak++;
+        currentDate = parse(sortedDates[i], 'yyyy-MM-dd', new Date());
+      } else {
+        break;
       }
+    }
 
-      let streak = 1;
-      let currentDate = new Date(sortedDates[0]);
+    return streak;
+  }, []);
 
-      for (let i = 1; i < sortedDates.length; i++) {
-        const prevDate = new Date(currentDate);
-        prevDate.setDate(prevDate.getDate() - 1);
-        const prevDateStr = prevDate.toISOString().split('T')[0];
+  const getBestStreak = useCallback((challenge: Challenge) => {
+    if (challenge.checkIns.length === 0) return 0;
 
-        if (sortedDates[i] === prevDateStr) {
-          streak++;
-          currentDate = new Date(sortedDates[i]);
-        } else {
-          break;
-        }
+    const sortedDates = [...new Set(challenge.checkIns.map(ci => ci.date))]
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
+    if (sortedDates.length === 0) return 0;
+
+    let maxStreak = 1;
+    let currentStreak = 1;
+
+    for (let i = 1; i < sortedDates.length; i++) {
+      // Difference in calendar days to account for DST etc
+      const diff = differenceInCalendarDays(
+        new Date(sortedDates[i]),
+        new Date(sortedDates[i - 1])
+      );
+
+      if (diff === 1) {
+        currentStreak++;
+        maxStreak = Math.max(maxStreak, currentStreak);
+      } else if (diff > 1) {
+        currentStreak = 1;
       }
+    }
 
-      return streak;
-    }, []);
+    return maxStreak;
+  }, []);
 
-    const getBestStreak = useCallback((challenge: Challenge) => {
-      if (challenge.checkIns.length === 0) return 0;
+  const getDaysRemaining = useCallback((challenge: Challenge) => {
+    const startDate = new Date(challenge.startDate);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 100);
 
-      const sortedDates = [...challenge.checkIns]
-        .map(ci => ci.date)
-        .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    const today = startOfDay(new Date());
+    const remaining = differenceInCalendarDays(endDate, today);
+    return Math.max(0, remaining);
+  }, []);
 
-      let maxStreak = 1;
-      let currentStreak = 1;
+  const getProgress = useCallback((challenge: Challenge) => {
+    return Math.min(100, Math.round((challenge.checkIns.length / 100) * 100));
+  }, []);
 
-      for (let i = 1; i < sortedDates.length; i++) {
-        const prevDate = new Date(sortedDates[i - 1]);
-        const currDate = new Date(sortedDates[i]);
-        const diffDays = Math.round((currDate.getTime() - prevDate.getTime()) / 86400000);
+  const activeChallenges = challenges.filter(c => c.status === 'active');
+  const completedChallenges = challenges.filter(c => c.status === 'completed');
 
-        if (diffDays === 1) {
-          currentStreak++;
-          maxStreak = Math.max(maxStreak, currentStreak);
-        } else {
-          currentStreak = 1;
-        }
-      }
-
-      return maxStreak;
-    }, []);
-
-    const getDaysRemaining = useCallback((challenge: Challenge) => {
-      const startDate = new Date(challenge.startDate);
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 100);
-      const today = new Date();
-      const remaining = Math.ceil((endDate.getTime() - today.getTime()) / 86400000);
-      return Math.max(0, remaining);
-    }, []);
-
-    const getProgress = useCallback((challenge: Challenge) => {
-      return Math.min(100, Math.round((challenge.checkIns.length / 100) * 100));
-    }, []);
-
-    const activeChallenges = challenges.filter(c => c.status === 'active');
-    const completedChallenges = challenges.filter(c => c.status === 'completed');
-
-    return {
-      challenges,
-      activeChallenges,
-      completedChallenges,
-      isLoaded,
-      createChallenge,
-      updateChallenge,
-      deleteChallenge,
-      checkIn,
-      hasCheckedInToday,
-      getStreak,
-      getBestStreak,
-      getDaysRemaining,
-      getProgress,
-      userProfile,
-      updateUserProfile,
-    };
-  }
+  return {
+    challenges,
+    activeChallenges,
+    completedChallenges,
+    isLoaded,
+    createChallenge,
+    updateChallenge,
+    deleteChallenge,
+    checkIn,
+    hasCheckedInToday,
+    getStreak,
+    getBestStreak,
+    getDaysRemaining,
+    getProgress,
+    userProfile,
+    updateUserProfile,
+  };
+}

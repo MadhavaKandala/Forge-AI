@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">100 Days Challenge</string>
+    <string name="title_activity_main">100 Days Challenge</string>
+    <string name="package_name">com.hundreddays.app</string>
+    <string name="custom_url_scheme">com.hundreddays.app</string>
+</resources>
