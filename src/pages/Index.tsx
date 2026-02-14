@@ -8,15 +8,14 @@ import { BottomNav } from '@/components/habit-tracker/BottomNav';
 import { AnalyticsSection } from '@/components/habit-tracker/AnalyticsSection';
 import { CommunitySection } from '@/components/habit-tracker/CommunitySection';
 import { ProfileSection } from '@/components/habit-tracker/ProfileSection';
-import { Search } from 'lucide-react';
+import { EisenhowerMatrix } from '@/components/habit-tracker/EisenhowerMatrix';
+import { ProductivityTracker } from '@/components/habit-tracker/ProductivityTracker';
+import { SmartSchedule } from '@/components/habit-tracker/SmartSchedule';
+import { Search, Flame } from 'lucide-react';
 
 /* 
- * ProgramSection is commented out as user hasn't asked for it to be restored explicitly 
- * but it was in the original imports. 
- * I will placeholder it if needed or omit for now if not part of user 'features'.
- * Actually, user had 'program' tab. I will add a placeholder for it.
+ * ProgramSection Placeholder
  */
-
 const ProgramPlaceholder = () => (
   <div className="w-full px-6 py-10 text-center text-zinc-500">
     <h2 className="text-xl font-bold text-white mb-2">Programs</h2>
@@ -36,7 +35,7 @@ const Index = () => {
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
         {activeTab === 'hub' && (
           <>
-            {/* Search Bar - only on Hub */}
+            {/* Search Bar */}
             <div className="w-full px-6 mb-6">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -48,9 +47,27 @@ const Index = () => {
               </div>
             </div>
 
+            {/* Top Utility Strip */}
             <WeekStrip />
+
+            {/* Smart Schedule - Real Time Context */}
+            <SmartSchedule />
+
+            {/* Day Progress & Streak */}
             <DaySection />
-            <HabitList />
+
+            {/* Productivity System (1-3-5 Rule) */}
+            <ProductivityTracker />
+
+            {/* Priority Matrix */}
+            <EisenhowerMatrix />
+
+            {/* Original Habit List (Bottom Priority) */}
+            <div className="mt-8 border-t border-zinc-800 pt-8">
+              <h2 className="px-6 text-sm font-bold text-zinc-500 uppercase tracking-widest mb-4">Habit Checklist</h2>
+              <HabitList />
+            </div>
+
             <ScheduleSection />
           </>
         )}

@@ -28,112 +28,96 @@ export const PROGRAM_TEMPLATES: ProgramTemplate[] = [
     {
         type: 'leetcode_75',
         name: 'LeetCode 75 Hard',
-        description: 'Master Data Structures & Algorithms in 75 days. One problem a day, no excuses.',
+        description: '75 Days of Code. One problem a day. No excuses.',
         days: 75,
         icon: '💻',
         difficulty: 'advanced',
         category: 'learning',
         dailyRequirements: [
             'Solve 1 LeetCode problem',
-            'Read 1 technical article',
-            'No social media before 10 AM'
+            'No social media before 10 AM',
+            'Read 1 technical article'
         ],
         totalXpPotential: 7500,
         phases: [
-            { name: 'Foundation', startDay: 1, endDay: 30, description: 'Basic Data Structures', xpPerDay: 80 },
-            { name: 'Advanced', startDay: 31, endDay: 60, description: 'Advanced Algorithms', xpPerDay: 120 },
-            { name: 'Mastery', startDay: 61, endDay: 75, description: 'Hard Problems', xpPerDay: 200 }
+            { name: 'Foundation', startDay: 1, endDay: 30, description: 'Arrays & Strings', xpPerDay: 80 },
+            { name: 'Intermediate', startDay: 31, endDay: 60, description: 'Trees & Graphs', xpPerDay: 100 },
+            { name: 'Advanced', startDay: 61, endDay: 75, description: 'DP & Hard Problems', xpPerDay: 150 }
         ]
     },
     {
-        type: 'gym_progress',
-        name: 'Gym Progress',
-        description: 'Transform your physique with consistent training and tracking.',
+        type: 'academic_excellence',
+        name: 'Academic Excellence',
+        description: 'Semester-long focus on studies and deep work.',
+        days: 120,
+        icon: '🎓',
+        difficulty: 'intermediate',
+        category: 'learning',
+        dailyRequirements: [
+            'Attend all classes',
+            '2 hours self-study',
+            'Review daily notes'
+        ],
+        totalXpPotential: 12000,
+    },
+    {
+        type: 'gita_journey',
+        name: 'Gita Journey',
+        description: 'Spiritual wisdom through daily reading during commute.',
+        days: 60,
+        icon: '📚',
+        difficulty: 'beginner',
+        category: 'mental',
+        dailyRequirements: [
+            'Read 20-30 mins (Bus)',
+            'Brief reflection note'
+        ],
+        totalXpPotential: 2400,
+    },
+    {
+        type: 'mongodb_cert',
+        name: 'MongoDB Certified',
+        description: 'Become a certified MongoDB developer in 45 days.',
+        days: 45,
+        icon: '💼',
+        difficulty: 'intermediate',
+        category: 'learning',
+        dailyRequirements: [
+            'Complete 1 Course Module',
+            'Practice Exercises'
+        ],
+        totalXpPotential: 4500,
+    },
+    {
+        type: 'gym_dance_fitness',
+        name: 'Gym & Dance',
+        description: 'Physical mastery through consistent training.',
         days: 90,
         icon: '💪',
         difficulty: 'intermediate',
         category: 'fitness',
         dailyRequirements: [
-            '45min Workout',
-            'Track Macros',
-            'Take Progress Photo'
+            'Gym or Dance Session (2x/week)',
+            'Protein intake goal',
+            '8 Hours Sleep'
         ],
         totalXpPotential: 9000,
     },
     {
-        type: 'gita_journey',
-        name: 'Bhagavad Gita Journey',
-        description: 'Spiritual growth through daily reading and reflection.',
-        days: 18,
-        icon: '🕉️',
-        difficulty: 'beginner',
-        category: 'mental',
-        dailyRequirements: [
-            'Read 1 Chapter',
-            'Meditate 10 mins',
-            'Write Reflection'
-        ],
-        totalXpPotential: 1800,
-    },
-    {
-        type: 'nutrition_mastery',
-        name: 'Nutrition Mastery',
-        description: 'Reset your relationship with food and build healthy habits.',
+        type: 'nutrition_tracking',
+        name: 'Nutrition 30',
+        description: 'Build the habit of tracking every meal.',
         days: 30,
-        icon: '🥗',
+        icon: '🍽️',
         difficulty: 'beginner',
         category: 'health',
         dailyRequirements: [
-            'No processed sugar',
-            'Drink 3L water',
-            'Eat 5 servings of veg'
+            'Log Breakfast',
+            'Log Lunch',
+            'Log Dinner',
+            'Drink 4L Water'
         ],
-        totalXpPotential: 3000,
-    },
-    {
-        type: 'academic_excellence',
-        name: 'Academic Excellence',
-        description: 'Excel in your studies with focused deep work sessions.',
-        days: 60,
-        icon: '📚',
-        difficulty: 'intermediate',
-        category: 'learning',
-        dailyRequirements: [
-            '2 hours deep work',
-            'Review yesterday\'s notes',
-            'Plan tomorrow\'s study'
-        ],
-        totalXpPotential: 6000,
-    },
-    {
-        type: 'creative_skills',
-        name: 'Creative Skills',
-        description: 'Dedicate time to master a new creative skill.',
-        days: 100,
-        icon: '🎨',
-        difficulty: 'intermediate',
-        category: 'learning',
-        dailyRequirements: [
-            '30min practice',
-            'Study 1 masterwork',
-            'Share progress'
-        ],
-        totalXpPotential: 10000,
-    },
-    {
-        type: 'productivity_master',
-        name: 'Productivity Master',
-        description: 'Optimize your life and workflow for maximum output.',
-        days: 21,
-        icon: '⚡',
-        difficulty: 'beginner',
-        category: 'productivity',
-        dailyRequirements: [
-            'Plan day night before',
-            'Zero inbox',
-            'Deep work block'
-        ],
-        totalXpPotential: 2100,
+        totalXpPotential: 1500,
     }
 ];
 
