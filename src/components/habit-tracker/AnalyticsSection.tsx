@@ -1,111 +1,190 @@
-import React from 'react';
-import { BarChart, Activity, TrendingUp, Calendar } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+    Activity, TrendingUp, Calendar, Layout,
+    Target, Zap, Rocket, ShieldCheck, ChevronRight,
+    TrendingDown, Plus
+} from 'lucide-react';
 import { useHabitStore } from '@/store/useHabitStore';
+import { cn } from '@/lib/utils';
+
+type TimePeriod = 'day' | 'week' | 'year';
 
 export const AnalyticsSection = () => {
-    const { habits, user, getDailyProgress } = useHabitStore();
+    const { habits, tasks, schedule, user, getDailyProgress } = useHabitStore();
+    const [period, setPeriod] = useState<TimePeriod>('day');
 
-    // Calculate Weekly Data
-    const today = new Date();
-    const currentDay = today.getDay(); // 0-6
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - currentDay); // Sunday
+    // Filter tasks based on period or matrix significance
+    const dailyTasks = tasks.filter(t => t.status === 'today' || t.status === 'in_progress');
+    const weeklyTasks = tasks.filter(t => t.status === 'this_week');
+    const backlogTasks = tasks.filter(t => t.status === 'backlog');
 
-    const weeklyData = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(startOfWeek);
-        d.setDate(startOfWeek.getDate() + i);
-        const dayStr = d.toLocaleDateString('en-US', { weekday: 'narrow' }); // S, M, T...
+    // Filter schedule for Tactical Focus
+    const currentSchedule = schedule.filter(s => s.period === 'today').slice(0, 3);
 
-        // Use the store selector to get consistent progress calculation for each day
-        const value = getDailyProgress(d);
+    // Calculate habit consistency
+    const habitCompletion = getDailyProgress(new Date());
 
-        return { day: dayStr, value };
-    });
-
-    const completedToday = getDailyProgress(new Date());
-
-    // Calculate Perfect Days
-    // A perfect day is one where progress was 100%
-    const allCompletedDates = new Set<string>();
-    habits.forEach(h => h.completedDates.forEach(d => allCompletedDates.add(d)));
-
-    let perfectDaysCount = 0;
-    allCompletedDates.forEach(dateStr => {
-        const habitsForDay = habits.length; // Assuming constant number of habits for simplicity
-        if (habitsForDay === 0) return;
-
-        const completedOnThatDay = habits.filter(h => h.completedDates.includes(dateStr)).length;
-        if (completedOnThatDay === habitsForDay) {
-            perfectDaysCount++;
-        }
-    });
-
-    return (
-        <div className="w-full px-6 mb-24 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <h2 className="text-xl font-bold text-white mb-6">Analytics</h2>
-
-            {/* Overview Cards */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
-                <div className="bg-[#18181B] border border-[#27272A] rounded-2xl p-4">
-                    <div className="flex items-center gap-2 mb-2 text-zinc-400">
-                        <Activity className="w-4 h-4" />
-                        <span className="text-xs font-bold uppercase">Consistency</span>
-                    </div>
-                    {/* Mock consistency for now or calculate (completed / total possible since start) */}
-                    <div className="text-2xl font-bold text-white">84%</div>
-                    <div className="text-xs text-[#dfff4f] mt-1">+2% this week</div>
+    const MatrixCard = ({
+        title,
+        icon: Icon,
+        tasks: quadrantTasks,
+        items, // For schedule or habits
+        metric,
+        color,
+        subtitle
+    }: {
+        title: string,
+        icon: any,
+        tasks?: any[],
+        items?: { title: string, time?: string }[],
+        metric?: string | number,
+        color: string,
+        subtitle: string
+    }) => (
+        <div className={cn(
+            "relative overflow-hidden bg-[#18181B] border border-[#27272A] rounded-2xl p-4 flex flex-col h-[190px]",
+            `hover:border-${color}/50 transition-all group`
+        )}>
+            <div className="flex items-center justify-between mb-3">
+                <div className={cn("p-1.5 rounded-lg bg-zinc-800", `text-${color}`)}>
+                    <Icon className="w-4 h-4" />
                 </div>
-                <div className="bg-[#18181B] border border-[#27272A] rounded-2xl p-4">
-                    <div className="flex items-center gap-2 mb-2 text-zinc-400">
-                        <TrendingUp className="w-4 h-4" />
-                        <span className="text-xs font-bold uppercase">Completion</span>
-                    </div>
-                    <div className="text-2xl font-bold text-white">{completedToday}%</div>
-                    <div className="text-xs text-zinc-500 mt-1">Today's Rate</div>
+                {metric !== undefined && (
+                    <span className={cn("text-lg font-black tracking-tighter", `text-${color}`)}>{metric}</span>
+                )}
+            </div>
+
+            <div className="flex-1 min-w-0">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-0.5">{title}</h3>
+                <p className="text-white text-xs font-bold truncate mb-3">{subtitle}</p>
+
+                <div className="space-y-1.5 overflow-y-auto no-scrollbar max-h-[85px]">
+                    {/* Render Tasks if provided */}
+                    {quadrantTasks && quadrantTasks.length > 0 && quadrantTasks.slice(0, 2).map((t, i) => (
+                        <div key={`task-${i}`} className="flex items-start gap-2">
+                            <div className={cn("w-1 h-1 rounded-full mt-1.5 shrink-0", `bg-${color}`)} />
+                            <span className="text-[10px] text-zinc-400 leading-tight line-clamp-2">{t.title}</span>
+                        </div>
+                    ))}
+
+                    {/* Render custom items (Schedule/Habits) if provided */}
+                    {items && items.length > 0 && items.map((item, i) => (
+                        <div key={`item-${i}`} className="flex items-start gap-2">
+                            <div className={cn("w-1 h-1 rounded-full mt-1.5 shrink-0", `bg-${color}`)} />
+                            <div className="flex flex-col">
+                                <span className="text-[10px] text-zinc-300 leading-tight font-medium">{item.title}</span>
+                                {item.time && <span className="text-[8px] text-zinc-500 uppercase">{item.time}</span>}
+                            </div>
+                        </div>
+                    ))}
+
+                    {(!quadrantTasks || quadrantTasks.length === 0) && (!items || items.length === 0) && (
+                        <div className="text-[10px] text-zinc-600 italic">Clear horizon</div>
+                    )}
                 </div>
             </div>
 
-            {/* Weekly Chart */}
-            <div className="bg-[#18181B] border border-[#27272A] rounded-3xl p-6 mb-6">
-                <div className="flex items-center justify-between mb-6">
-                    <h3 className="font-bold text-white">Weekly Performance</h3>
-                    <div className="flex gap-2">
-                        <span className="w-2 h-2 rounded-full bg-[#dfff4f]"></span>
-                        <span className="text-xs text-zinc-400">Habits</span>
-                    </div>
-                </div>
+            <button className="absolute bottom-2 right-2 p-1 rounded-full bg-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Plus className="w-3 h-3 text-zinc-400" />
+            </button>
+        </div>
+    );
 
-                <div className="flex items-end justify-between h-40 gap-2">
-                    {weeklyData.map((d, i) => (
-                        <div key={i} className="flex flex-col items-center gap-2 flex-1 group">
-                            <div
-                                className="w-full bg-[#27272A] rounded-t-lg relative overflow-hidden transition-all duration-500 group-hover:bg-[#323235]"
-                                style={{ height: `${Math.max(d.value, 5)}%` }} // Min height 5% for visuals
-                            >
-                                <div className="absolute bottom-0 left-0 w-full bg-[#dfff4f] opacity-20 h-full"></div>
-                                <div
-                                    className="absolute bottom-0 left-0 w-full bg-[#dfff4f] transition-all duration-1000 delay-100"
-                                    style={{ height: `${d.value}%` }}
-                                ></div>
-                            </div>
-                            <span className="text-xs font-bold text-zinc-500">{d.day}</span>
-                        </div>
+    return (
+        <div className="w-full px-6 mb-24 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* Header & Tabs */}
+            <div className="flex items-center justify-between mb-8 mt-4">
+                <div className="flex flex-col">
+                    <h2 className="text-xl font-bold text-white tracking-tight">Executive Summary</h2>
+                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Strategic Overview</p>
+                </div>
+                <div className="flex bg-zinc-900/50 p-1 rounded-xl border border-zinc-800">
+                    {(['day', 'week', 'year'] as TimePeriod[]).map((p) => (
+                        <button
+                            key={p}
+                            onClick={() => setPeriod(p)}
+                            className={cn(
+                                "px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+                                period === p ? "bg-primary text-black" : "text-zinc-500"
+                            )}
+                        >
+                            {p}
+                        </button>
                     ))}
                 </div>
             </div>
 
-            {/* Perfect Days */}
-            <div className="bg-[#dfff4f] rounded-2xl p-5 text-black flex items-center justify-between">
-                <div>
-                    <div className="flex items-center gap-2 mb-1 opacity-80">
-                        <Calendar className="w-4 h-4" />
-                        <span className="text-xs font-bold uppercase">Perfect Days</span>
-                    </div>
-                    <div className="text-3xl font-bold">{perfectDaysCount}</div>
-                    <div className="text-sm font-medium opacity-80">Keep it up, {user.name}!</div>
+            {/* The Strategic Matrix Grid */}
+            <div className="grid grid-cols-2 gap-3 mb-8">
+                {/* Q1: Tactical (Daily) */}
+                <MatrixCard
+                    title="Tactical Focus"
+                    subtitle={period === 'day' ? "Current Execution" : "Action Steps"}
+                    icon={Zap}
+                    tasks={period === 'day' ? dailyTasks : []}
+                    items={period === 'day' ? currentSchedule.map(s => ({ title: s.title, time: s.time })) : []}
+                    metric={dailyTasks.length}
+                    color="red-500"
+                />
+
+                {/* Q2: Strategic (Weekly) */}
+                <MatrixCard
+                    title="Strategic Build"
+                    subtitle="Systemic Growth"
+                    icon={Target}
+                    tasks={weeklyTasks}
+                    metric={weeklyTasks.length}
+                    color="blue-500"
+                />
+
+                {/* Q3: Future Vision (Yearly) */}
+                <MatrixCard
+                    title="Future Vision"
+                    subtitle="Vision / Long-Term"
+                    icon={Rocket}
+                    tasks={backlogTasks}
+                    metric={backlogTasks.length}
+                    color="purple-500"
+                />
+
+                {/* Q4: Systems & Logic (Habits) */}
+                <MatrixCard
+                    title="Mastery Logic"
+                    subtitle="Habit Consistency"
+                    icon={ShieldCheck}
+                    metric={`${habitCompletion}%`}
+                    items={habits.filter(h => h.streak > 5).slice(0, 2).map(h => ({ title: h.title, time: `${h.streak} day streak` }))}
+                    color="emerald-500"
+                />
+            </div>
+
+            {/* Long-term Performance Summary */}
+            <div className="bg-[#18181B] border border-[#27272A] rounded-3xl p-6 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-5">
+                    <Activity className="w-32 h-32 text-primary" />
                 </div>
-                <div className="w-12 h-12 rounded-full border-2 border-black flex items-center justify-center">
-                    <span className="font-bold text-lg">🔥</span>
+
+                <h3 className="font-bold text-white mb-6 relative">Velocity Index</h3>
+
+                <div className="grid grid-cols-2 gap-8 relative">
+                    <div>
+                        <div className="text-3xl font-black text-white tracking-tighter mb-1">
+                            {user.level}
+                            <span className="text-xs text-zinc-500 ml-2 font-bold uppercase tracking-widest">RANK</span>
+                        </div>
+                        <div className="w-full bg-zinc-800 h-1 rounded-full mt-2">
+                            <div className="bg-primary h-full rounded-full w-[65%]" />
+                        </div>
+                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-2">{user.xp} XP total earned</p>
+                    </div>
+
+                    <div className="flex flex-col justify-end items-end">
+                        <div className="flex items-center gap-2 text-primary">
+                            <TrendingUp className="w-4 h-4" />
+                            <span className="text-xl font-bold">12.4%</span>
+                        </div>
+                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest text-right">Weekly Progress Lift</p>
+                    </div>
                 </div>
             </div>
         </div>

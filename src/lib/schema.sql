@@ -6,6 +6,11 @@ CREATE TABLE IF NOT EXISTS tasks (
   category TEXT, -- coding, gym, diet, personal
   priority TEXT DEFAULT 'medium', -- low, medium, high
   status TEXT DEFAULT 'todo', -- todo, in_progress, completed, cancelled
+  completed INTEGER DEFAULT 0,
+  
+  -- 1-3-5 and Eisenhower Rule
+  size TEXT DEFAULT 'small',
+  quadrant TEXT DEFAULT 'q4',
   
   -- Time tracking
   estimated_minutes INTEGER,
@@ -20,9 +25,14 @@ CREATE TABLE IF NOT EXISTS tasks (
   is_recurring INTEGER DEFAULT 0,
   recurrence_pattern TEXT, -- daily, weekly, custom
   
-  -- Links
+  -- Links & Content
   notes TEXT,
   external_links TEXT, -- JSON array
+  attachments TEXT, -- JSON array
+  tags TEXT, -- JSON array
+  
+  -- Subtasks
+  subtasks TEXT, -- JSON array of {id, title, completed}
   
   -- Timestamps
   completed_at TEXT,

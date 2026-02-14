@@ -1,20 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { Task, TaskCategory, TaskPriority, TaskStatus, EisenhowerQuadrant, CreateTaskDTO } from '@/types/task';
 
 export type HabitType = 'checkbox' | 'numeric' | 'timer';
 export type Category = 'coding' | 'devotional' | 'diet' | 'gym' | 'personal' | 'academics' | 'breaks';
 export type TimeBlock = 'morning' | 'bus_college' | 'college' | 'bus_home' | 'evening';
-export type EisenhowerQuadrant = 'q1' | 'q2' | 'q3' | 'q4';
-
-export interface Task {
-    id: string;
-    title: string;
-    completed: boolean;
-    size: 'big' | 'medium' | 'small'; // For 1-3-5 Rule
-    quadrant: EisenhowerQuadrant;
-    dueDate?: string;
-    subtasks: { id: string; title: string; completed: boolean }[];
-}
 
 export interface Habit {
     id: string;
@@ -62,13 +52,15 @@ interface HabitState {
     setSelectedDate: (date: Date) => void;
 
     // Task Actions
-    addTask: (task: { title: string; quadrant: EisenhowerQuadrant; subtasks?: { title: string }[] }) => void;
+    addTask: (taskData: CreateTaskDTO) => void;
     toggleTask: (taskId: string) => void;
     updateTask: (taskId: string, updates: Partial<Task>) => void;
     deleteTask: (taskId: string) => void;
+    fetchTasks: () => Promise<void>;
 
     // Schedule/Habit Actions
     addHabit: (habit: Omit<Habit, 'id' | 'streak' | 'completedDates' | 'history'>) => void;
+    fetchHabits: () => Promise<void>;
     addScheduleItem: (item: Omit<ScheduleItem, 'id'>) => void;
     removeScheduleItem: (id: string) => void;
 
@@ -88,11 +80,11 @@ const formatDate = (date: Date): string => {
 };
 
 const INITIAL_TASKS: Task[] = [
-    { id: 't1', title: 'Two Sum Problem', completed: true, size: 'medium', quadrant: 'q1', subtasks: [] },
-    { id: 't2', title: 'Study Ch5', completed: false, size: 'big', quadrant: 'q1', subtasks: [] },
-    { id: 't3', title: 'Chest Workout', completed: false, size: 'medium', quadrant: 'q2', subtasks: [] },
-    { id: 't4', title: 'Reverse Linked List', completed: false, size: 'medium', quadrant: 'q1', subtasks: [] },
-    { id: 't5', title: 'Bhagavad Gita Reading', completed: false, size: 'small', quadrant: 'q2', subtasks: [] },
+    { id: 't1', title: 'Two Sum Problem', completed: true, status: 'completed', size: 'medium', quadrant: 'q1', category: 'coding', priority: 'high', isRecurring: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), subtasks: [] },
+    { id: 't2', title: 'Study Ch5', completed: false, status: 'today', size: 'big', quadrant: 'q1', category: 'academics', priority: 'high', isRecurring: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), subtasks: [] },
+    { id: 't3', title: 'Chest Workout', completed: false, status: 'this_week', size: 'medium', quadrant: 'q2', category: 'gym', priority: 'medium', isRecurring: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), subtasks: [] },
+    { id: 't4', title: 'Reverse Linked List', completed: false, status: 'today', size: 'medium', quadrant: 'q1', category: 'coding', priority: 'high', isRecurring: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), subtasks: [] },
+    { id: 't5', title: 'Bhagavad Gita Reading', completed: false, status: 'this_week', size: 'small', quadrant: 'q2', category: 'devotional', priority: 'low', isRecurring: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), subtasks: [] },
 ];
 
 const INITIAL_HABITS: Habit[] = [
@@ -197,38 +189,76 @@ export const useHabitStore = create<HabitState>()(
             })),
 
             // Task Actions
-            addTask: (taskData) => set((state) => {
-                // Auto-decide size based on Quadrant
-                // Q1 -> Big (Major focus)
-                // Q2 -> Medium (Important but planned)
-                // Q3/Q4 -> Small
-                let size: 'big' | 'medium' | 'small' = 'small';
-                if (taskData.quadrant === 'q1') size = 'big';
-                else if (taskData.quadrant === 'q2') size = 'medium';
+            addTask: async (taskData) => {
+                const { taskService } = await import('@/services/taskService');
 
-                const newTask: Task = {
-                    id: Math.random().toString(36).substr(2, 9),
-                    title: taskData.title,
-                    completed: false,
+                // Determine size and status if not provided
+                let size = taskData.size || 'small';
+                if (!taskData.size) {
+                    if (taskData.quadrant === 'q1') size = 'big';
+                    else if (taskData.quadrant === 'q2') size = 'medium';
+                }
+
+                const status = taskData.status || (taskData.quadrant === 'q1' ? 'today' : (taskData.quadrant === 'q2' ? 'this_week' : 'backlog'));
+
+                const newTask = await taskService.createTask({
+                    ...taskData,
                     size,
-                    quadrant: taskData.quadrant,
-                    subtasks: taskData.subtasks?.map(s => ({ id: Math.random().toString(36).substr(2, 9), title: s.title, completed: false })) || []
-                };
+                    status,
+                    isRecurring: taskData.isRecurring || false,
+                    subtasks: taskData.subtasks || []
+                });
 
-                return { tasks: [...state.tasks, newTask] };
+                set((state) => ({ tasks: [...state.tasks, newTask] }));
+            },
+
+            toggleTask: (taskId) => set((state) => {
+                const updatedTasks = state.tasks.map(t => {
+                    if (t.id === taskId) {
+                        const newCompleted = !t.completed;
+                        const newStatus = newCompleted ? 'completed' : 'today';
+
+                        // Async update in background
+                        import('@/services/taskService').then(({ taskService }) => {
+                            taskService.updateTask(taskId, { completed: newCompleted, status: newStatus as any });
+                        });
+
+                        return { ...t, completed: newCompleted, status: newStatus as any };
+                    }
+                    return t;
+                });
+                return { tasks: updatedTasks };
             }),
 
-            toggleTask: (taskId) => set((state) => ({
-                tasks: state.tasks.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t)
-            })),
+            updateTask: (taskId, updates) => set((state) => {
+                // Async update in background
+                import('@/services/taskService').then(({ taskService }) => {
+                    taskService.updateTask(taskId, updates);
+                });
 
-            updateTask: (taskId, updates) => set((state) => ({
-                tasks: state.tasks.map(t => t.id === taskId ? { ...t, ...updates } : t)
-            })),
+                return {
+                    tasks: state.tasks.map(t => t.id === taskId ? { ...t, ...updates } : t)
+                };
+            }),
 
-            deleteTask: (taskId) => set((state) => ({
-                tasks: state.tasks.filter(t => t.id !== taskId)
-            })),
+            deleteTask: (taskId) => set((state) => {
+                // Async update in background
+                import('@/services/taskService').then(({ taskService }) => {
+                    taskService.deleteTask(taskId);
+                });
+                return { tasks: state.tasks.filter(t => t.id !== taskId) };
+            }),
+
+            fetchTasks: async () => {
+                const { taskService } = await import('@/services/taskService');
+                const tasks = await taskService.getTasks();
+                set({ tasks });
+            },
+
+            fetchHabits: async () => {
+                // Future: add persistence for habits
+                console.log("Habits synchronized");
+            },
 
             toggleHabit: (habitId, date) => set((state) => {
                 const dateStr = formatDate(date);

@@ -1,9 +1,13 @@
 import React from 'react';
-import { useHabitStore, Task, EisenhowerQuadrant } from '@/store/useHabitStore';
+import { useHabitStore } from '@/store/useHabitStore';
+import { Task, EisenhowerQuadrant } from '@/types/task';
 import { AlertCircle, Clock, CheckCircle2, Trash2 } from 'lucide-react';
+import { TaskDetailModal } from '@/components/habit-tracker/TaskDetailModal';
 
 export const EisenhowerMatrix = () => {
     const { tasks, toggleTask, deleteTask } = useHabitStore();
+    const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
+    const [isDetailOpen, setIsDetailOpen] = React.useState(false);
 
     // Group tasks by quadrant
     const quadrants: Record<EisenhowerQuadrant, Task[]> = {
@@ -42,17 +46,33 @@ export const EisenhowerMatrix = () => {
                                     </div>
                                 ) : (
                                     qTasks.map(task => (
-                                        <div key={task.id} className="bg-[#18181B]/80 rounded-lg p-2 border border-zinc-800 flex items-start justify-between group">
+                                        <div
+                                            key={task.id}
+                                            className="bg-[#18181B]/80 rounded-lg p-2 border border-zinc-800 flex items-start justify-between group cursor-pointer hover:border-zinc-700 transition-colors"
+                                            onClick={() => {
+                                                setSelectedTask(task);
+                                                setIsDetailOpen(true);
+                                            }}
+                                        >
                                             <div className="flex items-start gap-2 max-w-[80%]">
                                                 <button
-                                                    onClick={() => toggleTask(task.id)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleTask(task.id);
+                                                    }}
                                                     className={`mt-0.5 w-3 h-3 rounded-full border flex-shrink-0 ${task.completed ? 'bg-green-500 border-green-500' : 'border-zinc-500'}`}
                                                 />
                                                 <span className={`text-xs text-white leading-tight ${task.completed ? 'line-through opacity-50' : ''}`}>
                                                     {task.title}
                                                 </span>
                                             </div>
-                                            <button onClick={() => deleteTask(task.id)} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    deleteTask(task.id);
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
                                                 <Trash2 className="w-3 h-3 text-red-500" />
                                             </button>
                                         </div>
@@ -63,6 +83,11 @@ export const EisenhowerMatrix = () => {
                     );
                 })}
             </div>
+            <TaskDetailModal
+                task={selectedTask}
+                isOpen={isDetailOpen}
+                onClose={() => setIsDetailOpen(false)}
+            />
         </div>
     );
 };

@@ -20,7 +20,7 @@ import { useUserStore } from "./store/useUserStore";
 import { useScheduleStore } from "./store/useScheduleStore";
 
 const App = () => {
-  const { setSelectedDate: setHabitDate, fetchHabits } = useHabitStore();
+  const { setSelectedDate: setHabitDate, fetchHabits, fetchTasks } = useHabitStore();
   const { setSelectedDate: setScheduleDate } = useScheduleStore(); // If needed to sync both
   const { fetchUser } = useUserStore();
 
@@ -36,6 +36,7 @@ const App = () => {
       try {
         await fetchUser();
         await fetchHabits();
+        await fetchTasks();
       } catch (err) {
         console.error("Failed to fetch initial data", err);
       }

@@ -12,15 +12,15 @@ import { EisenhowerMatrix } from '@/components/habit-tracker/EisenhowerMatrix';
 import { ProductivityTracker } from '@/components/habit-tracker/ProductivityTracker';
 import { SmartSchedule } from '@/components/habit-tracker/SmartSchedule';
 import { ProgramSection } from '@/components/habit-tracker/ProgramSection';
-import { Search } from 'lucide-react';
+import TasksPage from './TasksPage';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('hub');
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white pb-32 font-sans selection:bg-primary selection:text-black overflow-x-hidden">
-      {/* Header always visible */}
-      <Header />
+      {/* Header always visible except for Tasks/Kanban which has its own header */}
+      {activeTab !== 'tasks' && <Header />}
 
       {/* Main Content Area */}
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 max-w-md mx-auto">
@@ -56,12 +56,13 @@ const Index = () => {
           </>
         )}
 
+        {activeTab === 'tasks' && <TasksPage />}
+
         {activeTab === 'analytics' && <AnalyticsSection />}
         {activeTab === 'program' && (
           <div className="px-6 py-6">
             <h2 className="text-2xl font-bold mb-6">All Programs</h2>
             <ProgramSection onSeeAll={() => { }} />
-            {/* Detailed list of programs would go here */}
           </div>
         )}
         {activeTab === 'community' && <CommunitySection />}

@@ -9,19 +9,38 @@ export const taskService = {
 
         const sql = `
       INSERT INTO tasks (
-        id, title, description, category, priority, status,
-        estimated_minutes, scheduled_date, scheduled_time, due_date,
-        is_recurring, recurrence_pattern, notes, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        id, title, description, category, priority, status, completed,
+        size, quadrant, estimated_minutes, actual_minutes,
+        scheduled_date, scheduled_time, due_date,
+        is_recurring, recurrence_pattern, notes, 
+        external_links, attachments, tags, subtasks,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
         await dbService.run(sql, [
-            id, task.title, task.description || null, task.category, task.priority, task.status,
-            task.estimatedMinutes || null, task.scheduledDate || null, task.scheduledTime || null, task.dueDate || null,
-            task.isRecurring ? 1 : 0, task.recurrencePattern || null, task.notes || null, now, now
+            id, task.title, task.description || null, task.category, task.priority, task.status, task.completed ? 1 : 0,
+            task.size || 'small', task.quadrant || 'q4', task.estimatedMinutes || null, task.actualMinutes || null,
+            task.scheduledDate || null, task.scheduledTime || null, task.dueDate || null,
+            task.isRecurring ? 1 : 0, task.recurrencePattern || null, task.notes || null,
+            JSON.stringify(task.externalLinks || []), JSON.stringify(task.attachments || []), JSON.stringify(task.tags || []),
+            JSON.stringify(task.subtasks || []),
+            now, now
         ]);
 
-        return { ...task, id, createdAt: now, updatedAt: now };
+        return {
+            ...task,
+            id,
+            category: task.category || 'other',
+            priority: task.priority || 'medium',
+            status: task.status || 'backlog',
+            completed: !!task.completed,
+            size: task.size || 'small',
+            quadrant: task.quadrant || 'q4',
+            subtasks: task.subtasks || [],
+            createdAt: now,
+            updatedAt: now
+        };
     },
 
     async getTasks(filter?: { category?: string; status?: string }): Promise<Task[]> {
@@ -52,6 +71,9 @@ export const taskService = {
             category: row.category,
             priority: row.priority,
             status: row.status,
+            completed: Boolean(row.completed),
+            size: row.size,
+            quadrant: row.quadrant,
             estimatedMinutes: row.estimated_minutes,
             actualMinutes: row.actual_minutes,
             scheduledDate: row.scheduled_date,
@@ -60,6 +82,10 @@ export const taskService = {
             isRecurring: Boolean(row.is_recurring),
             recurrencePattern: row.recurrence_pattern,
             notes: row.notes,
+            externalLinks: row.external_links ? JSON.parse(row.external_links) : [],
+            attachments: row.attachments ? JSON.parse(row.attachments) : [],
+            tags: row.tags ? JSON.parse(row.tags) : [],
+            subtasks: row.subtasks ? JSON.parse(row.subtasks) : [],
             completedAt: row.completed_at,
             createdAt: row.created_at,
             updatedAt: row.updated_at
@@ -76,9 +102,19 @@ export const taskService = {
                 // Map camelCase to snake_case for DB
                 const dbKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
                 setClauses.push(`${dbKey} = ?`);
-                params.push(value);
+
+                // Handle complex fields
+                if (['externalLinks', 'attachments', 'tags', 'subtasks'].includes(key)) {
+                    params.push(JSON.stringify(value));
+                } else if (key === 'completed' || key === 'isRecurring') {
+                    params.push(value ? 1 : 0);
+                } else {
+                    params.push(value);
+                }
             }
         });
+
+        if (setClauses.length === 0) return;
 
         setClauses.push('updated_at = ?');
         params.push(now);
@@ -94,7 +130,7 @@ export const taskService = {
 
     async completeTask(id: string): Promise<void> {
         const now = new Date().toISOString();
-        await dbService.run("UPDATE tasks SET status = 'completed', completed_at = ?, updated_at = ? WHERE id = ?", [now, now, id]);
+        await dbService.run("UPDATE tasks SET status = 'completed', completed = 1, completed_at = ?, updated_at = ? WHERE id = ?", [now, now, id]);
     },
 
     async getTasksByDate(date: string): Promise<Task[]> {
@@ -107,6 +143,9 @@ export const taskService = {
             category: row.category,
             priority: row.priority,
             status: row.status,
+            completed: Boolean(row.completed),
+            size: row.size,
+            quadrant: row.quadrant,
             estimatedMinutes: row.estimated_minutes,
             actualMinutes: row.actual_minutes,
             scheduledDate: row.scheduled_date,
@@ -115,6 +154,10 @@ export const taskService = {
             isRecurring: Boolean(row.is_recurring),
             recurrencePattern: row.recurrence_pattern,
             notes: row.notes,
+            externalLinks: row.external_links ? JSON.parse(row.external_links) : [],
+            attachments: row.attachments ? JSON.parse(row.attachments) : [],
+            tags: row.tags ? JSON.parse(row.tags) : [],
+            subtasks: row.subtasks ? JSON.parse(row.subtasks) : [],
             completedAt: row.completed_at,
             createdAt: row.created_at,
             updatedAt: row.updated_at

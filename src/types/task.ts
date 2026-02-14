@@ -1,6 +1,7 @@
-export type TaskCategory = 'coding' | 'gym' | 'diet' | 'personal' | 'work' | 'other';
+export type TaskCategory = 'coding' | 'gym' | 'diet' | 'personal' | 'work' | 'academics' | 'devotional' | 'other';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type TaskStatus = 'backlog' | 'this_week' | 'today' | 'in_progress' | 'completed' | 'cancelled';
+export type EisenhowerQuadrant = 'q1' | 'q2' | 'q3' | 'q4';
 
 export interface Task {
     id: string;
@@ -9,6 +10,11 @@ export interface Task {
     category: TaskCategory;
     priority: TaskPriority;
     status: TaskStatus;
+    completed: boolean;
+
+    // 1-3-5 and Eisenhower Rule
+    size: 'big' | 'medium' | 'small';
+    quadrant: EisenhowerQuadrant;
 
     // Time tracking
     estimatedMinutes?: number;
@@ -23,9 +29,14 @@ export interface Task {
     isRecurring: boolean;
     recurrencePattern?: string; // daily, weekly, custom
 
-    // Links
+    // Links & Content
     notes?: string;
-    externalLinks?: string[]; // stored as JSON string in DB
+    externalLinks?: string[];
+    attachments?: string[];
+    tags?: string[];
+
+    // Subtasks
+    subtasks: { id: string; title: string; completed: boolean }[];
 
     // Timestamps
     completedAt?: string;
@@ -33,5 +44,10 @@ export interface Task {
     updatedAt: string;
 }
 
-export interface CreateTaskDTO extends Omit<Task, 'id' | 'createdAt' | 'updatedAt'> { }
+export interface CreateTaskDTO extends Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'completed' | 'priority' | 'status' | 'size'> {
+    completed?: boolean;
+    priority?: TaskPriority;
+    status?: TaskStatus;
+    size?: 'big' | 'medium' | 'small';
+}
 export interface UpdateTaskDTO extends Partial<Omit<Task, 'id' | 'createdAt' | 'updatedAt'>> { }
