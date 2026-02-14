@@ -1,11 +1,10 @@
--- Tasks Table (Beyond Habits)
 CREATE TABLE IF NOT EXISTS tasks (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   description TEXT,
-  category TEXT, -- coding, gym, diet, personal
+  category TEXT, -- coding, gym, diet, personal, academics, devotional
   priority TEXT DEFAULT 'medium', -- low, medium, high
-  status TEXT DEFAULT 'todo', -- todo, in_progress, completed, cancelled
+  status TEXT DEFAULT 'backlog', -- backlog, this_week, today, in_progress, completed
   completed INTEGER DEFAULT 0,
   
   -- 1-3-5 and Eisenhower Rule

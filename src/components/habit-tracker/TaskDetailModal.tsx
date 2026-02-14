@@ -135,10 +135,25 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, isOpen, 
                                 className="w-full bg-transparent text-center text-lg font-black text-white focus:outline-none"
                             />
                         </div>
-                        <div className="bg-zinc-900/50 p-4 rounded-3xl border border-zinc-800/50 text-center">
+                        <div className="bg-zinc-900/50 p-4 rounded-3xl border border-zinc-800/50 text-center col-span-2">
                             <Target className="w-4 h-4 text-[#dfff4f] mx-auto mb-2" />
-                            <p className="text-[10px] text-zinc-500 font-bold uppercase mb-1">Status</p>
-                            <p className="text-xs font-black uppercase text-[#dfff4f]">{localTask.status.replace('_', ' ')}</p>
+                            <p className="text-[10px] text-zinc-500 font-bold uppercase mb-2">Tactical Stage</p>
+                            <div className="flex flex-wrap justify-center gap-1.5">
+                                {(['backlog', 'this_week', 'today', 'in_progress', 'completed'] as TaskStatus[]).map((s) => (
+                                    <button
+                                        key={s}
+                                        onClick={() => setLocalTask({ ...localTask, status: s, completed: s === 'completed' })}
+                                        className={cn(
+                                            "px-2.5 py-1.5 rounded-full text-[9px] font-black uppercase transition-all border",
+                                            localTask.status === s
+                                                ? "bg-[#dfff4f] text-black border-[#dfff4f]"
+                                                : "bg-zinc-800/50 text-zinc-500 border-zinc-800 hover:border-zinc-700"
+                                        )}
+                                    >
+                                        {s.replace('_', ' ')}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                         <div className="bg-zinc-900/50 p-4 rounded-3xl border border-zinc-800/50 text-center">
                             <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto mb-2" />

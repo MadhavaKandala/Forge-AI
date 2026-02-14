@@ -122,8 +122,8 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ task, onMove, onClick }) => {
                 )}
             </div>
 
-            {/* Simple Status Quick Actions (Visible on Hover for Desktop, could be long-press on mobile) */}
-            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Simple Status Quick Actions - Fixed for mobile visibility */}
+            <div className="flex gap-1.5 mt-3 pt-3 border-t border-zinc-900/50">
                 {COLUMNS.filter(c => c.id !== task.status).map(c => (
                     <button
                         key={c.id}
@@ -131,10 +131,10 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ task, onMove, onClick }) => {
                             e.stopPropagation();
                             onMove(task.id, c.id);
                         }}
-                        className="h-5 w-5 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground flex items-center justify-center text-[8px] font-bold"
+                        className="flex-1 py-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-[#dfff4f] hover:text-[#dfff4f] flex items-center justify-center text-[8px] font-black uppercase tracking-tighter transition-all"
                         title={`Move to ${c.label}`}
                     >
-                        {c.label[0]}
+                        {c.label.split(' ')[0]}
                     </button>
                 ))}
             </div>

@@ -5,7 +5,7 @@ import { TaskDetailModal } from '@/components/habit-tracker/TaskDetailModal';
 import { taskService } from '@/services/taskService';
 import { Task, TaskCategory, TaskStatus } from '@/types/task';
 import { Button } from '@/components/ui/button';
-import { Filter, Layout, Plus } from 'lucide-react';
+import { Filter, Layout, Plus, Clock } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { useHabitStore } from '@/store/useHabitStore';
@@ -41,7 +41,7 @@ const TasksPage = () => {
         return true;
     });
 
-    const categories: string[] = ['all', 'coding', 'gym', 'diet', 'personal', 'work', 'academics'];
+    const categories: string[] = ['all', 'coding', 'gym', 'diet', 'personal', 'academics', 'devotional', 'other'];
 
     return (
         <div className="w-full h-screen overflow-hidden flex flex-col relative bg-background text-foreground">
@@ -51,6 +51,17 @@ const TasksPage = () => {
                     <h1 className="text-2xl font-black italic uppercase tracking-tighter">Mission Control</h1>
                 </div>
                 <div className="flex items-center gap-1">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-zinc-500 hover:text-[#dfff4f] transition-colors"
+                        onClick={() => {
+                            fetchTasks();
+                            toast.success("Intel Synchronized");
+                        }}
+                    >
+                        <Clock className="h-5 w-5" />
+                    </Button>
                     <AddTaskModal
                         onTaskAdded={fetchTasks}
                         trigger={
