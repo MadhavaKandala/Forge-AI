@@ -28,96 +28,142 @@ export const PROGRAM_TEMPLATES: ProgramTemplate[] = [
     {
         type: 'leetcode_75',
         name: 'LeetCode 75 Hard',
-        description: '75 Days of Code. One problem a day. No excuses.',
+        description: '75 Days of Code. Master 75 most important problems.',
         days: 75,
         icon: '💻',
         difficulty: 'advanced',
         category: 'learning',
         dailyRequirements: [
-            'Solve 1 LeetCode problem',
-            'No social media before 10 AM',
-            'Read 1 technical article'
+            'Complete 1 LeetCode problem',
+            'Document solution approach'
         ],
         totalXpPotential: 7500,
         phases: [
-            { name: 'Foundation', startDay: 1, endDay: 30, description: 'Arrays & Strings', xpPerDay: 80 },
-            { name: 'Intermediate', startDay: 31, endDay: 60, description: 'Trees & Graphs', xpPerDay: 100 },
-            { name: 'Advanced', startDay: 61, endDay: 75, description: 'DP & Hard Problems', xpPerDay: 150 }
+            { name: 'Fundamentals', startDay: 1, endDay: 20, description: 'Arrays & Strings (Easy)', xpPerDay: 75 },
+            { name: 'Data Structures', startDay: 21, endDay: 60, description: 'Linked Lists, Trees, Graphs (Medium)', xpPerDay: 100 },
+            { name: 'Optimization', startDay: 61, endDay: 75, description: 'DP & Hard Problems', xpPerDay: 150 }
+        ]
+    },
+    {
+        type: 'gym_progress',
+        name: 'Gym Progress',
+        description: '90-day physical transformation journey.',
+        days: 90,
+        icon: '💪',
+        difficulty: 'intermediate',
+        category: 'fitness',
+        dailyRequirements: [
+            'Complete assigned workout',
+            'Log sets, reps, weights',
+            'Rate form quality'
+        ],
+        totalXpPotential: 9000,
+        phases: [
+            { name: 'Foundation', startDay: 1, endDay: 30, description: 'PPL Split (4x/week)', xpPerDay: 80 },
+            { name: 'Hypertrophy', startDay: 31, endDay: 60, description: 'Upper/Lower (5x/week)', xpPerDay: 100 },
+            { name: 'Power', startDay: 61, endDay: 90, description: 'Arnold Split (6x/week)', xpPerDay: 120 }
+        ]
+    },
+    {
+        type: 'gita_journey',
+        name: 'Bhagavad Gita Journey',
+        description: 'Spiritual wisdom through daily reading.',
+        days: 60,
+        icon: '📚',
+        difficulty: 'beginner',
+        category: 'mental',
+        dailyRequirements: [
+            'Read assigned verses (20-30 min)',
+            'Write reflection (10-15 min)',
+            'One key learning to apply'
+        ],
+        totalXpPotential: 4200,
+        phases: [
+            { name: 'Foundation', startDay: 1, endDay: 15, description: 'Chapters 1-4', xpPerDay: 60 },
+            { name: 'Core', startDay: 16, endDay: 45, description: 'Chapters 5-12', xpPerDay: 70 },
+            { name: 'Advanced', startDay: 46, endDay: 60, description: 'Chapters 13-18', xpPerDay: 80 }
+        ]
+    },
+    {
+        type: 'nutrition_mastery',
+        name: 'Nutrition Mastery',
+        description: 'Master your diet and macro tracking.',
+        days: 45,
+        icon: '🍽️',
+        difficulty: 'beginner',
+        category: 'health',
+        dailyRequirements: [
+            'Log all meals',
+            'Hit macro goals (P/C/F)',
+            'Drink 8 glasses water'
+        ],
+        totalXpPotential: 2700,
+        phases: [
+            { name: 'Baseline', startDay: 1, endDay: 10, description: 'Track every meal', xpPerDay: 50 },
+            { name: 'Optimization', startDay: 11, endDay: 35, description: 'Hit macro targets', xpPerDay: 65 },
+            { name: 'Mastery', startDay: 36, endDay: 45, description: 'Maintain consistency', xpPerDay: 80 }
         ]
     },
     {
         type: 'academic_excellence',
         name: 'Academic Excellence',
-        description: 'Semester-long focus on studies and deep work.',
+        description: 'Semester-long focus on deep learning.',
         days: 120,
         icon: '🎓',
         difficulty: 'intermediate',
         category: 'learning',
         dailyRequirements: [
             'Attend all classes',
-            '2 hours self-study',
-            'Review daily notes'
+            'Study 2-3 hours',
+            'Complete practice problems',
+            'Review lecture notes'
         ],
-        totalXpPotential: 12000,
+        totalXpPotential: 10000,
+        phases: [
+            { name: 'Foundation', startDay: 1, endDay: 40, description: 'Syllabus coverage', xpPerDay: 70 },
+            { name: 'Consolidation', startDay: 41, endDay: 90, description: 'Deep learning', xpPerDay: 85 },
+            { name: 'Exam Prep', startDay: 91, endDay: 120, description: 'Mock tests', xpPerDay: 100 }
+        ]
     },
     {
-        type: 'gita_journey',
-        name: 'Gita Journey',
-        description: 'Spiritual wisdom through daily reading during commute.',
+        type: 'creative_skills',
+        name: 'Creative Skills (Video Editing)',
+        description: 'Master video editing in 60 days.',
         days: 60,
-        icon: '📚',
-        difficulty: 'beginner',
-        category: 'mental',
-        dailyRequirements: [
-            'Read 20-30 mins (Bus)',
-            'Brief reflection note'
-        ],
-        totalXpPotential: 2400,
-    },
-    {
-        type: 'mongodb_cert',
-        name: 'MongoDB Certified',
-        description: 'Become a certified MongoDB developer in 45 days.',
-        days: 45,
-        icon: '💼',
+        icon: '✂️',
         difficulty: 'intermediate',
-        category: 'learning',
+        category: 'productivity',
         dailyRequirements: [
-            'Complete 1 Course Module',
-            'Practice Exercises'
+            'Complete tutorial/lesson',
+            'Practice technique',
+            'Work on project'
         ],
-        totalXpPotential: 4500,
+        totalXpPotential: 3000,
+        phases: [
+            { name: 'Basics', startDay: 1, endDay: 20, description: 'Software & Tools', xpPerDay: 40 },
+            { name: 'Projects', startDay: 21, endDay: 50, description: 'Mini projects', xpPerDay: 55 },
+            { name: 'Capstone', startDay: 51, endDay: 60, description: 'Major project', xpPerDay: 75 }
+        ]
     },
     {
-        type: 'gym_dance_fitness',
-        name: 'Gym & Dance',
-        description: 'Physical mastery through consistent training.',
-        days: 90,
-        icon: '💪',
-        difficulty: 'intermediate',
-        category: 'fitness',
-        dailyRequirements: [
-            'Gym or Dance Session (2x/week)',
-            'Protein intake goal',
-            '8 Hours Sleep'
-        ],
-        totalXpPotential: 9000,
-    },
-    {
-        type: 'nutrition_tracking',
-        name: 'Nutrition 30',
-        description: 'Build the habit of tracking every meal.',
+        type: 'break_mastery',
+        name: 'Break Time Mastery',
+        description: 'Maintain healthy balance and guilt-free leisure.',
         days: 30,
-        icon: '🍽️',
+        icon: '🎮',
         difficulty: 'beginner',
-        category: 'health',
+        category: 'productivity',
         dailyRequirements: [
-            'Log Breakfast',
-            'Log Lunch',
-            'Log Dinner',
-            'Drink 4L Water'
+            'Designated break activities',
+            'Track break time (max 2h/day)',
+            'Try new hobby/activity'
         ],
-        totalXpPotential: 1500,
+        totalXpPotential: 1200,
+        phases: [
+            { name: 'Discovery', startDay: 1, endDay: 10, description: 'Explore interests', xpPerDay: 30 },
+            { name: 'Routine', startDay: 11, endDay: 20, description: 'Balance work/play', xpPerDay: 40 },
+            { name: 'Mastery', startDay: 21, endDay: 30, description: 'Guilt-free relaxation', xpPerDay: 50 }
+        ]
     }
 ];
 

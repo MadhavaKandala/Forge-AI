@@ -1,6 +1,6 @@
 export type TaskCategory = 'coding' | 'gym' | 'diet' | 'personal' | 'work' | 'other';
 export type TaskPriority = 'low' | 'medium' | 'high';
-export type TaskStatus = 'todo' | 'in_progress' | 'completed' | 'cancelled';
+export type TaskStatus = 'backlog' | 'this_week' | 'today' | 'in_progress' | 'completed' | 'cancelled';
 
 export interface Task {
     id: string;

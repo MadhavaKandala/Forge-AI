@@ -1,39 +1,33 @@
 import React from 'react';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, Award } from 'lucide-react';
 import { useHabitStore } from '@/store/useHabitStore';
+import { cn } from '@/lib/utils';
 
 export const DaySection = () => {
     const { user, habits } = useHabitStore();
 
-    // Calculate Streak based on highest habit streak (fix for "Day 46" hardcode)
+    // Calculate Streak based on highest habit streak
     const maxStreak = habits.length > 0 ? Math.max(...habits.map(h => h.streak)) : 0;
 
     return (
-        <div className="w-full px-6 mb-8 mt-6">
-            <h2 className="text-xl font-bold text-white mb-4">Today</h2>
-            <div className="flex gap-4">
+        <div className="w-full px-6 mb-6">
+            <div className="flex gap-3">
                 {/* Streak Card */}
-                <div className="flex-1 bg-[#dfff4f] rounded-3xl p-5 flex flex-col justify-between h-40 shadow-[0_0_20px_rgba(223,255,79,0.2)]">
-                    <div>
-                        <span className="text-4xl font-black text-black tracking-tight">{maxStreak}</span>
-                        <p className="text-black font-bold text-sm mt-1">Day streak</p>
+                <div className="flex-1 bg-primary rounded-2xl p-3 flex items-center justify-between shadow-lg shadow-primary/20">
+                    <div className="flex flex-col">
+                        <span className="text-2xl font-black text-primary-foreground leading-none">{maxStreak}</span>
+                        <p className="text-primary-foreground/70 font-bold text-[10px] uppercase tracking-tighter mt-0.5">Day Streak</p>
                     </div>
-                    <div className="flex items-center gap-1.5 text-black/70">
-                        <TrendingUp className="w-4 h-4" />
-                        <span className="text-xs font-bold font-mono">Personal best!</span>
-                    </div>
+                    <TrendingUp className="w-5 h-5 text-primary-foreground/40 shrink-0" />
                 </div>
 
                 {/* Points Card */}
-                <div className="flex-1 bg-[#18181B] border border-[#27272A] rounded-3xl p-5 flex flex-col justify-between h-40">
-                    <div>
-                        <span className="text-4xl font-black text-white tracking-tight">{user.xp}</span>
-                        <p className="text-zinc-400 font-bold text-sm mt-1">Points earned</p>
+                <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-2xl p-3 flex items-center justify-between shadow-inner">
+                    <div className="flex flex-col">
+                        <span className="text-2xl font-black text-white leading-none">{user.xp}</span>
+                        <p className="text-zinc-500 font-bold text-[10px] uppercase tracking-tighter mt-0.5">Total XP</p>
                     </div>
-                    <div className="flex items-center gap-1.5 text-[#dfff4f]">
-                        <TrendingUp className="w-4 h-4" />
-                        <span className="text-xs font-bold font-mono">Level {user.level}</span>
-                    </div>
+                    <Award className="w-5 h-5 text-primary/40 shrink-0" />
                 </div>
             </div>
         </div>

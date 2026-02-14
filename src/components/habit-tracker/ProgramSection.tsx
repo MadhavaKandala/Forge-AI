@@ -2,19 +2,20 @@ import React, { useEffect } from 'react';
 import { ArrowRight, Trophy, Zap, Sunrise, ChevronRight } from 'lucide-react';
 import { useProgramStore } from '../../store/useProgramStore';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 interface ProgramSectionProps {
     onSeeAll: () => void;
 }
 
 const gradientMap: Record<string, string> = {
-    'leetcode_75': 'from-purple-600 to-blue-600',
-    'gym_progress': 'from-red-600 to-orange-500',
-    'gita_journey': 'from-amber-500 to-yellow-600',
-    'nutrition_mastery': 'from-emerald-500 to-green-600',
-    'academic_excellence': 'from-blue-500 to-indigo-600',
-    'creative_skills': 'from-pink-500 to-rose-600',
-    'productivity_master': 'from-cyan-500 to-teal-600',
+    'leetcode_75': 'from-purple-600/20 to-blue-600/20',
+    'gym_progress': 'from-red-600/20 to-orange-500/20',
+    'gita_journey': 'from-amber-500/20 to-yellow-600/20',
+    'nutrition_mastery': 'from-emerald-500/20 to-green-600/20',
+    'academic_excellence': 'from-blue-500/20 to-indigo-600/20',
+    'creative_skills': 'from-pink-500/20 to-rose-600/20',
+    'productivity_master': 'from-cyan-500/20 to-teal-600/20',
 };
 
 export const ProgramSection = ({ onSeeAll }: ProgramSectionProps) => {
@@ -25,58 +26,39 @@ export const ProgramSection = ({ onSeeAll }: ProgramSectionProps) => {
         fetchActivePrograms();
     }, []);
 
-    // Fallback static programs if no active ones
     const fallbackPrograms = [
-        {
-            id: 'demo1',
-            name: "75 Hard",
-            description: "Mental Toughness",
-            icon: "🏆",
-            programType: 'leetcode_75',
-            completionPercentage: 0
-        },
-        {
-            id: 'demo2',
-            name: "Morning Routine",
-            description: "Start Strong",
-            icon: "🌅",
-            programType: 'morning_routine',
-            completionPercentage: 0
-        },
-        {
-            id: 'demo3',
-            name: "Productivity",
-            description: "Get Things Done",
-            icon: "⚡",
-            programType: 'productivity_master',
-            completionPercentage: 0
-        }
+        { id: 'demo1', name: "75 Hard", icon: "🏆", programType: 'leetcode_75', completionPercentage: 0 },
+        { id: 'demo2', name: "Morning", icon: "🌅", programType: 'morning_routine', completionPercentage: 0 },
+        { id: 'demo3', name: "Prod", icon: "⚡", programType: 'productivity_master', completionPercentage: 0 }
     ];
 
     const displayPrograms = activePrograms.length > 0 ? activePrograms : fallbackPrograms;
     const isFallback = activePrograms.length === 0;
 
     return (
-        <div className="w-full mb-8">
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-white">Active Programs</h2>
+        <div className="w-full mb-6">
+            <div className="flex items-center justify-between mb-3 px-6">
+                <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Live Programs</h2>
                 <button
                     onClick={onSeeAll}
-                    className="text-[#dfff4f] text-sm font-bold hover:underline"
+                    className="text-[#dfff4f] text-[10px] font-bold uppercase tracking-wider hover:underline"
                 >
-                    See all
+                    View All
                 </button>
             </div>
 
-            <div className="overflow-x-auto no-scrollbar pb-4 -mx-4 px-4">
-                <div className="flex gap-4 w-max">
-                    {displayPrograms.map((program, idx) => {
-                        const gradient = gradientMap[program.programType] || 'from-purple-600 to-blue-600';
+            <div className="overflow-x-auto no-scrollbar px-6">
+                <div className="flex gap-3 w-max">
+                    {displayPrograms.map((program) => {
+                        const gradient = gradientMap[program.programType] || 'from-purple-600/20 to-blue-600/20';
 
                         return (
                             <div
                                 key={program.id}
-                                className="w-[180px] h-[220px] p-4 bg-[#18181B] border border-[#27272A] rounded-2xl flex flex-col justify-between relative overflow-hidden group cursor-pointer active:scale-95 transition-all"
+                                className={cn(
+                                    "flex items-center gap-3 p-2 bg-[#18181B] border border-[#27272A] rounded-xl cursor-pointer active:scale-95 transition-all w-[140px]",
+                                    `bg-gradient-to-br ${gradient}`
+                                )}
                                 onClick={() => {
                                     if (isFallback) {
                                         onSeeAll();
@@ -85,35 +67,19 @@ export const ProgramSection = ({ onSeeAll }: ProgramSectionProps) => {
                                     }
                                 }}
                             >
-                                <div className={`absolute top-0 left-0 w-full h-24 bg-gradient-to-br ${gradient} opacity-80 z-0`}></div>
-
-                                <div className="relative z-10 mt-6">
-                                    <div className="w-12 h-12 rounded-xl bg-black/40 backdrop-blur-md flex items-center justify-center mb-3 text-2xl border border-white/10 shadow-lg">
-                                        {program.icon}
+                                <span className="text-xl shrink-0">{program.icon}</span>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="text-white font-bold text-xs truncate uppercase tracking-tighter">{program.name}</h3>
+                                    <div className="w-full bg-zinc-800 h-1 rounded-full mt-1 overflow-hidden">
+                                        <div
+                                            className="h-full bg-primary"
+                                            style={{ width: `${program.completionPercentage || 0}%` }}
+                                        />
                                     </div>
-
-                                    <h3 className="text-white font-bold text-lg leading-tight mb-1 line-clamp-2">{program.name}</h3>
-                                    <p className="text-zinc-400 text-xs line-clamp-1">{program.description || (program as any).category}</p>
-                                </div>
-
-                                <div className="relative z-10 mt-3 w-full bg-[#27272A] h-1.5 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full rounded-full bg-white transition-all duration-1000"
-                                        style={{ width: `${program.completionPercentage || 0}%` }}
-                                    ></div>
                                 </div>
                             </div>
                         );
                     })}
-
-                    <div
-                        className="w-[60px] h-[220px] flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={onSeeAll}
-                    >
-                        <div className="w-12 h-12 rounded-full border border-dashed border-zinc-700 flex items-center justify-center bg-[#18181B]">
-                            <ChevronRight className="text-zinc-500 w-5 h-5" />
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

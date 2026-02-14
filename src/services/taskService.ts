@@ -71,10 +71,14 @@ export const taskService = {
         const params = [];
         const now = new Date().toISOString();
 
-        if (updates.title !== undefined) { setClauses.push('title = ?'); params.push(updates.title); }
-        if (updates.status !== undefined) { setClauses.push('status = ?'); params.push(updates.status); }
-        if (updates.category !== undefined) { setClauses.push('category = ?'); params.push(updates.category); }
-        // Add other fields as needed
+        Object.entries(updates).forEach(([key, value]) => {
+            if (value !== undefined) {
+                // Map camelCase to snake_case for DB
+                const dbKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+                setClauses.push(`${dbKey} = ?`);
+                params.push(value);
+            }
+        });
 
         setClauses.push('updated_at = ?');
         params.push(now);
