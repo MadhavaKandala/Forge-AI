@@ -1,96 +1,82 @@
 import React, { useEffect, useState } from 'react';
-import { Task } from '../types/schema';
-import { useTaskStore } from '../store/useTaskStore';
-import { TaskList } from '../components/tasks/TaskList';
-import { AddTaskModal } from '../components/tasks/AddTaskModal';
-import { Button } from '../components/ui/button';
-import { Plus } from 'lucide-react';
-import { format } from 'date-fns';
-import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { TaskList } from '@/components/tasks/TaskList';
+import { AddTaskModal } from '@/components/tasks/AddTaskModal';
+import { taskService } from '@/services/taskService';
+import { Task, TaskCategory } from '@/types/task';
+import { Button } from '@/components/ui/button';
+import { Filter } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
-export const TasksPage: React.FC = () => {
-    const { tasks, fetchTasks, addTask, updateTask, deleteTask, isLoading } = useTaskStore();
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [selectedCategory, setSelectedCategory] = useState<string | 'all'>('all');
-    const [dateFilter, setDateFilter] = useState(new Date());
+const TasksPage = () => {
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [filter, setFilter] = useState<{ category?: TaskCategory | 'all' }>({ category: 'all' });
+
+    const fetchTasks = async () => {
+        setIsLoading(true);
+        try {
+            const fetchedTasks = await taskService.getTasks();
+            setTasks(fetchedTasks);
+        } catch (error) {
+            console.error("Failed to fetch tasks", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
-        // Fetch tasks on mount
         fetchTasks();
     }, []);
 
-    const handleCreateTask = async (taskData: Partial<Task>) => {
-        await addTask({
-            ...taskData,
-            user_id: 'default-user',
-            xp_value: 10,
-            difficulty_multiplier: 1.0,
-            has_subtasks: 0,
-            completed_subtasks: 0,
-            total_subtasks: 0
-        } as Omit<Task, 'id' | 'created_at' | 'updated_at'>);
-    };
-
-    const handleToggleTask = async (id: string, isCompleted: boolean) => {
-        const update = {
-            status: isCompleted ? 'completed' : 'todo',
-            completed_at: isCompleted ? new Date().toISOString() : undefined
-        };
-        await updateTask(id, update as Partial<Task>);
-    };
-
-    const handleEditTask = (task: Task) => {
-        // TODO: Implement Edit Modal
-        console.log("Edit task", task);
-    };
-
-    // Filter tasks based on UI state
-    // In future this filtering might happen at DB level via store selector or query
-    const filteredTasks = tasks.filter(task => {
-        if (selectedCategory !== 'all' && task.category !== selectedCategory) return false;
+    const filteredTasks = tasks.filter(t => {
+        if (filter.category && filter.category !== 'all' && t.category !== filter.category) return false;
         return true;
     });
 
-    const sortedTasks = [...filteredTasks].sort((a, b) => {
-        if (a.status === b.status) return 0;
-        if (a.status === 'in_progress') return -1;
-        if (a.status === 'completed') return 1;
-        return 0;
-    });
+    const categories: string[] = ['all', 'coding', 'gym', 'diet', 'personal', 'work'];
 
     return (
-        <div className="container mx-auto p-4 max-w-md pb-24">
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold">Tasks</h1>
-                    <p className="text-muted-foreground">{format(dateFilter, 'EEEE, MMM do')}</p>
-                </div>
-                <Button onClick={() => setIsAddModalOpen(true)} size="icon" className="rounded-full h-10 w-10">
-                    <Plus className="h-5 w-5" />
+        <div className="w-full h-full flex flex-col relative min-h-screen bg-background text-foreground">
+            {/* Header */}
+            <div className="p-4 flex items-center justify-between sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <h1 className="text-2xl font-bold">Tasks</h1>
+                <Button variant="ghost" size="icon">
+                    <Filter className="h-5 w-5" />
                 </Button>
             </div>
 
-            <Tabs defaultValue="all" className="w-full mb-4">
-                <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="all" onClick={() => setSelectedCategory('all')}>All</TabsTrigger>
-                    <TabsTrigger value="coding" onClick={() => setSelectedCategory('coding')}>Code</TabsTrigger>
-                    <TabsTrigger value="gym" onClick={() => setSelectedCategory('gym')}>Gym</TabsTrigger>
-                    <TabsTrigger value="personal" onClick={() => setSelectedCategory('personal')}>Life</TabsTrigger>
-                </TabsList>
-            </Tabs>
+            {/* Category Filter */}
+            <div className="px-4 pb-4">
+                <ScrollArea className="w-full whitespace-nowrap">
+                    <div className="flex w-max space-x-2 pb-2">
+                        {categories.map((cat) => (
+                            <Button
+                                key={cat}
+                                variant={filter.category === cat ? "secondary" : "outline"}
+                                size="sm"
+                                className="rounded-full capitalize"
+                                onClick={() => setFilter({ ...filter, category: cat as any })}
+                            >
+                                {cat}
+                            </Button>
+                        ))}
+                    </div>
+                </ScrollArea>
+            </div>
 
-            <TaskList
-                tasks={sortedTasks}
-                onToggle={handleToggleTask}
-                onEdit={handleEditTask}
-                isLoading={isLoading}
-            />
+            {/* Task List */}
+            <div className="flex-1 px-4">
+                <TaskList
+                    tasks={filteredTasks}
+                    isLoading={isLoading}
+                    onUpdate={fetchTasks}
+                />
+            </div>
 
-            <AddTaskModal
-                isOpen={isAddModalOpen}
-                onOpenChange={setIsAddModalOpen}
-                onSubmit={handleCreateTask}
-            />
+            {/* Floating Action Button */}
+            <div className="fixed bottom-24 right-4 z-50">
+                <AddTaskModal onTaskAdded={fetchTasks} />
+            </div>
         </div>
     );
 };

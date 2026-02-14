@@ -1,111 +1,67 @@
 import React, { useState } from 'react';
 import { Header } from '@/components/habit-tracker/Header';
-import { SearchBar } from '@/components/habit-tracker/SearchBar';
+import { WeekStrip } from '@/components/habit-tracker/WeekStrip';
 import { DaySection } from '@/components/habit-tracker/DaySection';
 import { HabitList } from '@/components/habit-tracker/HabitList';
-import { ProgramSection } from '@/components/habit-tracker/ProgramSection';
-import { BottomNav } from '@/components/habit-tracker/BottomNav';
 import { ScheduleSection } from '@/components/habit-tracker/ScheduleSection';
+import { BottomNav } from '@/components/habit-tracker/BottomNav';
 import { AnalyticsSection } from '@/components/habit-tracker/AnalyticsSection';
 import { CommunitySection } from '@/components/habit-tracker/CommunitySection';
 import { ProfileSection } from '@/components/habit-tracker/ProfileSection';
-import { WeekStrip } from '@/components/habit-tracker/WeekStrip';
-import { useHabitStore } from '@/store/useHabitStore';
-import TasksPage from './TasksPage';
-import ProgramsPage from './ProgramsPage';
+import { Search } from 'lucide-react';
+
+/* 
+ * ProgramSection is commented out as user hasn't asked for it to be restored explicitly 
+ * but it was in the original imports. 
+ * I will placeholder it if needed or omit for now if not part of user 'features'.
+ * Actually, user had 'program' tab. I will add a placeholder for it.
+ */
+
+const ProgramPlaceholder = () => (
+  <div className="w-full px-6 py-10 text-center text-zinc-500">
+    <h2 className="text-xl font-bold text-white mb-2">Programs</h2>
+    <p>Coming soon...</p>
+  </div>
+);
 
 const Index = () => {
-  const { getDailyProgress, selectedDate } = useHabitStore();
   const [activeTab, setActiveTab] = useState('hub');
 
-  const progress = getDailyProgress(selectedDate);
+  return (
+    <div className="min-h-screen bg-[#09090b] text-white pb-32 font-sans selection:bg-[#dfff4f] selection:text-black">
+      {/* Header always visible */}
+      <Header />
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'tasks':
-        return <TasksPage />;
-      case 'analytics':
-        return <AnalyticsSection />;
-      case 'programs':
-        return <ProgramsPage />;
-      case 'profile':
-        return <ProfileSection />;
-      case 'hub':
-      default:
-        return (
-          <div className="flex flex-col w-full animate-in fade-in duration-500">
-            <DaySection />
-            <div className="px-6 mb-2">
-              <h2 className="text-xl font-bold mb-4">Your Progress</h2>
-              <div className="w-full bg-[#18181B] rounded-2xl p-5 border border-[#27272A] flex items-center justify-between mb-8 transition-all hover:border-zinc-700">
-                <div className="flex flex-col">
-                  <span className="text-zinc-400 text-sm mb-1">Daily Goal</span>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-bold text-white transition-all duration-500">
-                      {progress}%
-                    </span>
-                    <span className="text-xs text-[#dfff4f]">+1% vs yesterday</span>
-                  </div>
-                  <button
-                    onClick={() => window.location.href = '/pomodoro'}
-                    className="mt-2 text-xs bg-[#dfff4f] text-black px-3 py-1 rounded-full font-bold hover:bg-[#ccee3e] transition-colors"
-                  >
-                    ▶ Start Focus
-                  </button>
-                </div>
-
-                {/* Progress Ring */}
-                <div className="relative w-16 h-16 flex items-center justify-center">
-                  {/* Background Circle */}
-                  <svg className="w-full h-full transform -rotate-90">
-                    <circle
-                      cx="32"
-                      cy="32"
-                      r="28"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      fill="transparent"
-                      className="text-zinc-800"
-                    />
-                    {/* Foreground Circle */}
-                    <circle
-                      cx="32"
-                      cy="32"
-                      r="28"
-                      stroke="#dfff4f"
-                      strokeWidth="4"
-                      fill="transparent"
-                      strokeDasharray={2 * Math.PI * 28}
-                      strokeDashoffset={2 * Math.PI * 28 * (1 - progress / 100)}
-                      className="transition-all duration-1000 ease-out"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <span className="absolute text-xs font-bold text-white">{progress}%</span>
-                </div>
+      {/* Main Content Area */}
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+        {activeTab === 'hub' && (
+          <>
+            {/* Search Bar - only on Hub */}
+            <div className="w-full px-6 mb-6">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <input
+                  type="text"
+                  placeholder="Search habits..."
+                  className="w-full bg-[#18181B] border border-[#27272A] rounded-2xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-[#dfff4f] transition-colors"
+                />
               </div>
             </div>
 
+            <WeekStrip />
+            <DaySection />
             <HabitList />
             <ScheduleSection />
-            <ProgramSection />
-          </div>
-        );
-    }
-  };
+          </>
+        )}
 
-  return (
-    <div className="min-h-screen bg-black text-white pb-24 max-w-md mx-auto md:border-x md:border-[#27272A] relative">
-      <Header />
-      {activeTab === 'hub' && (
-        <>
-          <SearchBar />
-          <WeekStrip />
-        </>
-      )}
+        {activeTab === 'analytics' && <AnalyticsSection />}
+        {activeTab === 'program' && <ProgramPlaceholder />}
+        {activeTab === 'community' && <CommunitySection />}
+        {activeTab === 'profile' && <ProfileSection />}
+      </div>
 
-      {renderContent()}
-
+      {/* Bottom Navigation */}
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );

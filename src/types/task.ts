@@ -33,12 +33,5 @@ export interface Task {
     updatedAt: string;
 }
 
-export interface CreateTaskDTO extends Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'actualMinutes' | 'completedAt' | 'externalLinks'> {
-    externalLinks?: string[];
-}
-
-export interface UpdateTaskDTO extends Partial<CreateTaskDTO> {
-    status?: TaskStatus;
-    actualMinutes?: number;
-    completedAt?: string;
-}
+export interface CreateTaskDTO extends Omit<Task, 'id' | 'createdAt' | 'updatedAt'> { }
+export interface UpdateTaskDTO extends Partial<Omit<Task, 'id' | 'createdAt' | 'updatedAt'>> { }

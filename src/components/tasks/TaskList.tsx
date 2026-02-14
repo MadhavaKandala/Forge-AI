@@ -1,41 +1,37 @@
 import React from 'react';
-import { Task } from '../../types/schema';
+import { Task } from '../../types/task';
 import { TaskItem } from './TaskItem';
-import { ScrollArea } from '../ui/scroll-area';
 
 interface TaskListProps {
     tasks: Task[];
-    onToggle: (id: string, isCompleted: boolean) => void;
-    onEdit: (task: Task) => void;
-    isLoading?: boolean;
+    isLoading: boolean;
+    onUpdate: () => void;
 }
 
-export const TaskList: React.FC<TaskListProps> = ({ tasks, onToggle, onEdit, isLoading }) => {
+export const TaskList: React.FC<TaskListProps> = ({ tasks, isLoading, onUpdate }) => {
     if (isLoading) {
         return <div className="p-4 text-center text-muted-foreground">Loading tasks...</div>;
     }
 
     if (tasks.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
-                <p>No tasks found.</p>
-                <p className="text-sm">Create a new task to get started!</p>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+                    <span className="text-2xl">📝</span>
+                </div>
+                <h3 className="font-semibold text-lg">No tasks yet</h3>
+                <p className="text-muted-foreground text-sm max-w-xs mt-1">
+                    Add a task to start tracking your productivity.
+                </p>
             </div>
         );
     }
 
     return (
-        <ScrollArea className="h-[calc(100vh-280px)]">
-            <div className="space-y-2 p-1">
-                {tasks.map((task) => (
-                    <TaskItem
-                        key={task.id}
-                        task={task}
-                        onToggle={onToggle}
-                        onEdit={onEdit}
-                    />
-                ))}
-            </div>
-        </ScrollArea>
+        <div className="space-y-3 pb-24">
+            {tasks.map((task) => (
+                <TaskItem key={task.id} task={task} onUpdate={onUpdate} />
+            ))}
+        </div>
     );
 };

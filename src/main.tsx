@@ -1,20 +1,25 @@
-import { createRoot } from "react-dom/client";
+import React from "react";
+import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import { dbService } from "./lib/db";
+import { dbService } from "./lib/db.ts";
 import schema from "./lib/schema.sql?raw";
 
-const initApp = async () => {
-    try {
-        await dbService.initializePlugin();
-        await dbService.openConnection();
-        await dbService.runMigrations(schema);
-        console.log("Database initialized and migrations run successfully");
-    } catch (err) {
-        console.error("Failed to initialize database:", err);
-    }
+// const init = async () => {
+//     try {
+//         await dbService.initializePlugin();
+//         await dbService.openConnection();
+//         await dbService.runMigrations(schema);
+//         console.log("Database initialized and migrations run");
+//     } catch (e) {
+//         console.error("Failed to initialize database", e);
+//     }
 
-    createRoot(document.getElementById("root")!).render(<App />);
-};
+ReactDOM.createRoot(document.getElementById("root")!).render(
+    <React.StrictMode>
+        <App />
+    </React.StrictMode>
+);
+// };
 
-initApp();
+// init();

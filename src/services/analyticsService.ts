@@ -4,7 +4,6 @@ import { format, startOfWeek, endOfWeek, subDays } from 'date-fns';
 export interface CategoryTimeData {
     category: string;
     totalMinutes: number;
-    color?: string;
 }
 
 export interface WeeklyActivityData {
@@ -16,39 +15,30 @@ export interface WeeklyActivityData {
 export const analyticsService = {
     async getTimeBreakdown(startDate: string, endDate: string): Promise<CategoryTimeData[]> {
         try {
-            // Aggregate Time by Category from Pomodoro Sessions
-            // We use the 'category' column directly from pomodoro_sessions
+            // Aggregate Pomodoro Sessions by Task Category
+            // Join pomodoro_sessions -> tasks
             const sql = `
-            SELECT category, SUM(duration_minutes) as total_minutes
-            FROM pomodoro_sessions
-            WHERE started_at BETWEEN ? AND ?
-              AND (was_completed = 1 OR duration_minutes > 0)
-            GROUP BY category
+            SELECT t.category, SUM(ps.duration_minutes) as total_minutes
+            FROM pomodoro_sessions ps
+            JOIN tasks t ON ps.task_id = t.id
+            WHERE ps.started_at BETWEEN ? AND ?
+            GROUP BY t.category
         `;
 
             const result = await dbService.query(sql, [startDate, endDate]);
 
-            // Map result
+            // Map result to simpler array
             const map: Record<string, number> = {};
             result.forEach(row => {
-                const cat = row.category || 'general';
-                const mins = row.total_minutes || 0;
-                map[cat] = (map[cat] || 0) + mins;
+                const cat = row.category || 'uncategorized';
+                map[cat] = (map[cat] || 0) + row.total_minutes;
             });
 
-            // Define colors for known categories
-            const categoryColors: Record<string, string> = {
-                coding: '#3b82f6', // blue
-                gym: '#ef4444', // red
-                reading: '#10b981', // green
-                meditation: '#8b5cf6', // purple
-                general: '#6b7280' // gray
-            };
+            // Also consider manual time logs if implemented (future)
 
             return Object.entries(map).map(([category, totalMinutes]) => ({
                 category,
-                totalMinutes,
-                color: categoryColors[category.toLowerCase()] || '#dfff4f'
+                totalMinutes
             })).sort((a, b) => b.totalMinutes - a.totalMinutes);
 
         } catch (error) {
@@ -63,7 +53,7 @@ export const analyticsService = {
             const sql = `
             SELECT SUM(estimated_minutes) as estimated, SUM(actual_minutes) as actual
             FROM tasks
-            WHERE status = 'completed' AND estimated_minutes IS NOT NULL AND actual_minutes IS NOT NULL
+            WHERE status = 'completed' AND estimated_minutes IS NOT NULL
           `;
             const result = await dbService.query(sql);
             if (result.length > 0) {

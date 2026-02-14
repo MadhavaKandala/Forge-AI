@@ -1,39 +1,50 @@
 import React, { useState } from 'react';
-import { Bell } from 'lucide-react';
-import { useUserStore } from '@/store/useUserStore';
+import { Bell, Search } from 'lucide-react'; // Search removed from header if SearchBar is separate
+// Actually, design shows Bell and Avatar in header usually
+import { useHabitStore } from '@/store/useHabitStore';
 import { NotificationsModal } from './NotificationsModal';
 
 export const Header = () => {
-    const { user } = useUserStore();
+    const { user } = useHabitStore();
     const [showNotifications, setShowNotifications] = useState(false);
 
-    // Dynamic Date
+    // Date formatting
     const today = new Date();
-    const dateOptions: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
-    const dateStr = today.toLocaleDateString('en-GB', dateOptions);
+    const dateStr = today.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 
     return (
         <>
-            <div className="flex items-center justify-between w-full h-[60px] px-6">
-                <div className="flex flex-col">
-                    <span className="text-zinc-400 text-sm font-medium">{dateStr}</span>
-                    <h1 className="text-2xl font-bold text-white">Hello, {user?.name || 'Guest'}</h1>
-                </div>
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => setShowNotifications(true)}
-                        className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center relative hover:bg-zinc-800 transition-colors"
-                    >
-                        <Bell className="w-5 h-5 text-white" />
-                        <div className="absolute top-2 right-2.5 w-2 h-2 bg-[#dfff4f] rounded-full"></div>
-                    </button>
-                    <div className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center overflow-hidden">
-                        <img src={user?.avatar_url || "https://github.com/shadcn.png"} alt="Profile" className="w-full h-full object-cover" />
+            <div className="w-full px-6 pt-6 pb-2 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <div className="w-10 h-10 rounded-full overflow-hidden border border-zinc-700">
+                            <img
+                                src={user.avatarUrl || "https://github.com/shadcn.png"}
+                                alt="User"
+                                className="w-full h-full object-cover"
+                            />
+                        </div>
+                        {/* Status Indicator */}
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#18181B] rounded-full flex items-center justify-center">
+                            <div className="w-2.5 h-2.5 bg-[#dfff4f] rounded-full"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 className="text-sm font-bold text-zinc-400">Good Morning,</h2>
+                        <h1 className="text-lg font-black text-white">{user.name}</h1>
                     </div>
                 </div>
+
+                <button
+                    onClick={() => setShowNotifications(true)}
+                    className="w-10 h-10 rounded-full bg-[#18181B] border border-[#27272A] flex items-center justify-center text-white hover:bg-[#27272A] transition-colors relative"
+                >
+                    <Bell className="w-5 h-5" />
+                    <div className="absolute top-2 right-2.5 w-2 h-2 bg-[#dfff4f] rounded-full animate-pulse"></div>
+                </button>
             </div>
 
-            <NotificationsModal open={showNotifications} onOpenChange={setShowNotifications} />
+            <NotificationsModal isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
         </>
     );
 };

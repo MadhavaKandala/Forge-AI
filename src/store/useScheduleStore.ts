@@ -39,10 +39,10 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
             const dateStr = date.toISOString().split('T')[0];
 
             // 1. Fetch from Schedules table
-            const explicitSchedules = await scheduleRepository.findByDate('default-user', dateStr);
+            const explicitSchedules = (await scheduleRepository.findByDate('default-user', dateStr)) || [];
 
             // 2. Fetch Tasks scheduled for this date
-            const scheduledTasks = await taskRepository.findByScheduledDate(dateStr);
+            const scheduledTasks = (await taskRepository.findByScheduledDate(dateStr)) || [];
 
             // Enrich Explicit Schedules
             const enrichedExplicit = await Promise.all(explicitSchedules.map(async (s) => {
@@ -85,8 +85,16 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
                 estimated_duration_minutes: t.estimated_minutes
             }));
 
+            // AGGRESSIVE SAFETY CHECK
+            // Ensure inputs to spread are arrays
+            const safeExplicit = Array.isArray(enrichedExplicit) ? enrichedExplicit : [];
+            const safeTasks = Array.isArray(enrichedTasks) ? enrichedTasks : [];
+
+            if (!Array.isArray(enrichedExplicit)) console.error("CRITICAL: enrichedExplicit is not array:", enrichedExplicit);
+            if (!Array.isArray(enrichedTasks)) console.error("CRITICAL: enrichedTasks is not array:", enrichedTasks);
+
             // Combine and Sort
-            const allSchedules = [...enrichedExplicit, ...enrichedTasks].sort((a, b) => {
+            const allSchedules = [...safeExplicit, ...safeTasks].sort((a, b) => {
                 const timeA = a.scheduled_time || '00:00';
                 const timeB = b.scheduled_time || '00:00';
                 return timeA.localeCompare(timeB);
@@ -94,7 +102,8 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
 
             set({ schedules: allSchedules });
         } catch (error) {
-            set({ error: (error as Error).message });
+            console.error("Error fetching schedules:", error);
+            set({ error: (error as Error).message, schedules: [] }); // Reset to empty array on error
         } finally {
             set({ isLoading: false });
         }

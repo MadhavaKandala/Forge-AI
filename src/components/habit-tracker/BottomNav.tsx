@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Compass, MessageCircle, User, BarChart, CheckSquare, Trophy } from 'lucide-react';
+import { Home, BarChart2, Users, User, LayoutGrid } from 'lucide-react';
 
 interface BottomNavProps {
     activeTab: string;
@@ -7,38 +7,34 @@ interface BottomNavProps {
 }
 
 export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
-
     const navItems = [
-        { id: 'hub', label: 'Hub', icon: Home },
-        { id: 'tasks', label: 'Tasks', icon: CheckSquare },
-        { id: 'analytics', label: 'Analytics', icon: BarChart },
-        { id: 'programs', label: 'Programs', icon: Trophy },
-        { id: 'profile', label: 'Profile', icon: User },
+        { id: 'hub', icon: Home, label: 'Hub' },
+        { id: 'analytics', icon: BarChart2, label: 'Stats' },
+        { id: 'program', icon: LayoutGrid, label: 'Program' },
+        { id: 'community', icon: Users, label: 'Social' },
+        { id: 'profile', icon: User, label: 'Profile' },
     ];
 
     return (
-        <div className="fixed bottom-0 left-0 w-full bg-black/80 backdrop-blur-xl border-t border-[#27272A] px-6 py-4 pb-8 z-50">
-            <div className="flex items-center justify-between max-w-md mx-auto">
-                {navItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = activeTab === item.id;
-
-                    return (
-                        <button
-                            key={item.id}
-                            onClick={() => onTabChange(item.id)}
-                            className="flex flex-col items-center gap-1.5 w-16"
-                        >
-                            <div className={`transition-all duration-300 ${isActive ? 'text-[#dfff4f] -translate-y-1' : 'text-zinc-500'}`}>
-                                <Icon className="w-6 h-6" fill={isActive ? "currentColor" : "none"} strokeWidth={isActive ? 0 : 2} />
-                            </div>
-                            {isActive && (
-                                <span className="w-1 h-1 rounded-full bg-[#dfff4f] animate-in zoom-in"></span>
-                            )}
-                        </button>
-                    );
-                })}
-            </div>
+        <div className="fixed bottom-0 left-0 w-full bg-[#09090b]/90 backdrop-blur-lg border-t border-[#27272A] px-6 py-4 flex items-center justify-between z-40 pb-safe">
+            {navItems.map((item) => (
+                <button
+                    key={item.id}
+                    onClick={() => onTabChange(item.id)}
+                    className="group flex flex-col items-center gap-1 relative"
+                >
+                    <div className={`p-2 rounded-xl transition-all duration-300 ${activeTab === item.id
+                        ? 'bg-[#dfff4f] text-black translate-y-[-4px] shadow-[0_4px_12px_rgba(223,255,79,0.3)]'
+                        : 'text-zinc-500 hover:text-zinc-300'
+                        }`}>
+                        <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'stroke-[2.5]' : 'stroke-2'}`} />
+                    </div>
+                    {/* Active Dot */}
+                    {activeTab === item.id && (
+                        <div className="absolute -bottom-2 w-1 h-1 rounded-full bg-[#dfff4f]"></div>
+                    )}
+                </button>
+            ))}
         </div>
     );
 };

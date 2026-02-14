@@ -193,21 +193,46 @@ export interface CategoryTimeStats {
 
 export interface Program {
     id: string;
-    user_id: string;
     name: string;
-    description?: string;
-    program_type?: string;
+    description: string;
+    programType: string;
+    totalDays: number;
+    currentDay: number;
+    status: 'active' | 'completed' | 'paused' | 'failed' | 'not_started';
+    startedAt?: string;
+    completedAt?: string;
+    category?: string;
+    difficulty?: string;
+    dailyRequirements?: string[];
+    phases?: {
+        name: string;
+        startDay: number;
+        endDay: number;
+        description: string;
+        xpPerDay: number;
+    }[];
+    totalXpPotential: number;
+    xpEarned?: number;
+    completionPercentage?: number;
+    daysMissed?: number;
     icon?: string;
-    color?: string;
-    total_days: number;
-    current_day: number;
-    status: 'active' | 'completed' | 'paused' | 'failed';
-    start_date: string;
-    end_date?: string;
-    completed_at?: string;
-    habit_ids?: string; // JSON
-    task_ids?: string; // JSON
-    daily_requirements?: string; // JSON
-    created_at: string;
-    updated_at: string;
+}
+
+export interface ProgramDay {
+    id: string;
+    programId: string;
+    dayNumber: number;
+    isCompleted: boolean;
+    completedAt?: string;
+    notes?: string;
+    dailyXp: number;
+}
+
+export interface ProgramMilestone {
+    id: string;
+    programId: string;
+    milestoneName: string;
+    dayNumber: number;
+    isCompleted: boolean;
+    xpReward: number;
 }

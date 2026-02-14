@@ -37,8 +37,6 @@ export const CommunitySection = () => {
                 </div>
             </div>
 
-            {/* Top 3 Podium Mockup (Optional - Simplified list for now) */}
-
             <div className="flex flex-col gap-3">
                 {sortedLeaderboard.map((player) => (
                     <div

@@ -1,213 +1,333 @@
 import { create } from 'zustand';
-import { Habit, HabitCompletion } from '../types/schema';
-import { habitRepository } from '../repositories/habit.repository';
-import { v4 as uuidv4 } from 'uuid';
-import { dbService } from '../lib/db';
+import { persist } from 'zustand/middleware';
 
-// Extended Habit type for UI
-export interface HabitWithCompletion extends Habit {
-    completedDates: string[]; // YYYY-MM-DD
-    history: Record<string, number>; // Date -> Value (for numeric/timer)
+export type HabitType = 'checkbox' | 'numeric' | 'timer';
+
+export interface Habit {
+    id: string;
+    title: string;
+    time: string;
+    streak: number;
+    completedDates: string[]; // ISO date strings YYYY-MM-DD
+    type: HabitType;
+    goal?: number;
+    unit?: string;
+    // Map date string to value (e.g., "2024-02-09": 50)
+    history: Record<string, number>;
+}
+
+interface User {
+    name: string;
+    level: number;
+    xp: number;
+    avatarUrl?: string;
+    notificationsEnabled?: boolean;
+}
+
+export interface ScheduleItem {
+    id: string;
+    title: string;
+    time: string;
+    duration?: string;
+    tag?: string;
+    color: string;
+    period: 'today' | 'week' | 'month';
 }
 
 interface HabitState {
-    habits: HabitWithCompletion[];
-    isLoading: boolean;
-    error: string | null;
+    user: User;
+    habits: Habit[];
+    schedule: ScheduleItem[];
     selectedDate: Date;
 
     // Actions
-    fetchHabits: () => Promise<void>;
-    addHabit: (habit: Omit<Habit, 'id' | 'created_at' | 'updated_at' | 'user_id' | 'current_streak' | 'longest_streak' | 'total_completions' | 'is_active' | 'is_paused' | 'is_archived' | 'xp_value'>) => Promise<void>;
-    toggleHabit: (habitId: string, date: Date) => Promise<void>;
-    updateHabitValue: (habitId: string, date: Date, value: number) => Promise<void>;
+    toggleHabit: (habitId: string, date: Date) => void;
+    updateHabitValue: (habitId: string, date: Date, value: number) => void;
     setSelectedDate: (date: Date) => void;
-    deleteHabit: (id: string) => Promise<void>;
+    addHabit: (habit: Omit<Habit, 'id' | 'streak' | 'completedDates' | 'history'>) => void;
+    addScheduleItem: (item: Omit<ScheduleItem, 'id'>) => void;
+    removeScheduleItem: (id: string) => void;
+    updateUser: (updates: Partial<User>) => void;
+    resetData: () => void;
 
     // Selectors
     getDailyProgress: (date: Date) => number;
+    syncDate: () => void;
 }
 
-export const useHabitStore = create<HabitState>((set, get) => ({
-    habits: [],
-    isLoading: false,
-    error: null,
-    selectedDate: new Date(),
+// Helper to format date as YYYY-MM-DD
+const formatDate = (date: Date): string => {
+    return date.toISOString().split('T')[0];
+};
 
-    fetchHabits: async () => {
-        set({ isLoading: true });
-        try {
-            const habits = await habitRepository.findByUserId('default-user');
+export const useHabitStore = create<HabitState>()(
+    persist(
+        (set, get) => ({
+            user: {
+                name: 'Madhava',
+                level: 1,
+                xp: 0,
+                avatarUrl: 'https://github.com/shadcn.png',
+                notificationsEnabled: true
+            },
+            selectedDate: new Date(),
+            habits: [
+                {
+                    id: '1',
+                    title: 'Morning meditation',
+                    time: '10 min',
+                    streak: 0,
+                    completedDates: [],
+                    type: 'checkbox',
+                    history: {}
+                },
+                {
+                    id: '2',
+                    title: 'Drink 4L of water',
+                    time: 'All Day',
+                    streak: 0,
+                    completedDates: [],
+                    type: 'numeric',
+                    goal: 4000,
+                    unit: 'ml',
+                    history: {}
+                },
+                {
+                    id: '3',
+                    title: 'Deep Work',
+                    time: 'Anytime',
+                    streak: 0,
+                    completedDates: [],
+                    type: 'timer',
+                    goal: 240, // 4 hours
+                    unit: 'mins',
+                    history: {}
+                },
+                {
+                    id: '4',
+                    title: 'Read 20 pages',
+                    time: 'Evening',
+                    streak: 0,
+                    completedDates: [],
+                    type: 'checkbox',
+                    goal: 20,
+                    unit: 'pages',
+                    history: {}
+                }
+            ],
 
-            const enrichedHabits = await Promise.all(habits.map(async (h) => {
-                const completions = await habitRepository.getCompletions(h.id);
-                const completedDates = completions.map(c => c.completion_date);
-                const history: Record<string, number> = {};
-                completions.forEach(c => {
-                    history[c.completion_date] = c.counter_value || c.duration_minutes || c.progress_value || 1;
+            schedule: [
+                {
+                    id: '1',
+                    title: 'Morning Run',
+                    time: '7:00 AM',
+                    duration: '45 min',
+                    tag: 'Fitness',
+                    color: '#dfff4f', // Neon Lime
+                    period: 'today'
+                },
+                {
+                    id: '2',
+                    title: 'Reading Time',
+                    time: '8:00 PM',
+                    duration: '30 min',
+                    tag: 'Self-care',
+                    color: '#f97316', // Orange
+                    period: 'today'
+                },
+                {
+                    id: '3',
+                    title: 'Weekly Review',
+                    time: 'Sunday 6:00 PM',
+                    duration: '1 hr',
+                    tag: 'Planning',
+                    color: '#7c3aed', // Violet
+                    period: 'week'
+                },
+                {
+                    id: '4',
+                    title: 'Dentist Appointment',
+                    time: 'Oct 24, 10:00 AM',
+                    duration: '1 hr',
+                    tag: 'Health',
+                    color: '#3b82f6', // Blue
+                    period: 'month'
+                }
+            ],
+
+            addScheduleItem: (item) => set((state) => ({
+                schedule: [...state.schedule, { ...item, id: Math.random().toString(36).substr(2, 9) }]
+            })),
+
+            removeScheduleItem: (id) => set((state) => ({
+                schedule: state.schedule.filter((i) => i.id !== id)
+            })),
+
+            setSelectedDate: (date: Date) => set({ selectedDate: date }),
+
+            addHabit: (newHabit) => set((state) => ({
+                habits: [
+                    ...state.habits,
+                    {
+                        ...newHabit,
+                        id: Math.random().toString(36).substr(2, 9),
+                        streak: 0,
+                        completedDates: [],
+                        history: {}
+                    }
+                ]
+            })),
+
+            toggleHabit: (habitId, date) => set((state) => {
+                const dateStr = formatDate(date);
+
+                return {
+                    habits: state.habits.map((h) => {
+                        if (h.id !== habitId) return h;
+
+                        const isCompleted = h.completedDates.includes(dateStr);
+                        let newCompletedDates = [...h.completedDates];
+                        let newStreak = h.streak;
+
+                        if (isCompleted) {
+                            // Untoggle
+                            newCompletedDates = newCompletedDates.filter(d => d !== dateStr);
+                            if (formatDate(new Date()) === dateStr) {
+                                newStreak = Math.max(0, newStreak - 1);
+                            }
+                        } else {
+                            // Toggle ON
+                            newCompletedDates.push(dateStr);
+                            if (formatDate(new Date()) === dateStr) {
+                                newStreak += 1;
+                            }
+                        }
+
+                        return {
+                            ...h,
+                            completedDates: newCompletedDates,
+                            streak: newStreak
+                        };
+                    })
+                };
+            }),
+
+            updateHabitValue: (habitId, date, value) => set((state) => {
+                const dateStr = formatDate(date);
+                const isToday = formatDate(new Date()) === dateStr;
+                let xpGained = 0;
+
+                const newHabits = state.habits.map((h) => {
+                    if (h.id !== habitId) return h;
+
+                    const newHistory = { ...h.history, [dateStr]: value };
+
+                    // Check if goal met
+                    const isGoalMet = h.goal ? value >= h.goal : false;
+                    let newCompletedDates = [...h.completedDates];
+                    let newStreak = h.streak;
+
+                    const wasCompleted = h.completedDates.includes(dateStr);
+
+                    if (isGoalMet && !wasCompleted) {
+                        newCompletedDates.push(dateStr);
+                        if (isToday) {
+                            newStreak += 1;
+                            xpGained = 10;
+                        }
+                    } else if (!isGoalMet && wasCompleted) {
+                        newCompletedDates = newCompletedDates.filter(d => d !== dateStr);
+                        if (isToday) {
+                            newStreak = Math.max(0, newStreak - 1);
+                            xpGained = -10;
+                        }
+                    }
+
+                    return {
+                        ...h,
+                        history: newHistory,
+                        completedDates: newCompletedDates,
+                        streak: newStreak
+                    };
                 });
 
                 return {
-                    ...h,
-                    completedDates,
-                    history
-                };
-            }));
-
-            set({ habits: enrichedHabits });
-        } catch (error) {
-            set({ error: (error as Error).message });
-        } finally {
-            set({ isLoading: false });
-        }
-    },
-
-    addHabit: async (habitData) => {
-        try {
-            const newHabit: Habit = {
-                ...habitData,
-                id: uuidv4(),
-                user_id: 'default-user',
-                current_streak: 0,
-                longest_streak: 0,
-                total_completions: 0,
-                is_active: 1,
-                is_paused: 0,
-                is_archived: 0,
-                xp_value: 10, // Default
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            } as Habit;
-
-            await habitRepository.create(newHabit);
-
-            const habitWithCompletion: HabitWithCompletion = { ...newHabit, completedDates: [], history: {} };
-            set((state) => ({ habits: [...state.habits, habitWithCompletion] }));
-        } catch (error) {
-            set({ error: (error as Error).message });
-        }
-    },
-
-    toggleHabit: async (habitId, date) => {
-        const dateStr = date.toISOString().split('T')[0];
-        const { habits } = get();
-        const habitIndex = habits.findIndex(h => h.id === habitId);
-        if (habitIndex === -1) return;
-
-        const habit = habits[habitIndex];
-        const isCompleted = habit.completedDates.includes(dateStr);
-
-        try {
-            if (isCompleted) {
-                await habitRepository.removeCompletion(habitId, dateStr);
-            } else {
-                const completion: Partial<HabitCompletion> = {
-                    id: uuidv4(),
-                    habit_id: habitId,
-                    user_id: 'default-user',
-                    completion_date: dateStr,
-                    xp_earned: habit.xp_value,
-                    completed_at: new Date().toISOString()
-                };
-                await habitRepository.addCompletion(completion);
-            }
-
-            // Sync local state
-            const newCompletedDates = isCompleted
-                ? habit.completedDates.filter(d => d !== dateStr)
-                : [...habit.completedDates, dateStr];
-
-            set((state) => ({
-                habits: state.habits.map(h =>
-                    h.id === habitId ? { ...h, completedDates: newCompletedDates } : h
-                )
-            }));
-
-        } catch (error) {
-            set({ error: (error as Error).message });
-        }
-    },
-
-    updateHabitValue: async (habitId, date, value) => {
-        const dateStr = date.toISOString().split('T')[0];
-        const { habits } = get();
-        const habit = habits.find(h => h.id === habitId);
-        if (!habit) return;
-
-        try {
-            // Check if completion exists
-            const existingCompletion = await habitRepository.getCompletionByDate(habitId, dateStr);
-
-            if (existingCompletion) {
-                // Update
-                const setClause = habit.habit_type === 'counter' ? 'counter_value = ?' :
-                    habit.habit_type === 'duration' ? 'duration_minutes = ?' : 'progress_value = ?';
-                const query = `UPDATE habit_completions SET ${setClause} WHERE id = ?`;
-                await dbService.run(query, [value, existingCompletion.id]);
-
-            } else {
-                // Create
-                const completion: Partial<HabitCompletion> = {
-                    id: uuidv4(),
-                    habit_id: habitId,
-                    user_id: 'default-user',
-                    completion_date: dateStr,
-                    xp_earned: habit.xp_value,
-                    completed_at: new Date().toISOString()
-                };
-                if (habit.habit_type === 'counter') completion.counter_value = value;
-                else if (habit.habit_type === 'duration') completion.duration_minutes = value;
-                else if (habit.habit_type === 'progress') completion.progress_value = value;
-
-                await habitRepository.addCompletion(completion);
-            }
-
-            // Update local state
-            set((state) => ({
-                habits: state.habits.map(h => {
-                    if (h.id === habitId) {
-                        const newHistory = { ...h.history, [dateStr]: value };
-
-                        let goal = 0;
-                        if (habit.habit_type === 'counter') goal = habit.counter_goal || 0;
-                        else if (habit.habit_type === 'duration') goal = habit.duration_goal_minutes || 0;
-                        else if (habit.habit_type === 'progress') goal = habit.progress_goal || 0;
-
-                        const isGoalMet = value >= goal;
-                        let newCompletedDates = [...h.completedDates];
-                        if (isGoalMet && !newCompletedDates.includes(dateStr)) {
-                            newCompletedDates.push(dateStr);
-                        } else if (!isGoalMet && newCompletedDates.includes(dateStr)) {
-                            newCompletedDates = newCompletedDates.filter(d => d !== dateStr);
-                        }
-
-                        return { ...h, history: newHistory, completedDates: newCompletedDates };
+                    habits: newHabits,
+                    user: {
+                        ...state.user,
+                        xp: state.user.xp + xpGained
                     }
-                    return h;
-                })
-            }));
+                };
+            }),
 
-        } catch (error) {
-            set({ error: (error as Error).message });
+            getDailyProgress: (date) => {
+                const { habits } = get();
+                if (habits.length === 0) return 0;
+
+                const dateStr = formatDate(date);
+                // Simple calculation: count of completed habits
+                // Advanced: could sum up % of each habit (e.g. 50% of water + 100% of yoga)
+                // For now, let's keep it binary (completed or not) for the main ring
+                const completedCount = habits.filter(h => h.completedDates.includes(dateStr)).length;
+                return Math.round((completedCount / habits.length) * 100);
+            },
+
+            syncDate: () => {
+                const { selectedDate } = get();
+                const today = new Date();
+                if (formatDate(selectedDate) !== formatDate(today)) {
+                    set({ selectedDate: today });
+                }
+            },
+
+            updateUser: (updates) => set((state) => ({
+                user: { ...state.user, ...updates }
+            })),
+
+            resetData: () => set({
+                user: {
+                    name: 'Madhava',
+                    level: 1,
+                    xp: 0,
+                    avatarUrl: 'https://github.com/shadcn.png',
+                    notificationsEnabled: true
+                },
+                habits: [], // Or reset to defaults
+                schedule: [],
+                selectedDate: new Date()
+            }),
+        }),
+        {
+            name: 'habit-tracker-storage',
+            version: 3, // Force reset to clear sticky "46" streak
+            migrate: (persistedState, version) => {
+                // If coming from v2 or lower, simple return might preserve old habits.
+                // We want to RESET habits if they have bad data.
+                // But we want to keep User name "Madhava".
+
+                // Let's just return the initial state for habits to be safe, 
+                // but keep the user info if possible. 
+                // Actually, just returning State as is might not trigger reset unless we explicit set it.
+                // Since "migrate" returns the new state, let's reset habits here.
+
+                const oldState = persistedState as HabitState;
+                return {
+                    ...oldState,
+                    user: {
+                        ...oldState.user,
+                        name: 'Madhava',
+                        level: 1,
+                        xp: 0
+                    },
+                    habits: oldState.habits.map(h => ({ ...h, streak: 0, completedDates: [], history: {} })),
+                    schedule: []
+                };
+            },
+            partialize: (state) => ({
+                user: state.user,
+                habits: state.habits,
+                schedule: state.schedule
+            }),
         }
-    },
-
-    deleteHabit: async (id) => {
-        try {
-            await habitRepository.delete(id);
-            set((state) => ({ habits: state.habits.filter(h => h.id !== id) }));
-        } catch (error) {
-            set({ error: (error as Error).message });
-        }
-    },
-
-    setSelectedDate: (date) => set({ selectedDate: date }),
-
-    getDailyProgress: (date) => {
-        const { habits } = get();
-        if (habits.length === 0) return 0;
-        const dateStr = date.toISOString().split('T')[0];
-        const completedCount = habits.filter(h => h.completedDates.includes(dateStr)).length;
-        return Math.round((completedCount / habits.length) * 100);
-    }
-}));
+    )
+);

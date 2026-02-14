@@ -1,63 +1,76 @@
 import React from 'react';
-import { X, Bell, Calendar, Clock } from 'lucide-react';
+import { Bell, X, Calendar } from 'lucide-react';
 import { useHabitStore } from '@/store/useHabitStore';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { format } from 'date-fns';
 
 interface NotificationsModalProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
+    isOpen: boolean;
+    onClose: () => void;
 }
 
-export const NotificationsModal = ({ open, onOpenChange }: NotificationsModalProps) => {
+export const NotificationsModal: React.FC<NotificationsModalProps> = ({ isOpen, onClose }) => {
     const { schedule } = useHabitStore();
 
-    // Sort by time (simple string sort for now, ideally parse dates)
-    const sortedSchedule = [...schedule].sort((a, b) => a.time.localeCompare(b.time));
+    if (!isOpen) return null;
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-[#18181B] border-[#27272A] text-white max-w-md w-[90%] rounded-2xl">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-                        <Bell className="w-5 h-5 text-[#dfff4f]" />
-                        Upcoming Reminders
-                    </DialogTitle>
-                </DialogHeader>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-sm bg-[#18181B] border border-[#27272A] rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#dfff4f]/10 flex items-center justify-center text-[#dfff4f]">
+                            <Bell className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-white">Notifications</h2>
+                            <p className="text-xs text-zinc-400">Your scheduled reminders</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-[#27272A] rounded-full text-zinc-400 transition-colors"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
 
-                <div className="flex flex-col gap-3 mt-4 max-h-[60vh] overflow-y-auto pr-2">
-                    {sortedSchedule.length === 0 ? (
+                <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                    {schedule.length === 0 ? (
                         <div className="text-center py-8 text-zinc-500">
-                            <Calendar className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                            <p>No reminders scheduled.</p>
+                            <Bell className="w-8 h-8 mx-auto mb-3 opacity-20" />
+                            <p className="text-sm">No scheduled reminders yet</p>
                         </div>
                     ) : (
-                        sortedSchedule.map((item) => (
-                            <div key={item.id} className="flex items-start gap-4 p-4 rounded-xl bg-black/40 border border-[#27272A] hover:border-zinc-700 transition-colors">
-                                <div className="w-1 h-12 rounded-full" style={{ backgroundColor: item.color }}></div>
+                        schedule.map((item) => (
+                            <div key={item.id} className="bg-[#27272A]/50 rounded-xl p-4 border border-[#27272A] flex items-start gap-3">
+                                <div className="mt-1">
+                                    <Calendar className="w-4 h-4 text-[#dfff4f]" />
+                                </div>
                                 <div className="flex-1">
-                                    <div className="flex justify-between items-start">
-                                        <h4 className="font-bold text-base">{item.title}</h4>
-                                        <span className="text-xs font-mono text-[#dfff4f] bg-[#dfff4f]/10 px-2 py-0.5 rounded">
-                                            {item.time}
+                                    <h4 className="text-sm font-bold text-white">{item.title}</h4>
+                                    <p className="text-xs text-zinc-400 mt-0.5">{item.time}</p>
+                                    <div className="flex gap-2 mt-2">
+                                        <span
+                                            className="text-[10px] px-2 py-0.5 rounded-full bg-black/40 border border-[#dfff4f]/20 text-zinc-300"
+                                        >
+                                            {item.tag || 'General'}
                                         </span>
-                                    </div>
-                                    <div className="flex items-center gap-3 mt-2 text-zinc-400 text-xs">
-                                        <div className="flex items-center gap-1">
-                                            <Clock className="w-3 h-3" />
-                                            <span>{item.duration}</span>
-                                        </div>
-                                        {item.period === 'today' && (
-                                            <span className="text-[10px] uppercase border border-zinc-800 px-1.5 rounded text-zinc-500">
-                                                Today
-                                            </span>
-                                        )}
                                     </div>
                                 </div>
                             </div>
                         ))
                     )}
                 </div>
-            </DialogContent>
-        </Dialog>
+
+                <div className="mt-6 pt-4 border-t border-[#27272A]">
+                    <button
+                        onClick={onClose}
+                        className="w-full py-3 bg-[#dfff4f] text-black font-bold rounded-xl text-sm hover:opacity-90 transition-opacity"
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 };

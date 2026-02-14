@@ -10,18 +10,12 @@ export const TimerInput = ({ value, onChange }: TimerInputProps) => {
     const [isRunning, setIsRunning] = useState(false);
     const [seconds, setSeconds] = useState(value * 60);
 
-    const onChangeRef = React.useRef(onChange);
-
-    useEffect(() => {
-        onChangeRef.current = onChange;
-    }, [onChange]);
-
     useEffect(() => {
         // Sync local state if external value changes significantly (e.g. date change)
         if (!isRunning && Math.abs(seconds - value * 60) > 60) {
             setSeconds(value * 60);
         }
-    }, [value, isRunning]); // Removed seconds to avoid loop
+    }, [value]);
 
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -29,15 +23,23 @@ export const TimerInput = ({ value, onChange }: TimerInputProps) => {
             interval = setInterval(() => {
                 setSeconds((s) => {
                     const newSeconds = s + 1;
-                    if (newSeconds % 10 === 0) {
-                        onChangeRef.current(Math.floor(newSeconds / 60));
-                    }
+                    // Save every minute (approx) to avoid too many writes? 
+                    // Or just save on pause. Let's save every 10s for safety?
+                    // Actually, parent onChange is likely expensive (store update). 
+                    // Let's update parent only on pause or stop, or periodically.
                     return newSeconds;
                 });
             }, 1000);
         }
         return () => clearInterval(interval);
     }, [isRunning]);
+
+    // Effect to sync back to parent periodically if running
+    useEffect(() => {
+        if (isRunning && seconds % 10 === 0) { // Update store every 10s
+            onChange(Math.floor(seconds / 60));
+        }
+    }, [seconds, isRunning, onChange]);
 
     const toggleTimer = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -58,21 +60,20 @@ export const TimerInput = ({ value, onChange }: TimerInputProps) => {
     };
 
     return (
-        <button
-            onClick={toggleTimer}
-            className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all ${isRunning
-                ? 'border-orange-500 text-orange-500 bg-orange-500/10'
-                : 'border-zinc-700 bg-[#27272A] text-zinc-500 hover:border-zinc-600'
-                }`}
-        >
-            {isRunning ? (
-                <div className="relative">
-                    <div className="absolute inset-0 bg-orange-500 rounded-full animate-ping opacity-20"></div>
-                    <Pause className="w-5 h-5 fill-current" />
-                </div>
-            ) : (
-                <Play className="w-5 h-5 fill-current ml-0.5" />
-            )}
-        </button>
+        <div className="flex items-center gap-3 bg-zinc-900 rounded-lg p-1 border border-zinc-800">
+            <div className="w-20 text-center">
+                <span className={`font-mono font-bold text-lg ${isRunning ? 'text-[#dfff4f]' : 'text-white'}`}>
+                    {formatTime(seconds)}
+                </span>
+            </div>
+
+            <button
+                onClick={toggleTimer}
+                className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors ${isRunning ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' : 'bg-[#dfff4f]/10 text-[#dfff4f] hover:bg-[#dfff4f]/20'
+                    }`}
+            >
+                {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+            </button>
+        </div>
     );
 };

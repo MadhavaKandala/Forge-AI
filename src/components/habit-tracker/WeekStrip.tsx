@@ -2,10 +2,7 @@ import React from 'react';
 import { useHabitStore } from '@/store/useHabitStore';
 
 export const WeekStrip = () => {
-    const { habits, selectedDate, setSelectedDate } = useHabitStore();
-
-    // Get current week (Mon-Sun or Sun-Sat?) - Let's do a sliding 7 day window or fixed week.
-    // User requested "S M T W T F S", implying standard week.
+    const { selectedDate, setSelectedDate, habits } = useHabitStore();
 
     const today = new Date();
     const currentDay = today.getDay(); // 0 is Sunday
@@ -22,17 +19,11 @@ export const WeekStrip = () => {
 
     return (
         <div className="w-full px-6 mb-6">
-            <div className="w-full bg-[#18181B] rounded-2xl p-4 border border-[#27272A] flex justify-between items-center">
+            <div className="flex items-center justify-between bg-[#18181B] border border-[#27272A] rounded-2xl p-4">
                 {weekDays.map((date, index) => {
                     const dateStr = date.toISOString().split('T')[0];
                     const isToday = dateStr === today.toISOString().split('T')[0];
                     const isSelected = dateStr === selectedDate.toISOString().split('T')[0];
-
-                    // Check completion status for this date
-                    // Logic: If any habit completed? Or all? User said "streak on that day".
-                    // Let's assume a "Perfect Day" (all habits) or at least > 0 habits.
-                    // For now, let's show green if ANY habit was done (simple) or check progress > 0.
-
                     const habitsDone = habits.filter(h => h.completedDates.includes(dateStr)).length;
                     const hasActivity = habitsDone > 0;
                     const isPerfect = habitsDone === habits.length && habits.length > 0;

@@ -1,10 +1,10 @@
 import { Capacitor } from '@capacitor/core';
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
-import { JeepSqlite } from 'jeep-sqlite';
+import { defineCustomElements as jeepSqlite } from 'jeep-sqlite/loader';
 
 // Define the custom element for web
 if (typeof customElements !== 'undefined') {
-  customElements.define('jeep-sqlite', JeepSqlite);
+  jeepSqlite(window);
 }
 
 export const DB_NAME = 'blitzit_db';
@@ -56,38 +56,38 @@ class DatabaseService {
     if (!this.db) throw new Error('Database not initialized');
     await this.db.execute(sql);
   }
-  
-  async runMigrations(schema: string): Promise<void> {
-      if (!this.db) throw new Error('Database not initialized');
-      
-      // Split schema into individual statements, removing comments and empty lines
-      const statements = schema
-          .split(';')
-          .map(s => s.trim())
-          .filter(s => s.length > 0);
 
-      for (const statement of statements) {
-          try {
-              await this.db.execute(statement);
-          } catch (e) {
-              console.error('Error running migration statement:', statement, e);
-          }
+  async runMigrations(schema: string): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    // Split schema into individual statements, removing comments and empty lines
+    const statements = schema
+      .split(';')
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+
+    for (const statement of statements) {
+      try {
+        await this.db.execute(statement);
+      } catch (e) {
+        console.error('Error running migration statement:', statement, e);
       }
+    }
   }
-  
+
   async query(statement: string, values?: any[]): Promise<any[]> {
     if (!this.db) throw new Error('Database not initialized');
     const result = await this.db.query(statement, values);
     return result.values || [];
   }
-  
+
   async run(statement: string, values?: any[]): Promise<any> {
     if (!this.db) throw new Error('Database not initialized');
     return await this.db.run(statement, values);
   }
-  
+
   getDB(): SQLiteDBConnection | null {
-      return this.db;
+    return this.db;
   }
 }
 

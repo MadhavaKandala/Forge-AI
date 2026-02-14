@@ -2,11 +2,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import PomodoroPage from "./pages/PomodoroPage";
 import SchedulePage from "./pages/SchedulePage";
 import ProgramsPage from "./pages/ProgramsPage";
+import ProgramDetailPage from "./pages/ProgramDetailPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,8 +33,12 @@ const App = () => {
   useEffect(() => {
     // 0. Fetch Initial Data
     const initData = async () => {
-      await fetchUser();
-      await fetchHabits();
+      try {
+        await fetchUser();
+        await fetchHabits();
+      } catch (err) {
+        console.error("Failed to fetch initial data", err);
+      }
     };
     initData();
 
@@ -106,16 +111,17 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <HashRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/pomodoro" element={<PomodoroPage />} />
             <Route path="/schedule" element={<SchedulePage />} />
             <Route path="/programs" element={<ProgramsPage />} />
+            <Route path="/programs/:id" element={<ProgramDetailPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
+        </HashRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );
