@@ -19,13 +19,29 @@ export const taskService = {
     `;
 
         await dbService.run(sql, [
-            id, task.title, task.description || null, task.category, task.priority, task.status, task.completed ? 1 : 0,
-            task.size || 'small', task.quadrant || 'q4', task.estimatedMinutes || null, task.actualMinutes || null,
-            task.scheduledDate || null, task.scheduledTime || null, task.dueDate || null,
-            task.isRecurring ? 1 : 0, task.recurrencePattern || null, task.notes || null,
-            JSON.stringify(task.externalLinks || []), JSON.stringify(task.attachments || []), JSON.stringify(task.tags || []),
+            id,
+            task.title,
+            task.description || null,
+            task.category || 'other',
+            task.priority || 'medium',
+            task.status || 'backlog',
+            task.completed ? 1 : 0,
+            task.size || 'small',
+            task.quadrant || 'q4',
+            task.estimatedMinutes !== undefined ? task.estimatedMinutes : null,
+            task.actualMinutes !== undefined ? task.actualMinutes : null,
+            task.scheduledDate || null,
+            task.scheduledTime || null,
+            task.dueDate || null,
+            task.isRecurring ? 1 : 0,
+            task.recurrencePattern || null,
+            task.notes || null,
+            JSON.stringify(task.externalLinks || []),
+            JSON.stringify(task.attachments || []),
+            JSON.stringify(task.tags || []),
             JSON.stringify(task.subtasks || []),
-            now, now
+            now,
+            now
         ]);
 
         return {

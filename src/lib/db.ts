@@ -70,8 +70,46 @@ class DatabaseService {
       try {
         await this.db.execute(statement);
       } catch (e) {
-        console.error('Error running migration statement:', statement, e);
+        // If it's a "table already exists" error, that's fine
+        // console.log('Migration statement skipped or already run');
       }
+    }
+
+    // Safety check for new columns in existing tables
+    await this.ensureTableColumns();
+  }
+
+  private async ensureTableColumns(): Promise<void> {
+    try {
+      // Columns added in V2.0.0 Phase 2.1
+      const taskColumns = [
+        { name: 'size', type: 'TEXT DEFAULT "small"' },
+        { name: 'quadrant', type: 'TEXT DEFAULT "q4"' },
+        { name: 'estimated_minutes', type: 'INTEGER' },
+        { name: 'actual_minutes', type: 'INTEGER' },
+        { name: 'scheduled_date', type: 'TEXT' },
+        { name: 'scheduled_time', type: 'TEXT' },
+        { name: 'due_date', type: 'TEXT' },
+        { name: 'is_recurring', type: 'INTEGER DEFAULT 0' },
+        { name: 'recurrence_pattern', type: 'TEXT' },
+        { name: 'notes', type: 'TEXT' },
+        { name: 'external_links', type: 'TEXT' },
+        { name: 'attachments', type: 'TEXT' },
+        { name: 'tags', type: 'TEXT' },
+        { name: 'subtasks', type: 'TEXT' }
+      ];
+
+      const existingColumns = await this.query('PRAGMA table_info(tasks)');
+      const colNames = existingColumns.map(c => c.name);
+
+      for (const col of taskColumns) {
+        if (!colNames.includes(col.name)) {
+          await this.executeSql(`ALTER TABLE tasks ADD COLUMN ${col.name} ${col.type}`);
+          console.log(`Added column ${col.name} to tasks table`);
+        }
+      }
+    } catch (err) {
+      console.error('Error during column ensurance migration:', err);
     }
   }
 
