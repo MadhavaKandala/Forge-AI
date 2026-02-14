@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useHabitStore } from '@/store/useHabitStore';
 import { TaskCategory, EisenhowerQuadrant } from '@/types/task';
 import { X, Plus, Clock, Target, ShieldCheck, AlignLeft } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface AddTaskModalProps {
     isOpen?: boolean;
@@ -29,15 +30,21 @@ export const AddTaskModal = ({ isOpen: controlledIsOpen, onClose, onTaskAdded, t
         e.preventDefault();
         if (!title.trim()) return;
 
-        await addTask({
-            title,
-            description: description.trim() || undefined,
-            category,
-            quadrant,
-            estimatedMinutes,
-            subtasks,
-            isRecurring: false
-        });
+        try {
+            await addTask({
+                title,
+                description: description.trim() || undefined,
+                category,
+                quadrant,
+                estimatedMinutes,
+                subtasks,
+                isRecurring: false
+            });
+            toast.success("Mission Deployed Successfully");
+        } catch (error) {
+            toast.error("Failed to deploy mission");
+            console.error(error);
+        }
 
         // Reset
         setTitle('');

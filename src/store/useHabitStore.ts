@@ -192,11 +192,18 @@ export const useHabitStore = create<HabitState>()(
             addTask: async (taskData) => {
                 const { taskService } = await import('@/services/taskService');
 
-                // Determine size and status if not provided
+                // Derive metrics from quadrant if not provided
                 let size = taskData.size || 'small';
-                if (!taskData.size) {
-                    if (taskData.quadrant === 'q1') size = 'big';
-                    else if (taskData.quadrant === 'q2') size = 'medium';
+                let priority: TaskPriority = taskData.priority || 'medium';
+
+                if (taskData.quadrant === 'q1') {
+                    size = taskData.size || 'big';
+                    priority = taskData.priority || 'high';
+                } else if (taskData.quadrant === 'q2') {
+                    size = taskData.size || 'medium';
+                    priority = taskData.priority || 'high';
+                } else if (taskData.quadrant === 'q3') {
+                    priority = taskData.priority || 'medium';
                 }
 
                 const status = taskData.status || (taskData.quadrant === 'q1' ? 'today' : (taskData.quadrant === 'q2' ? 'this_week' : 'backlog'));
@@ -204,12 +211,13 @@ export const useHabitStore = create<HabitState>()(
                 const newTask = await taskService.createTask({
                     ...taskData,
                     size,
+                    priority,
                     status,
                     isRecurring: taskData.isRecurring || false,
                     subtasks: taskData.subtasks || []
                 });
 
-                set((state) => ({ tasks: [...state.tasks, newTask] }));
+                set((state) => ({ tasks: [newTask, ...state.tasks] }));
             },
 
             toggleTask: (taskId) => set((state) => {
@@ -355,14 +363,16 @@ export const useHabitStore = create<HabitState>()(
         {
             name: 'habit-tracker-storage',
             version: 6, // Increment version for deep work action
-            migrate: (persistedState, version) => {
-                return {
-                    user: INITIAL_USER,
-                    habits: INITIAL_HABITS,
-                    schedule: INITIAL_SCHEDULE,
-                    tasks: INITIAL_TASKS,
-                    selectedDate: new Date()
-                } as HabitState;
+            migrate: (persistedState: any, version: number) => {
+                if (version < 6) {
+                    // Just return common structures, defaults will handle the rest
+                    return {
+                        ...persistedState,
+                        tasks: persistedState.tasks || INITIAL_TASKS,
+                        user: persistedState.user || INITIAL_USER
+                    };
+                }
+                return persistedState;
             },
             partialize: (state) => ({
                 user: state.user,
