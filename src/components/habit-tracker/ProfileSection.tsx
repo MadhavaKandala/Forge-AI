@@ -1,5 +1,6 @@
 import React from 'react';
 import { User, Settings, Bell, LogOut, ChevronRight, Shield, HelpCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { useHabitStore } from '@/store/useHabitStore';
 
 export const ProfileSection = () => {
@@ -100,13 +101,33 @@ export const ProfileSection = () => {
                 </button>
             </div>
 
-            <button
-                onClick={resetData}
-                className="w-full flex items-center justify-center gap-2 p-4 text-red-500 font-bold hover:bg-red-500/10 rounded-2xl transition-colors"
-            >
-                <LogOut className="w-5 h-5" />
-                Reset Data (Debug)
-            </button>
+            <div className="space-y-3">
+                {localStorage.getItem('habit-tracker-emergency-backup') && (
+                    <button
+                        onClick={() => {
+                            const { restoreBackup } = useHabitStore.getState();
+                            restoreBackup();
+                        }}
+                        className="w-full flex items-center justify-center gap-2 p-4 bg-[#dfff4f]/10 text-[#dfff4f] font-bold border border-[#dfff4f]/20 rounded-2xl transition-all hover:bg-[#dfff4f]/20"
+                    >
+                        <Shield className="w-5 h-5" />
+                        Restore Last Session
+                    </button>
+                )}
+
+                <button
+                    onClick={() => {
+                        if (window.confirm("CRITICAL: This will reset all your habits, profile, and store data to defaults. Your missions (Tasks) in the database will remain safe. Proceed?")) {
+                            resetData();
+                            toast.success("System Restored to Defaults");
+                        }
+                    }}
+                    className="w-full flex items-center justify-center gap-2 p-4 text-red-500 font-bold hover:bg-red-500/10 rounded-2xl transition-colors"
+                >
+                    <LogOut className="w-5 h-5" />
+                    Reset Data (Debug)
+                </button>
+            </div>
         </div>
     );
 };

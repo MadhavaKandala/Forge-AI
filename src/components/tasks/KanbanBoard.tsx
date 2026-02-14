@@ -24,7 +24,12 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskMove, onT
     const containerRef = useRef<HTMLDivElement>(null);
 
     const getTasksByStatus = (status: TaskStatus) => {
-        return tasks.filter((t) => t.status === status);
+        return tasks.filter((t) => {
+            if (status === 'backlog') {
+                return t.status === 'backlog' || t.status === ('todo' as any) || t.status === ('cancelled' as any);
+            }
+            return t.status === status;
+        });
     };
 
     return (

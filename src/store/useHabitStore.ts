@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { toast } from 'sonner';
 import { Task, TaskCategory, TaskPriority, TaskStatus, EisenhowerQuadrant, CreateTaskDTO } from '@/types/task';
 
 export type HabitType = 'checkbox' | 'numeric' | 'timer';
@@ -66,6 +67,7 @@ interface HabitState {
 
     updateUser: (updates: Partial<User>) => void;
     resetData: () => void;
+    restoreBackup: () => void;
 
     // Deep Work logging
     logDeepWork: (minutes: number) => void;
@@ -350,7 +352,18 @@ export const useHabitStore = create<HabitState>()(
             })),
 
             resetData: () => {
-                console.log("Resetting Data to REAL defaults");
+                const currentState = get();
+                // Create emergency backup in localStorage
+                localStorage.setItem('habit-tracker-emergency-backup', JSON.stringify({
+                    user: currentState.user,
+                    habits: currentState.habits,
+                    schedule: currentState.schedule,
+                    tasks: currentState.tasks,
+                    version: 6,
+                    timestamp: new Date().toISOString()
+                }));
+
+                console.log("Resetting Data - Emergency backup created");
                 set({
                     user: INITIAL_USER,
                     habits: INITIAL_HABITS,
@@ -359,6 +372,27 @@ export const useHabitStore = create<HabitState>()(
                     selectedDate: new Date()
                 });
             },
+
+            restoreBackup: () => {
+                const backup = localStorage.getItem('habit-tracker-emergency-backup');
+                if (backup) {
+                    try {
+                        const data = JSON.parse(backup);
+                        set({
+                            user: data.user,
+                            habits: data.habits,
+                            schedule: data.schedule,
+                            tasks: data.tasks
+                        });
+                        toast.success("Intel Restored from Backup");
+                        localStorage.removeItem('habit-tracker-emergency-backup');
+                    } catch (e) {
+                        toast.error("Backup Data Corrupted");
+                    }
+                } else {
+                    toast.error("No Emergency Backup Found");
+                }
+            }
         }),
         {
             name: 'habit-tracker-storage',
