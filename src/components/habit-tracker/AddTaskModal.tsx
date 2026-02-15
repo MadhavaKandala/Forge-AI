@@ -21,8 +21,9 @@ export const AddTaskModal = ({ isOpen: controlledIsOpen, onClose, onTaskAdded, t
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState<TaskCategory>('coding');
-    const [quadrant, setQuadrant] = useState<EisenhowerQuadrant>('q1');
+    const [quadrant, setQuadrant] = useState<EisenhowerQuadrant>('q2');
     const [estimatedMinutes, setEstimatedMinutes] = useState<number>(25);
+    const [scheduledDate, setScheduledDate] = useState<string>(new Date().toISOString().split('T')[0]);
     const [subtasks, setSubtasks] = useState<{ id: string; title: string; completed: boolean }[]>([]);
     const [newSubtask, setNewSubtask] = useState('');
 
@@ -37,6 +38,7 @@ export const AddTaskModal = ({ isOpen: controlledIsOpen, onClose, onTaskAdded, t
                 category,
                 quadrant,
                 estimatedMinutes,
+                scheduledDate,
                 subtasks,
                 isRecurring: false
             });
@@ -50,8 +52,9 @@ export const AddTaskModal = ({ isOpen: controlledIsOpen, onClose, onTaskAdded, t
         setTitle('');
         setDescription('');
         setCategory('coding');
-        setQuadrant('q1');
+        setQuadrant('q2');
         setEstimatedMinutes(25);
+        setScheduledDate(new Date().toISOString().split('T')[0]);
         setSubtasks([]);
         handleClose();
         if (onTaskAdded) onTaskAdded();
@@ -74,7 +77,9 @@ export const AddTaskModal = ({ isOpen: controlledIsOpen, onClose, onTaskAdded, t
     return (
         <>
             {trigger ? (
-                <div onClick={() => setInternalIsOpen(true)}>{trigger}</div>
+                <span className="flex items-center justify-center cursor-pointer" onClick={() => setInternalIsOpen(true)}>
+                    {trigger}
+                </span>
             ) : controlledIsOpen === undefined && (
                 <button
                     onClick={() => setInternalIsOpen(true)}
@@ -136,6 +141,16 @@ export const AddTaskModal = ({ isOpen: controlledIsOpen, onClose, onTaskAdded, t
                                         />
                                     </div>
                                 </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">Target Date</label>
+                                <input
+                                    type="date"
+                                    value={scheduledDate}
+                                    onChange={(e) => setScheduledDate(e.target.value)}
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#dfff4f] transition-colors"
+                                />
                             </div>
 
                             <div>

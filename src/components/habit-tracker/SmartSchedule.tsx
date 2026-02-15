@@ -23,63 +23,66 @@ export const SmartSchedule = () => {
     let actionType: 'pomodoro' | 'habit' | 'none' = 'none';
 
     // Based on user's real schedule
-    if (hour >= 6 && hour < 8) {
+    if (hour >= 5 && hour < 6) {
+        currentBlock = 'Early Start';
+        blockIcon = <Sun className="w-4 h-4" />;
+        blockColor = 'text-blue-400';
+        suggestion = 'Warm up & Planning';
+        actionType = 'habit';
+    } else if (hour >= 6 && hour < 8) {
         currentBlock = 'Morning Routine';
         blockIcon = <Sun className="w-4 h-4" />;
         blockColor = 'text-yellow-500';
-        suggestion = 'Meditation & Breakfast';
+        suggestion = 'Meditation & Morning Code';
         actionType = 'habit';
     } else if (hour >= 8 && hour < 9) {
         currentBlock = 'Bus Commute';
         blockIcon = <Bus className="w-4 h-4" />;
         blockColor = 'text-orange-500';
-        suggestion = 'Read Gita/Book (30m)';
+        suggestion = 'Read Gita / Listen to Podcast';
         actionType = 'habit';
-    } else if (hour >= 9 && hour < 12) { // 9:30 - 12:30 class
-        currentBlock = 'Full Stack Class';
+    } else if (hour >= 9 && hour < 13) {
+        currentBlock = 'Morning Classes';
         blockIcon = <Briefcase className="w-4 h-4" />;
         blockColor = 'text-blue-500';
-        suggestion = 'Focus on Learning (No Tasks)';
-        actionType = 'none';
-    } else if (hour === 12 || (hour === 13 && currentTime.getMinutes() < 30)) {
-        currentBlock = 'Lunch Break';
+        suggestion = 'Full Stack Development';
+        actionType = 'pomodoro';
+    } else if (hour === 13) {
+        currentBlock = 'Lunch & Break';
         blockIcon = <Coffee className="w-4 h-4" />;
-        blockColor = 'text-zinc-400';
-        suggestion = 'Eat & Socialize';
-        actionType = 'none';
-    } else if ((hour === 13 && currentTime.getMinutes() >= 30) || (hour >= 14 && hour < 16)) {
-        currentBlock = 'CP Class';
+        blockColor = 'text-emerald-500';
+        suggestion = 'Refuel & Rest';
+        actionType = 'habit';
+    } else if (hour >= 14 && hour < 16) {
+        currentBlock = 'Afternoon Labs';
         blockIcon = <Briefcase className="w-4 h-4" />;
         blockColor = 'text-purple-500';
-        suggestion = 'Coding / LeetCode';
+        suggestion = 'CP Practice / Lab Work';
         actionType = 'pomodoro';
-    } else if (hour === 16 && currentTime.getMinutes() < 30) {
-        currentBlock = 'Social Time';
-        blockColor = 'text-pink-500';
-        actionType = 'none';
-    } else if ((hour === 16 && currentTime.getMinutes() >= 30) || (hour === 17)) {
-        currentBlock = 'Bus Home';
+    } else if (hour >= 16 && hour < 18) {
+        currentBlock = 'Commute & Social';
         blockIcon = <Bus className="w-4 h-4" />;
         blockColor = 'text-orange-500';
-        suggestion = 'Reading / Audio';
+        suggestion = 'Review Day / Networking';
         actionType = 'habit';
-    } else if (hour >= 18 && hour < 21) { // 6:30 PM starts peak
-        if (hour === 18 && currentTime.getMinutes() < 30) {
-            currentBlock = 'Freshen Up';
-            actionType = 'none';
-        } else {
-            currentBlock = 'PEAK TIME';
-            blockIcon = <Moon className="w-4 h-4" />;
-            blockColor = 'text-red-500';
-            suggestion = 'Deep Work / Big Task';
-            actionType = 'pomodoro';
-        }
-    } else if (hour >= 21) {
-        currentBlock = 'Evening Routine';
+    } else if (hour >= 18 && hour < 21) {
+        currentBlock = 'Peak Performance';
+        blockIcon = <Moon className="w-4 h-4" />;
+        blockColor = 'text-red-500';
+        suggestion = 'Deep Work: Coding';
+        actionType = 'pomodoro';
+    } else if (hour >= 21 && hour < 23) {
+        currentBlock = 'Evening Focus';
         blockIcon = <Moon className="w-4 h-4" />;
         blockColor = 'text-indigo-500';
-        suggestion = 'Dinner & Planning';
+        suggestion = 'Planning & Review';
         actionType = 'habit';
+    } else {
+        currentBlock = 'Night Rest';
+        blockIcon = <Moon className="w-4 h-4" />;
+        blockColor = 'text-zinc-600';
+        suggestion = 'Sleep & Recovery';
+        actionType = 'none';
     }
 
     const handleAction = () => {
@@ -123,9 +126,10 @@ export const SmartSchedule = () => {
                     {actionType !== 'none' && (
                         <button
                             onClick={handleAction}
-                            className="bg-[#dfff4f] text-black text-xs font-black px-4 py-2 rounded-xl hover:bg-[#ccee3e] transition-all flex items-center gap-2 shadow-lg shadow-[#dfff4f]/10"
+                            className="bg-[#dfff4f] text-black text-[10px] font-black px-3 py-2 rounded-xl hover:bg-[#ccee3e] transition-all flex items-center gap-1.5 shadow-lg shadow-[#dfff4f]/10 uppercase"
                         >
-                            <Play className="w-3 h-3 fill-black" /> START
+                            <Play className="w-3 h-3 fill-black" />
+                            {actionType === 'pomodoro' ? 'Start Deep Work' : 'View Habits'}
                         </button>
                     )}
                 </div>

@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 
 interface ProgramSectionProps {
     onSeeAll: () => void;
+    onHubSelect?: (hubId: string) => void;
 }
 
 const gradientMap: Record<string, string> = {
@@ -18,7 +19,7 @@ const gradientMap: Record<string, string> = {
     'productivity_master': 'from-cyan-500/20 to-teal-600/20',
 };
 
-export const ProgramSection = ({ onSeeAll }: ProgramSectionProps) => {
+export const ProgramSection = ({ onSeeAll, onHubSelect }: ProgramSectionProps) => {
     const navigate = useNavigate();
     const { activePrograms, fetchActivePrograms } = useProgramStore();
 
@@ -61,7 +62,10 @@ export const ProgramSection = ({ onSeeAll }: ProgramSectionProps) => {
                                 )}
                                 onClick={() => {
                                     if (isFallback) {
-                                        onSeeAll();
+                                        if (program.programType === 'leetcode_75') onHubSelect?.('coding');
+                                        else if (program.programType === 'gym_progress') onHubSelect?.('fitness');
+                                        else if (program.programType === 'nutrition_mastery') onHubSelect?.('diet');
+                                        else onSeeAll();
                                     } else {
                                         navigate(`/programs/${program.id}`);
                                     }

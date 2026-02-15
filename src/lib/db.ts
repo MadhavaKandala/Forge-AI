@@ -55,6 +55,7 @@ class DatabaseService {
   async executeSql(sql: string): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
     await this.db.execute(sql);
+    await this.saveToStore();
   }
 
   async runMigrations(schema: string): Promise<void> {
@@ -74,6 +75,8 @@ class DatabaseService {
         // console.log('Migration statement skipped or already run');
       }
     }
+
+    await this.saveToStore();
 
     // Safety check for new columns in existing tables
     await this.ensureTableColumns();
@@ -108,6 +111,7 @@ class DatabaseService {
           console.log(`Added column ${col.name} to tasks table`);
         }
       }
+      await this.saveToStore();
     } catch (err) {
       console.error('Error during column ensurance migration:', err);
     }
@@ -121,7 +125,21 @@ class DatabaseService {
 
   async run(statement: string, values?: any[]): Promise<any> {
     if (!this.db) throw new Error('Database not initialized');
-    return await this.db.run(statement, values);
+    const res = await this.db.run(statement, values);
+    await this.saveToStore();
+    return res;
+  }
+
+  async saveToStore(): Promise<void> {
+    const platform = Capacitor.getPlatform();
+    if (platform === 'web') {
+      try {
+        await this.sqlite.saveToStore(DB_NAME);
+        // console.log('Database saved to store (web)');
+      } catch (e) {
+        console.error('Error saving to store:', e);
+      }
+    }
   }
 
   getDB(): SQLiteDBConnection | null {

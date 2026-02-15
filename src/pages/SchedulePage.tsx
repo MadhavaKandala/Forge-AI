@@ -4,6 +4,7 @@ import { Calendar } from '../components/ui/calendar';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { AddScheduleModal } from '../components/habit-tracker/AddScheduleModal';
 import { scheduleService, ScheduleItem } from '../services/scheduleService';
 import { cn } from '../lib/utils';
 
@@ -12,6 +13,7 @@ export const SchedulePage: React.FC = () => {
     const [date, setDate] = useState<Date | undefined>(new Date());
     const [items, setItems] = useState<ScheduleItem[]>([]);
     const [view, setView] = useState<'day' | 'week' | 'month'>('day');
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     useEffect(() => {
         if (date) {
@@ -31,7 +33,7 @@ export const SchedulePage: React.FC = () => {
                     <ArrowLeft className="h-6 w-6" />
                 </Button>
                 <h1 className="text-xl font-bold">Schedule</h1>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" onClick={() => setIsAddModalOpen(true)}>
                     <Plus className="h-6 w-6" />
                 </Button>
             </div>
@@ -96,6 +98,14 @@ export const SchedulePage: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            <AddScheduleModal
+                isOpen={isAddModalOpen}
+                onClose={() => {
+                    setIsAddModalOpen(false);
+                    if (date) fetchSchedule(date);
+                }}
+            />
         </div>
     );
 };

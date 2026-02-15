@@ -45,16 +45,18 @@ const TasksPage = () => {
 
     return (
         <div className="w-full h-screen overflow-hidden flex flex-col relative bg-background text-foreground">
-            <div className="p-4 flex items-center justify-between sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="flex items-center gap-2">
-                    <Layout className="h-6 w-6 text-[#dfff4f]" />
-                    <h1 className="text-2xl font-black italic uppercase tracking-tighter">Mission Control</h1>
+            <div className="p-4 flex items-center justify-between sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-zinc-900">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-zinc-900 rounded-xl border border-zinc-800">
+                        <Layout className="h-5 w-5 text-[#dfff4f]" />
+                    </div>
+                    <h1 className="text-xl font-black italic uppercase tracking-tighter">Mission Control</h1>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="text-zinc-500 hover:text-[#dfff4f] transition-colors"
+                        className="text-zinc-500 hover:text-[#dfff4f] transition-colors h-10 w-10 bg-zinc-900/50 border border-zinc-800 rounded-xl"
                         onClick={() => {
                             fetchTasks();
                             toast.success("Intel Synchronized");
@@ -65,12 +67,12 @@ const TasksPage = () => {
                     <AddTaskModal
                         onTaskAdded={fetchTasks}
                         trigger={
-                            <Button variant="ghost" size="icon" className="text-[#dfff4f]">
+                            <Button variant="ghost" size="icon" className="text-[#dfff4f] h-10 w-10 bg-zinc-900 border border-zinc-800 rounded-xl">
                                 <Plus className="h-5 w-5" />
                             </Button>
                         }
                     />
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" className="h-10 w-10 bg-zinc-900/50 border border-zinc-800 rounded-xl text-zinc-500">
                         <Filter className="h-5 w-5" />
                     </Button>
                 </div>

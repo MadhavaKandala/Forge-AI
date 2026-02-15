@@ -1,7 +1,8 @@
 import React from 'react';
-import { Plus, Code, Dumbbell, Utensils, Heart, GraduationCap, Coffee, BookOpen } from 'lucide-react';
+import { Plus, Code, Dumbbell, Utensils, Heart, GraduationCap, Coffee, BookOpen, ChevronRight } from 'lucide-react';
 import { useHabitStore, Category } from '@/store/useHabitStore';
 import { CompactHabitCard } from './CompactHabitCard';
+import { AddHabitModal } from './AddHabitModal';
 import { cn } from '@/lib/utils';
 
 const CATEGORY_ICONS: Record<Category, React.ReactNode> = {
@@ -14,8 +15,9 @@ const CATEGORY_ICONS: Record<Category, React.ReactNode> = {
     breaks: <Coffee className="w-4 h-4" />
 };
 
-export const HabitList = () => {
+export const HabitList = ({ onCategoryClick }: { onCategoryClick?: (cat: Category) => void }) => {
     const { habits, toggleHabit, selectedDate } = useHabitStore();
+    const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
 
     const formatDate = (date: Date) => date.toISOString().split('T')[0];
     const dateStr = formatDate(selectedDate);
@@ -29,7 +31,10 @@ export const HabitList = () => {
                     <h2 className="text-xl font-bold text-white">Daily Habits</h2>
                     <p className="text-xs text-muted-foreground">{habits.length} habits tracked</p>
                 </div>
-                <button className="w-8 h-8 rounded-full border border-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors">
+                <button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="w-8 h-8 rounded-full border border-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors"
+                >
                     <Plus className="w-4 h-4" />
                 </button>
             </div>
@@ -43,7 +48,10 @@ export const HabitList = () => {
 
                     return (
                         <div key={cat} className="space-y-2">
-                            <div className="flex items-center justify-between px-1">
+                            <div
+                                className="flex items-center justify-between px-1 cursor-pointer hover:bg-white/5 rounded-lg py-1 transition-colors group"
+                                onClick={() => onCategoryClick?.(cat)}
+                            >
                                 <div className="flex items-center gap-2">
                                     <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
                                         {CATEGORY_ICONS[cat]}
@@ -52,9 +60,12 @@ export const HabitList = () => {
                                         {cat}
                                     </h3>
                                 </div>
-                                <span className="text-[10px] font-mono text-zinc-500">
-                                    {completedCount}/{categoryHabits.length}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-mono text-zinc-500">
+                                        {completedCount}/{categoryHabits.length}
+                                    </span>
+                                    <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-primary transition-colors" />
+                                </div>
                             </div>
 
                             <div className="bg-card/30 rounded-2xl border p-1 space-y-0.5">
@@ -78,6 +89,8 @@ export const HabitList = () => {
                     <p className="text-zinc-500">No habits configured</p>
                 </div>
             )}
+
+            <AddHabitModal open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
         </div>
     );
 };

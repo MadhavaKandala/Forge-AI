@@ -41,6 +41,13 @@ export function useChallenges() {
       journalEntries: [],
       streak: 0,
     },
+    diet: {
+      dailyCalorieGoal: 2000,
+      dailyWaterGoalLiters: 2.5,
+      logs: [],
+      currentWeight: 0,
+      goalWeight: 0,
+    },
   });
   const [isLoaded, setIsLoaded] = useState(false);
 

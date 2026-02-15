@@ -152,11 +152,32 @@ export interface MindfulnessProfile {
   streak: number;
 }
 
+export interface DietLog {
+  id: string;
+  date: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  waterIntakeLiters: number;
+  type: 'meal' | 'snack';
+  description?: string;
+}
+
+export interface DietProfile {
+  dailyCalorieGoal: number;
+  dailyWaterGoalLiters: number;
+  logs: DietLog[];
+  currentWeight: number;
+  goalWeight: number;
+}
+
 export interface UserProfile {
   name: string;
   fitness: FitnessProfile;
   coding: CodingProfile;
   reading: ReadingProfile;
+  diet: DietProfile;
   mindfulness: MindfulnessProfile;
 }
 

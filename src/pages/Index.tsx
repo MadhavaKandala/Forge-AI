@@ -13,9 +13,16 @@ import { ProductivityTracker } from '@/components/habit-tracker/ProductivityTrac
 import { SmartSchedule } from '@/components/habit-tracker/SmartSchedule';
 import { ProgramSection } from '@/components/habit-tracker/ProgramSection';
 import TasksPage from './TasksPage';
+import { CodeHub } from '@/components/Hubs/CodeHub';
+import { FitnessHub } from '@/components/Hubs/FitnessHub';
+import { ReadingHub } from '@/components/Hubs/ReadingHub';
+import { DietHub } from '@/components/Hubs/DietHub';
+import { useChallenges } from '@/hooks/useChallenges';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('hub');
+  const [selectedHub, setSelectedHub] = useState<string | null>(null);
+  const { activeChallenges } = useChallenges();
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white pb-32 font-sans selection:bg-primary selection:text-black overflow-x-hidden">
@@ -30,7 +37,7 @@ const Index = () => {
             <WeekStrip />
 
             {/* Live Programs - Horizontal High Density */}
-            <ProgramSection onSeeAll={() => setActiveTab('program')} />
+            <ProgramSection onSeeAll={() => setActiveTab('program')} onHubSelect={setSelectedHub} />
 
             {/* Smart Schedule - Real Time Context */}
             <SmartSchedule />
@@ -48,8 +55,8 @@ const Index = () => {
             </div>
 
             {/* Habit Checklist (Bottom Priority) */}
-            <div className="mt-4 border-t border-zinc-900 pt-8">
-              <HabitList />
+            <div id="habit-checklist" className="mt-4 border-t border-zinc-900 pt-8">
+              <HabitList onCategoryClick={setSelectedHub} />
             </div>
 
             <ScheduleSection />
@@ -67,6 +74,33 @@ const Index = () => {
         )}
         {activeTab === 'community' && <CommunitySection />}
         {activeTab === 'profile' && <ProfileSection />}
+
+        {/* Categories Hubs Overlays */}
+        {selectedHub === 'coding' && (
+          <div className="fixed inset-0 bg-[#09090b] z-50 overflow-y-auto px-6 py-8 animate-in slide-in-from-right duration-300">
+            <CodeHub challenges={activeChallenges} onNavigateBack={() => setSelectedHub(null)} />
+          </div>
+        )}
+        {selectedHub === 'fitness' && (
+          <div className="fixed inset-0 bg-[#09090b] z-50 overflow-y-auto px-6 py-8 animate-in slide-in-from-right duration-300">
+            <FitnessHub challenges={activeChallenges} onNavigateBack={() => setSelectedHub(null)} />
+          </div>
+        )}
+        {selectedHub === 'gym' && (
+          <div className="fixed inset-0 bg-[#09090b] z-50 overflow-y-auto px-6 py-8 animate-in slide-in-from-right duration-300">
+            <FitnessHub challenges={activeChallenges} onNavigateBack={() => setSelectedHub(null)} />
+          </div>
+        )}
+        {selectedHub === 'reading' && (
+          <div className="fixed inset-0 bg-[#09090b] z-50 overflow-y-auto px-6 py-8 animate-in slide-in-from-right duration-300">
+            <ReadingHub challenges={activeChallenges} onNavigateBack={() => setSelectedHub(null)} />
+          </div>
+        )}
+        {selectedHub === 'diet' && (
+          <div className="fixed inset-0 bg-[#09090b] z-50 overflow-y-auto px-6 py-8 animate-in slide-in-from-right duration-300">
+            <DietHub onNavigateBack={() => setSelectedHub(null)} />
+          </div>
+        )}
       </div>
 
       {/* Bottom Navigation */}

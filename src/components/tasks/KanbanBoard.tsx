@@ -24,13 +24,23 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskMove, onT
     const containerRef = useRef<HTMLDivElement>(null);
 
     const getTasksByStatus = (status: TaskStatus) => {
-        return tasks.filter((t) => {
+        const filtered = tasks.filter((t) => {
+            // Map legacy or missing statuses
+            const taskStatus = t.status || 'backlog';
+
             if (status === 'backlog') {
-                return t.status === 'backlog' || t.status === ('todo' as any) || t.status === ('cancelled' as any);
+                return taskStatus === 'backlog' || taskStatus === 'todo' || taskStatus === 'cancelled' || !taskStatus;
             }
-            return t.status === status;
+            return taskStatus === status;
         });
+
+        return filtered;
     };
+
+    console.log("KanbanBoard: Rendering with tasks:", tasks.length);
+    if (tasks.length > 0) {
+        console.log("KanbanBoard: Task statuses:", tasks.map(t => t.status));
+    }
 
     return (
         <div className="w-full h-full overflow-hidden flex flex-col">

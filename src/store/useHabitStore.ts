@@ -7,6 +7,17 @@ export type HabitType = 'checkbox' | 'numeric' | 'timer';
 export type Category = 'coding' | 'devotional' | 'diet' | 'gym' | 'personal' | 'academics' | 'breaks';
 export type TimeBlock = 'morning' | 'bus_college' | 'college' | 'bus_home' | 'evening';
 
+export interface WorkoutLog {
+    id: string;
+    exerciseName: string;
+    date: string; // ISO YYYY-MM-DD
+    sets: {
+        reps: number;
+        weight: number;
+        isCompleted: boolean;
+    }[];
+}
+
 export interface Habit {
     id: string;
     title: string;
@@ -46,6 +57,9 @@ interface HabitState {
     schedule: ScheduleItem[];
     tasks: Task[];
     selectedDate: Date;
+    workoutLogs: WorkoutLog[];
+    dietLogs: import('@/types/challenge').DietLog[];
+    waterIntakeLiters: number;
 
     // Actions
     toggleHabit: (habitId: string, date: Date) => void;
@@ -72,6 +86,15 @@ interface HabitState {
     // Deep Work logging
     logDeepWork: (minutes: number) => void;
 
+    // Workout Actions
+    addWorkoutLog: (log: Omit<WorkoutLog, 'id'>) => void;
+    updateWorkoutLog: (logId: string, updates: Partial<WorkoutLog>) => void;
+
+    // Diet Actions
+    addDietLog: (log: Omit<import('@/types/challenge').DietLog, 'id'>) => void;
+    addWater: (amount: number) => void;
+    updateDietGoal: (calories: number, water: number) => void;
+
     // Selectors
     getDailyProgress: (date: Date) => number;
     syncDate: () => void;
@@ -91,45 +114,45 @@ const INITIAL_TASKS: Task[] = [
 
 const INITIAL_HABITS: Habit[] = [
     // CODING
-    { id: 'h1', title: 'Morning Code Session', time: '6:00 AM', streak: 12, completedDates: [], type: 'timer', category: 'coding', goal: 120, unit: 'min', history: {} },
-    { id: 'h2', title: 'LeetCode Problem (Daily)', time: '9:00 PM', streak: 12, completedDates: [], type: 'checkbox', category: 'coding', history: {} },
-    { id: 'h3', title: 'Code Notes & Review', time: '10:00 PM', streak: 12, completedDates: [], type: 'checkbox', category: 'coding', history: {} },
+    { id: 'h1', title: 'Morning Code Session', time: '6:00 AM', streak: 0, completedDates: [], type: 'timer', category: 'coding', goal: 120, unit: 'min', history: {} },
+    { id: 'h2', title: 'LeetCode Problem (Daily)', time: '9:00 PM', streak: 0, completedDates: [], type: 'checkbox', category: 'coding', history: {} },
+    { id: 'h3', title: 'Code Notes & Review', time: '10:00 PM', streak: 0, completedDates: [], type: 'checkbox', category: 'coding', history: {} },
 
     // GYM
-    { id: 'h4', title: 'Morning Gym Session', time: '8:30 AM', streak: 12, completedDates: [], type: 'timer', category: 'gym', goal: 90, unit: 'min', history: {} },
-    { id: 'h5', title: 'Post-Workout Protein', time: '10:15 AM', streak: 12, completedDates: [], type: 'checkbox', category: 'gym', history: {} },
-    { id: 'h6', title: 'Evening Cardio', time: '6:00 PM', streak: 12, completedDates: [], type: 'checkbox', category: 'gym', history: {} },
-    { id: 'h7', title: 'Progress Photo (Weekly)', time: 'Sunday', streak: 12, completedDates: [], type: 'checkbox', category: 'gym', history: {} },
+    { id: 'h4', title: 'Morning Gym Session', time: '8:30 AM', streak: 0, completedDates: [], type: 'timer', category: 'gym', goal: 90, unit: 'min', history: {} },
+    { id: 'h5', title: 'Post-Workout Protein', time: '10:15 AM', streak: 0, completedDates: [], type: 'checkbox', category: 'gym', history: {} },
+    { id: 'h6', title: 'Evening Cardio', time: '6:00 PM', streak: 0, completedDates: [], type: 'checkbox', category: 'gym', history: {} },
+    { id: 'h7', title: 'Progress Photo (Weekly)', time: 'Sunday', streak: 0, completedDates: [], type: 'checkbox', category: 'gym', history: {} },
 
     // DIET
-    { id: 'h8', title: 'Drink 8 Glasses Water', time: 'All Day', streak: 12, completedDates: [], type: 'numeric', category: 'diet', goal: 8, unit: 'glasses', history: {} },
-    { id: 'h9', title: 'Log All Meals', time: 'All Day', streak: 12, completedDates: [], type: 'checkbox', category: 'diet', history: {} },
-    { id: 'h10', title: 'Hit Calorie Goal (2200)', time: 'All Day', streak: 12, completedDates: [], type: 'numeric', category: 'diet', goal: 2200, unit: 'cal', history: {} },
-    { id: 'h11', title: 'Hit Macro Goals (P/C/F)', time: 'All Day', streak: 12, completedDates: [], type: 'checkbox', category: 'diet', history: {} },
-    { id: 'h12', title: 'Meal Prep (Sunday)', time: 'Sunday', streak: 12, completedDates: [], type: 'checkbox', category: 'diet', history: {} },
+    { id: 'h8', title: 'Drink 8 Glasses Water', time: 'All Day', streak: 0, completedDates: [], type: 'numeric', category: 'diet', goal: 8, unit: 'glasses', history: {} },
+    { id: 'h9', title: 'Log All Meals', time: 'All Day', streak: 0, completedDates: [], type: 'checkbox', category: 'diet', history: {} },
+    { id: 'h10', title: 'Hit Calorie Goal (2200)', time: 'All Day', streak: 0, completedDates: [], type: 'numeric', category: 'diet', goal: 2200, unit: 'cal', history: {} },
+    { id: 'h11', title: 'Hit Macro Goals (P/C/F)', time: 'All Day', streak: 0, completedDates: [], type: 'checkbox', category: 'diet', history: {} },
+    { id: 'h12', title: 'Meal Prep (Sunday)', time: 'Sunday', streak: 0, completedDates: [], type: 'checkbox', category: 'diet', history: {} },
 
     // DEVOTIONAL
-    { id: 'h13', title: 'Morning Meditation', time: '5:45 AM', streak: 12, completedDates: [], type: 'timer', category: 'devotional', goal: 15, unit: 'min', history: {} },
-    { id: 'h14', title: 'Bhagavad Gita Reading', time: '10:30 PM', streak: 12, completedDates: [], type: 'timer', category: 'devotional', goal: 30, unit: 'min', history: {} },
-    { id: 'h15', title: 'Evening Prayer', time: '8:30 PM', streak: 12, completedDates: [], type: 'checkbox', category: 'devotional', history: {} },
+    { id: 'h13', title: 'Morning Meditation', time: '5:45 AM', streak: 0, completedDates: [], type: 'timer', category: 'devotional', goal: 15, unit: 'min', history: {} },
+    { id: 'h14', title: 'Bhagavad Gita Reading', time: '10:30 PM', streak: 0, completedDates: [], type: 'timer', category: 'devotional', goal: 30, unit: 'min', history: {} },
+    { id: 'h15', title: 'Evening Prayer', time: '8:30 PM', streak: 0, completedDates: [], type: 'checkbox', category: 'devotional', history: {} },
 
     // ACADEMICS
-    { id: 'h16', title: 'Attend All Classes', time: '10:00 AM', streak: 12, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
-    { id: 'h17', title: 'Study Session (2-3h)', time: '3:00 PM', streak: 12, completedDates: [], type: 'timer', category: 'personal', goal: 180, unit: 'min', history: {} },
-    { id: 'h18', title: 'Review Lecture Notes', time: '7:00 PM', streak: 12, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
-    { id: 'h19', title: 'Practice Problems', time: '7:30 PM', streak: 12, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
+    { id: 'h16', title: 'Attend All Classes', time: '10:00 AM', streak: 0, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
+    { id: 'h17', title: 'Study Session (2-3h)', time: '3:00 PM', streak: 0, completedDates: [], type: 'timer', category: 'personal', goal: 180, unit: 'min', history: {} },
+    { id: 'h18', title: 'Review Lecture Notes', time: '7:00 PM', streak: 0, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
+    { id: 'h19', title: 'Practice Problems', time: '7:30 PM', streak: 0, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
 
     // PERSONAL
-    { id: 'h20', title: 'Morning Journal Entry', time: '6:15 AM', streak: 12, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
-    { id: 'h21', title: 'Gratitude Practice', time: '11:00 PM', streak: 12, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
-    { id: 'h22', title: 'Sleep by 11:30 PM', time: '11:30 PM', streak: 12, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
-    { id: 'h23', title: 'Reading (30 min)', time: '9:00 PM', streak: 12, completedDates: [], type: 'timer', category: 'personal', goal: 30, unit: 'min', history: {} },
-    { id: 'h24', title: 'Weekly Planning', time: 'Sunday', streak: 12, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
+    { id: 'h20', title: 'Morning Journal Entry', time: '6:15 AM', streak: 0, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
+    { id: 'h21', title: 'Gratitude Practice', time: '11:00 PM', streak: 0, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
+    { id: 'h22', title: 'Sleep by 11:30 PM', time: '11:30 PM', streak: 0, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
+    { id: 'h23', title: 'Reading (30 min)', time: '9:00 PM', streak: 0, completedDates: [], type: 'timer', category: 'personal', goal: 30, unit: 'min', history: {} },
+    { id: 'h24', title: 'Weekly Planning', time: 'Sunday', streak: 0, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
 
     // BREAKS
-    { id: 'h25', title: 'Creative Learning', time: 'Flexible', streak: 12, completedDates: [], type: 'timer', category: 'personal', goal: 60, unit: 'min', history: {} },
-    { id: 'h26', title: 'Hobby Time', time: 'Flexible', streak: 12, completedDates: [], type: 'timer', category: 'personal', goal: 60, unit: 'min', history: {} },
-    { id: 'h27', title: 'Social Time', time: 'Flexible', streak: 12, completedDates: [], type: 'timer', category: 'personal', goal: 30, unit: 'min', history: {} },
+    { id: 'h25', title: 'Creative Learning', time: 'Flexible', streak: 0, completedDates: [], type: 'timer', category: 'personal', goal: 60, unit: 'min', history: {} },
+    { id: 'h26', title: 'Hobby Time', time: 'Flexible', streak: 0, completedDates: [], type: 'timer', category: 'personal', goal: 60, unit: 'min', history: {} },
+    { id: 'h27', title: 'Social Time', time: 'Flexible', streak: 0, completedDates: [], type: 'timer', category: 'personal', goal: 30, unit: 'min', history: {} },
 ];
 
 const INITIAL_SCHEDULE: ScheduleItem[] = [
@@ -166,6 +189,29 @@ export const useHabitStore = create<HabitState>()(
             tasks: INITIAL_TASKS,
             habits: INITIAL_HABITS,
             schedule: INITIAL_SCHEDULE,
+            workoutLogs: [],
+            dietLogs: [],
+            waterIntakeLiters: 0,
+
+            addWorkoutLog: (log) => set((state: HabitState) => ({
+                workoutLogs: [...state.workoutLogs, { ...log, id: Math.random().toString(36).substr(2, 9) }]
+            }) as Partial<HabitState>),
+
+            updateWorkoutLog: (logId, updates) => set((state: HabitState) => ({
+                workoutLogs: state.workoutLogs.map(l => l.id === logId ? { ...l, ...updates } : l)
+            }) as Partial<HabitState>),
+
+            addDietLog: (log) => set((state: HabitState) => ({
+                dietLogs: [...state.dietLogs, { ...log, id: Math.random().toString(36).substr(2, 9) }]
+            }) as Partial<HabitState>),
+
+            addWater: (amount: number) => set((state: HabitState) => ({
+                waterIntakeLiters: state.waterIntakeLiters + amount
+            }) as Partial<HabitState>),
+
+            updateDietGoal: (calories, water) => {
+                // This could update the user profile in useChallenges or the store
+            },
 
             addScheduleItem: (item) => set((state) => ({
                 schedule: [...state.schedule, { ...item, id: Math.random().toString(36).substr(2, 9) }]
@@ -192,6 +238,7 @@ export const useHabitStore = create<HabitState>()(
 
             // Task Actions
             addTask: async (taskData) => {
+                console.log("Adding Task:", taskData);
                 const { taskService } = await import('@/services/taskService');
 
                 // Derive metrics from quadrant if not provided
@@ -210,16 +257,38 @@ export const useHabitStore = create<HabitState>()(
 
                 const status = taskData.status || (taskData.quadrant === 'q1' ? 'today' : (taskData.quadrant === 'q2' ? 'this_week' : 'backlog'));
 
-                const newTask = await taskService.createTask({
-                    ...taskData,
-                    size,
-                    priority,
-                    status,
-                    isRecurring: taskData.isRecurring || false,
-                    subtasks: taskData.subtasks || []
-                });
+                try {
+                    const newTask = await taskService.createTask({
+                        ...taskData,
+                        size,
+                        priority,
+                        status,
+                        isRecurring: taskData.isRecurring || false,
+                        subtasks: taskData.subtasks || []
+                    });
 
-                set((state) => ({ tasks: [newTask, ...state.tasks] }));
+                    console.log("Task Created in DB:", newTask);
+                    set((state) => ({
+                        tasks: [newTask, ...state.tasks.filter(t => !t.id.startsWith('local-'))]
+                    }));
+                } catch (error) {
+                    console.error("Error creating task in store:", error);
+                    toast.error("Database connection issue. Task saved locally only.");
+                    // Fallback: add with local ID if DB fails
+                    const localTask: Task = {
+                        ...taskData,
+                        id: `local-${Math.random().toString(36).substr(2, 9)}`,
+                        size,
+                        priority,
+                        status,
+                        completed: false,
+                        isRecurring: taskData.isRecurring || false,
+                        subtasks: taskData.subtasks || [],
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+                    set((state) => ({ tasks: [localTask, ...state.tasks] }));
+                }
             },
 
             toggleTask: (taskId) => set((state) => {
@@ -228,9 +297,9 @@ export const useHabitStore = create<HabitState>()(
                         const newCompleted = !t.completed;
                         const newStatus = newCompleted ? 'completed' : 'today';
 
-                        // Async update in background
                         import('@/services/taskService').then(({ taskService }) => {
-                            taskService.updateTask(taskId, { completed: newCompleted, status: newStatus as any });
+                            taskService.updateTask(taskId, { completed: newCompleted, status: newStatus as any })
+                                .catch(err => console.error("Failed to sync task toggle:", err));
                         });
 
                         return { ...t, completed: newCompleted, status: newStatus as any };
@@ -241,9 +310,9 @@ export const useHabitStore = create<HabitState>()(
             }),
 
             updateTask: (taskId, updates) => set((state) => {
-                // Async update in background
                 import('@/services/taskService').then(({ taskService }) => {
-                    taskService.updateTask(taskId, updates);
+                    taskService.updateTask(taskId, updates)
+                        .catch(err => console.error("Failed to sync task update:", err));
                 });
 
                 return {
@@ -252,21 +321,31 @@ export const useHabitStore = create<HabitState>()(
             }),
 
             deleteTask: (taskId) => set((state) => {
-                // Async update in background
                 import('@/services/taskService').then(({ taskService }) => {
-                    taskService.deleteTask(taskId);
+                    taskService.deleteTask(taskId)
+                        .catch(err => console.error("Failed to sync task deletion:", err));
                 });
                 return { tasks: state.tasks.filter(t => t.id !== taskId) };
             }),
 
             fetchTasks: async () => {
-                const { taskService } = await import('@/services/taskService');
-                const tasks = await taskService.getTasks();
-                set({ tasks });
+                try {
+                    const { taskService } = await import('@/services/taskService');
+                    const dbTasks = await taskService.getTasks();
+                    console.log("Fetched Tasks from DB:", dbTasks.length);
+
+                    if (dbTasks.length > 0) {
+                        set({ tasks: dbTasks });
+                    } else if (get().tasks.length === 0) {
+                        // Only set initial tasks if store is empty and DB is empty
+                        set({ tasks: INITIAL_TASKS });
+                    }
+                } catch (error) {
+                    console.error("Error fetching tasks:", error);
+                }
             },
 
             fetchHabits: async () => {
-                // Future: add persistence for habits
                 console.log("Habits synchronized");
             },
 
@@ -318,14 +397,12 @@ export const useHabitStore = create<HabitState>()(
                 const dateStr = formatDate(today);
                 const { habits, updateHabitValue } = get();
 
-                // Find a 'coding' timer habit or target a specific one
                 const codingHabit = habits.find(h => h.category === 'coding' && h.type === 'timer');
                 if (codingHabit) {
                     const currentVal = codingHabit.history[dateStr] || 0;
                     updateHabitValue(codingHabit.id, today, currentVal + minutes);
                 }
 
-                // Also give XP bonus for deep work
                 set((state) => ({
                     user: { ...state.user, xp: state.user.xp + (minutes * 2) }
                 }));
@@ -353,7 +430,6 @@ export const useHabitStore = create<HabitState>()(
 
             resetData: () => {
                 const currentState = get();
-                // Create emergency backup in localStorage
                 localStorage.setItem('habit-tracker-emergency-backup', JSON.stringify({
                     user: currentState.user,
                     habits: currentState.habits,
@@ -396,10 +472,9 @@ export const useHabitStore = create<HabitState>()(
         }),
         {
             name: 'habit-tracker-storage',
-            version: 6, // Increment version for deep work action
+            version: 6,
             migrate: (persistedState: any, version: number) => {
                 if (version < 6) {
-                    // Just return common structures, defaults will handle the rest
                     return {
                         ...persistedState,
                         tasks: persistedState.tasks || INITIAL_TASKS,
@@ -412,7 +487,8 @@ export const useHabitStore = create<HabitState>()(
                 user: state.user,
                 habits: state.habits,
                 schedule: state.schedule,
-                tasks: state.tasks
+                tasks: state.tasks,
+                workoutLogs: state.workoutLogs
             }),
         }
     )

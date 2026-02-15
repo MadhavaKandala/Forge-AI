@@ -41,14 +41,12 @@ export const AddHabitModal = ({ open, onOpenChange }: AddHabitModalProps) => {
 
         try {
             await addHabit({
-                name: name.trim(),
-                habit_type: habitType as any,
-                category,
-                recurrence_pattern: frequency,
-                difficulty: 'medium' as any,
-                reminder_time: reminderTime || undefined,
-                ...(habitType === 'counter' ? { counter_goal: counterGoal, counter_unit: counterUnit } : {}),
-                ...(habitType === 'duration' ? { duration_goal_minutes: durationGoal } : {}),
+                title: name.trim(),
+                type: habitType as any,
+                category: category as any,
+                time: frequency === 'daily' ? 'All Day' : frequency,
+                ...(habitType === 'counter' ? { goal: counterGoal, unit: counterUnit } : {}),
+                ...(habitType === 'duration' ? { goal: durationGoal, unit: 'min' } : {}),
             });
 
             // Reset form

@@ -37,6 +37,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CreateChallengeDialog } from '../CreateChallengeDialog';
 import { ChallengeCategory } from '@/types/challenge';
+import { githubService } from '@/services/githubService';
 
 interface CodeHubProps {
   challenges: Challenge[];
@@ -94,6 +95,7 @@ export function CodeHub({ challenges, onNavigateBack }: CodeHubProps) {
   // Local state for forms
   const [editProfile, setEditProfile] = useState(userProfile.coding);
   const [githubUsername, setGithubUsername] = useState(userProfile.coding.github?.username || '');
+  const [isRefreshingGithub, setIsRefreshingGithub] = useState(false);
 
   // Filter coding challenges
   const codingChallenges = useMemo(() => {
@@ -127,24 +129,25 @@ export function CodeHub({ challenges, onNavigateBack }: CodeHubProps) {
     setProfileDialogOpen(false);
   };
 
-  const handleGithubConnect = () => {
-    // Simulate fetching data
-    const mockStats = {
-      username: githubUsername,
-      commits: Math.floor(Math.random() * 500) + 50,
-      pullRequests: Math.floor(Math.random() * 50),
-      contributions: Math.floor(Math.random() * 1000) + 100,
-      streak: Math.floor(Math.random() * 30),
-      isConnected: true,
-    };
+  // Filter coding challenges
+  // ...
 
-    updateUserProfile({
-      coding: {
-        ...userProfile.coding,
-        github: mockStats
-      }
-    });
-    setGithubDialogOpen(false);
+  const handleGithubConnect = async () => {
+    setIsRefreshingGithub(true);
+    try {
+      const stats = await githubService.fetchStats(githubUsername);
+      updateUserProfile({
+        coding: {
+          ...userProfile.coding,
+          github: stats
+        }
+      });
+      setGithubDialogOpen(false);
+    } catch (error) {
+      alert('Could not find GitHub user');
+    } finally {
+      setIsRefreshingGithub(false);
+    }
   };
 
   const handleStartChallenge = (preset: typeof DAILY_CHALLENGES[0]) => {
@@ -552,7 +555,9 @@ export function CodeHub({ challenges, onNavigateBack }: CodeHubProps) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setGithubDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleGithubConnect} disabled={!githubUsername}>Connect</Button>
+            <Button onClick={handleGithubConnect} disabled={!githubUsername || isRefreshingGithub}>
+              {isRefreshingGithub ? 'Connecting...' : 'Connect'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

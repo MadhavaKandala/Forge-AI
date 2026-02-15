@@ -25,7 +25,8 @@ import {
   Scale,
   Footprints,
   Activity,
-  Plus, // Add Plus icon
+  Plus,
+  X,
 } from 'lucide-react';
 import {
   ChartContainer,
@@ -47,6 +48,8 @@ import {
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 import { FitnessRecord, BodyMetric } from '@/types/challenge';
 
+import { useHabitStore, WorkoutLog } from '@/store/useHabitStore';
+
 interface FitnessHubProps {
   challenges: Challenge[];
   onNavigateBack?: () => void;
@@ -59,10 +62,18 @@ export function FitnessHub({ challenges, onNavigateBack }: FitnessHubProps) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [metricsDialogOpen, setMetricsDialogOpen] = useState(false);
   const [recordDialogOpen, setRecordDialogOpen] = useState(false);
+  const [workoutDialogOpen, setWorkoutDialogOpen] = useState(false);
+
+  const { workoutLogs, addWorkoutLog } = useHabitStore();
 
   // Local state for editing
   const [editMetrics, setEditMetrics] = useState(userProfile.fitness.metrics);
   const [newRecord, setNewRecord] = useState<Partial<FitnessRecord>>({ name: '', value: '', unit: '', icon: '🏆' });
+  const [newWorkout, setNewWorkout] = useState<Omit<WorkoutLog, 'id'>>({
+    exerciseName: '',
+    date: new Date().toISOString().split('T')[0],
+    sets: [{ reps: 0, weight: 0, isCompleted: true }]
+  });
 
   // Filter fitness challenges
   const fitnessChallenges = useMemo(() => {
@@ -283,8 +294,8 @@ export function FitnessHub({ challenges, onNavigateBack }: FitnessHubProps) {
                     <div
                       key={pr.id}
                       className={`p-3 rounded-lg border transition-all hover:scale-[1.02] ${pr.isRecent
-                          ? 'bg-yellow-500/5 border-yellow-500/30 ring-1 ring-yellow-500/20'
-                          : 'bg-muted/50 border-border/50'
+                        ? 'bg-yellow-500/5 border-yellow-500/30 ring-1 ring-yellow-500/20'
+                        : 'bg-muted/50 border-border/50'
                         }`}
                     >
                       <div className="flex items-center justify-between mb-2">
@@ -492,6 +503,58 @@ export function FitnessHub({ challenges, onNavigateBack }: FitnessHubProps) {
               </div>
             </CardContent>
           </Card>
+
+          {/* Workout Volume / Exercise Logs */}
+          <Card className="hover:shadow-lg transition-shadow duration-300">
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Activity className="w-5 h-5 text-emerald-500" />
+                  Workout Volume
+                </CardTitle>
+                <CardDescription>Track sets, reps, and weights</CardDescription>
+              </div>
+              <Button size="sm" onClick={() => setWorkoutDialogOpen(true)} className="gap-2">
+                <Plus className="w-4 h-4" />
+                Log Set
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {workoutLogs.length > 0 ? (
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {workoutLogs.slice(-4).reverse().map((log) => (
+                      <div key={log.id} className="p-4 rounded-xl border bg-muted/30">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-bold text-sm uppercase tracking-tight">{log.exerciseName}</h4>
+                          <span className="text-[10px] text-muted-foreground">{format(parseISO(log.date), 'MMM d')}</span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {log.sets.map((set, i) => (
+                            <div key={i} className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">Set {i + 1}</span>
+                              <span className="font-medium">{set.reps} reps @ {set.weight} lbs</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 pt-2 border-t border-border/50 flex justify-between items-center text-[10px]">
+                          <span className="text-muted-foreground">Total Volume</span>
+                          <span className="font-bold text-emerald-500">
+                            {log.sets.reduce((sum, s) => sum + (s.reps * s.weight), 0)} lbs
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 border border-dashed rounded-xl bg-muted/10">
+                    <Activity className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+                    <p className="text-xs text-muted-foreground">No workouts logged yet</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right Column */}
@@ -557,8 +620,8 @@ export function FitnessHub({ challenges, onNavigateBack }: FitnessHubProps) {
                     <div className="flex-1 h-6 rounded-full bg-muted/50 overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${day.percentage >= 80 ? 'bg-green-500' :
-                            day.percentage >= 60 ? 'bg-yellow-500' :
-                              'bg-red-500/70'
+                          day.percentage >= 60 ? 'bg-yellow-500' :
+                            'bg-red-500/70'
                           }`}
                         style={{ width: `${day.percentage}%` }}
                       />
@@ -730,6 +793,110 @@ export function FitnessHub({ challenges, onNavigateBack }: FitnessHubProps) {
           </div>
           <DialogFooter>
             <Button onClick={handleRecordSave} disabled={!newRecord.name || !newRecord.value}>Add PR</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Add Workout Dialog */}
+      <Dialog open={workoutDialogOpen} onOpenChange={setWorkoutDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Log Workout Volume</DialogTitle>
+            <DialogDescription>Add a specific exercise and its sets</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Exercise Name</Label>
+              <Input
+                placeholder="e.g. Bench Press"
+                value={newWorkout.exerciseName}
+                onChange={(e) => setNewWorkout({ ...newWorkout, exerciseName: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Sets</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setNewWorkout({
+                    ...newWorkout,
+                    sets: [...newWorkout.sets, { reps: 0, weight: 0, isCompleted: true }]
+                  })}
+                  className="h-7 text-[10px]"
+                >
+                  + Add Set
+                </Button>
+              </div>
+
+              <div className="max-h-[200px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                {newWorkout.sets.map((set, index) => (
+                  <div key={index} className="flex items-center gap-3 bg-muted/30 p-3 rounded-xl border border-border/50">
+                    <div className="w-6 h-6 rounded-full bg-zinc-900 border border-border flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1 grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold">Reps</span>
+                        <Input
+                          type="number"
+                          className="h-8 text-sm"
+                          value={set.reps}
+                          onChange={(e) => {
+                            const newSets = [...newWorkout.sets];
+                            newSets[index].reps = parseInt(e.target.value) || 0;
+                            setNewWorkout({ ...newWorkout, sets: newSets });
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold">Lbs</span>
+                        <Input
+                          type="number"
+                          className="h-8 text-sm"
+                          value={set.weight}
+                          onChange={(e) => {
+                            const newSets = [...newWorkout.sets];
+                            newSets[index].weight = parseFloat(e.target.value) || 0;
+                            setNewWorkout({ ...newWorkout, sets: newSets });
+                          }}
+                        />
+                      </div>
+                    </div>
+                    {newWorkout.sets.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-500/50 hover:text-red-500"
+                        onClick={() => {
+                          const newSets = newWorkout.sets.filter((_, i) => i !== index);
+                          setNewWorkout({ ...newWorkout, sets: newSets });
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setWorkoutDialogOpen(false)}>Cancel</Button>
+            <Button
+              onClick={() => {
+                addWorkoutLog(newWorkout);
+                setWorkoutDialogOpen(false);
+                setNewWorkout({
+                  exerciseName: '',
+                  date: new Date().toISOString().split('T')[0],
+                  sets: [{ reps: 0, weight: 0, isCompleted: true }]
+                });
+              }}
+              disabled={!newWorkout.exerciseName}
+            >
+              Log Workout
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
