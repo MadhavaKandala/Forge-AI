@@ -11,18 +11,26 @@ import { ProfileSection } from '@/components/habit-tracker/ProfileSection';
 import { EisenhowerMatrix } from '@/components/habit-tracker/EisenhowerMatrix';
 import { ProductivityTracker } from '@/components/habit-tracker/ProductivityTracker';
 import { SmartSchedule } from '@/components/habit-tracker/SmartSchedule';
+import { WhatNextCard } from '@/components/habit-tracker/WhatNextCard';
 import { ProgramSection } from '@/components/habit-tracker/ProgramSection';
+import { AddTaskModal } from '@/components/habit-tracker/AddTaskModal';
 import TasksPage from './TasksPage';
 import { CodeHub } from '@/components/Hubs/CodeHub';
 import { FitnessHub } from '@/components/Hubs/FitnessHub';
 import { ReadingHub } from '@/components/Hubs/ReadingHub';
 import { DietHub } from '@/components/Hubs/DietHub';
 import { useChallenges } from '@/hooks/useChallenges';
+import { useHabitStore } from '@/store/useHabitStore';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('hub');
   const [selectedHub, setSelectedHub] = useState<string | null>(null);
   const { activeChallenges } = useChallenges();
+  const { fetchTasks } = useHabitStore();
+
+  React.useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white pb-32 font-sans selection:bg-primary selection:text-black overflow-x-hidden">
@@ -38,6 +46,9 @@ const Index = () => {
 
             {/* Live Programs - Horizontal High Density */}
             <ProgramSection onSeeAll={() => setActiveTab('program')} onHubSelect={setSelectedHub} />
+
+            {/* Smart Suggestions - High Priority */}
+            <WhatNextCard />
 
             {/* Smart Schedule - Real Time Context */}
             <SmartSchedule />
@@ -99,6 +110,13 @@ const Index = () => {
         {selectedHub === 'diet' && (
           <div className="fixed inset-0 bg-[#09090b] z-50 overflow-y-auto px-6 py-8 animate-in slide-in-from-right duration-300">
             <DietHub onNavigateBack={() => setSelectedHub(null)} />
+          </div>
+        )}
+
+        {/* Global Floating Action Button */}
+        {activeTab !== 'tasks' && (
+          <div className="fixed bottom-24 right-6 z-40">
+            <AddTaskModal />
           </div>
         )}
       </div>

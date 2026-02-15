@@ -271,6 +271,11 @@ export const useHabitStore = create<HabitState>()(
                     set((state) => ({
                         tasks: [newTask, ...state.tasks.filter(t => !t.id.startsWith('local-'))]
                     }));
+
+                    // Refresh suggester
+                    import('./useSuggesterStore').then(({ useSuggesterStore }) => {
+                        useSuggesterStore.getState().getSuggestion();
+                    });
                 } catch (error) {
                     console.error("Error creating task in store:", error);
                     toast.error("Database connection issue. Task saved locally only.");
@@ -306,6 +311,10 @@ export const useHabitStore = create<HabitState>()(
                     }
                     return t;
                 });
+                // Refresh suggester
+                import('./useSuggesterStore').then(({ useSuggesterStore }) => {
+                    useSuggesterStore.getState().getSuggestion();
+                });
                 return { tasks: updatedTasks };
             }),
 
@@ -324,6 +333,11 @@ export const useHabitStore = create<HabitState>()(
                 import('@/services/taskService').then(({ taskService }) => {
                     taskService.deleteTask(taskId)
                         .catch(err => console.error("Failed to sync task deletion:", err));
+
+                    // Refresh suggester
+                    import('./useSuggesterStore').then(({ useSuggesterStore }) => {
+                        useSuggesterStore.getState().getSuggestion();
+                    });
                 });
                 return { tasks: state.tasks.filter(t => t.id !== taskId) };
             }),
@@ -336,10 +350,26 @@ export const useHabitStore = create<HabitState>()(
 
                     if (dbTasks.length > 0) {
                         set({ tasks: dbTasks });
-                    } else if (get().tasks.length === 0) {
-                        // Only set initial tasks if store is empty and DB is empty
-                        set({ tasks: INITIAL_TASKS });
+                    } else {
+                        // DB is empty - we need to populate it
+                        if (get().tasks.length > 0) {
+                            console.log("Syncing existing store tasks to DB...");
+                            for (const task of get().tasks) {
+                                await taskService.createTask(task).catch(e => console.error("Sync error:", e));
+                            }
+                        } else {
+                            console.log("Seeding INITIAL_TASKS to DB...");
+                            set({ tasks: INITIAL_TASKS });
+                            for (const task of INITIAL_TASKS) {
+                                await taskService.createTask(task).catch(e => console.error("Seed error:", e));
+                            }
+                        }
                     }
+
+                    // Always refresh suggester after fetchTasks completes
+                    import('./useSuggesterStore').then(({ useSuggesterStore }) => {
+                        useSuggesterStore.getState().getSuggestion();
+                    });
                 } catch (error) {
                     console.error("Error fetching tasks:", error);
                 }

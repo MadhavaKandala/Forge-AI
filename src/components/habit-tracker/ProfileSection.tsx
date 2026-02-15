@@ -127,6 +127,19 @@ export const ProfileSection = () => {
                     <LogOut className="w-5 h-5" />
                     Reset Data (Debug)
                 </button>
+
+                {/* Build Info / Latest Commit */}
+                <div className="pt-8 pb-4 text-center">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] text-zinc-500 font-mono">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#dfff4f] animate-pulse"></span>
+                        Build: 1.0.64
+                        <span className="text-zinc-700">|</span>
+                        Latest Intel: <span className="text-zinc-300">742a5d3</span>
+                    </div>
+                    <p className="mt-2 text-[9px] text-zinc-600 uppercase tracking-tighter font-black italic">
+                        "Fix mission persistence and display issues..."
+                    </p>
+                </div>
             </div>
         </div>
     );

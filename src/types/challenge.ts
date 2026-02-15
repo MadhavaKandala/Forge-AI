@@ -100,6 +100,11 @@ export interface GitHubStats {
   contributions: number;
   streak: number;
   isConnected: boolean;
+  latestCommit?: {
+    message: string;
+    hash: string;
+    date: string;
+  };
 }
 
 export interface CodingProfile {

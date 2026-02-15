@@ -89,7 +89,6 @@ export const SmartSchedule = () => {
         if (actionType === 'pomodoro') {
             navigate('/pomodoro');
         } else if (actionType === 'habit') {
-            // Can scroll to habit list or do nothing for now
             const habitList = document.getElementById('habit-checklist');
             habitList?.scrollIntoView({ behavior: 'smooth' });
         }
@@ -102,7 +101,6 @@ export const SmartSchedule = () => {
     return (
         <div className="w-full px-6 mb-8">
             <div className="bg-[#18181B] border border-[#27272A] rounded-2xl p-4 relative overflow-hidden group hover:border-zinc-700 transition-colors">
-                {/* Active Indicator Glow */}
                 <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-${blockColor.replace('text-', '')}/10 to-transparent blur-xl`}></div>
 
                 <div className="flex justify-between items-start mb-4">
@@ -117,7 +115,6 @@ export const SmartSchedule = () => {
                     </div>
                 </div>
 
-                {/* Suggestion Box */}
                 <div className="bg-zinc-900/50 rounded-xl p-3 border border-zinc-800/50 flex items-center justify-between">
                     <div>
                         <p className="text-[10px] text-zinc-400 font-black mb-0.5 tracking-widest uppercase">SMART SUGGESTION</p>
@@ -134,7 +131,6 @@ export const SmartSchedule = () => {
                     )}
                 </div>
 
-                {/* Vertical Timeline Preview (Mini) */}
                 <div className="mt-4 flex gap-1 h-1 w-full bg-[#27272A] rounded-full overflow-hidden">
                     <div className="h-full bg-yellow-500 w-[10%]" title="Morning"></div>
                     <div className="h-full bg-orange-500 w-[10%]" title="Commute"></div>

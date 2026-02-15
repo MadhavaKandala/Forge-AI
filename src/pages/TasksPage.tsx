@@ -47,9 +47,12 @@ const TasksPage = () => {
         <div className="w-full h-screen overflow-hidden flex flex-col relative bg-background text-foreground">
             <div className="p-4 flex items-center justify-between sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-zinc-900">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-zinc-900 rounded-xl border border-zinc-800">
-                        <Layout className="h-5 w-5 text-[#dfff4f]" />
-                    </div>
+                    <button
+                        onClick={() => window.history.back()}
+                        className="p-2 bg-zinc-900 rounded-xl border border-zinc-800 hover:text-[#dfff4f] transition-colors"
+                    >
+                        <Layout className="h-5 w-5" />
+                    </button>
                     <h1 className="text-xl font-black italic uppercase tracking-tighter">Mission Control</h1>
                 </div>
                 <div className="flex items-center gap-2">

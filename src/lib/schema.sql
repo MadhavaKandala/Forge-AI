@@ -138,3 +138,77 @@ CREATE TABLE IF NOT EXISTS category_time_stats (
   
   UNIQUE(category, date)
 );
+
+-- Task Scoring Data
+CREATE TABLE IF NOT EXISTS task_scores (
+  id TEXT PRIMARY KEY,
+  task_id TEXT NOT NULL,
+  
+  -- Component scores
+  priority_score INTEGER DEFAULT 0,
+  time_fit_score INTEGER DEFAULT 0,
+  impact_score INTEGER DEFAULT 0,
+  momentum_score INTEGER DEFAULT 0,
+  energy_match_score INTEGER DEFAULT 0,
+  
+  -- Weighted total
+  final_score INTEGER DEFAULT 0,
+  
+  -- Metadata
+  calculated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  context TEXT, -- JSON string: {time, location, energy, etc}
+  reason TEXT, -- Why this score
+  
+  FOREIGN KEY (task_id) REFERENCES tasks(id)
+);
+
+-- Smart Suggestions History
+CREATE TABLE IF NOT EXISTS smart_suggestions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT,
+  
+  -- What was suggested
+  suggested_task_id TEXT NOT NULL,
+  rank INTEGER, -- 1st suggestion, 2nd option, etc
+  
+  -- Context at suggestion time
+  time_available_minutes INTEGER,
+  energy_level TEXT,
+  current_time TEXT,
+  day_of_week TEXT,
+  
+  -- User response
+  action_taken TEXT, -- started, skipped, chose_other, ignored
+  task_completed INTEGER DEFAULT 0,
+  time_to_complete INTEGER,
+  
+  -- Accuracy tracking
+  was_correct_suggestion INTEGER DEFAULT 0,
+  feedback_score INTEGER, -- 1-5 stars
+  
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (suggested_task_id) REFERENCES tasks(id)
+);
+
+-- Energy & Productivity Patterns
+CREATE TABLE IF NOT EXISTS user_patterns (
+  id TEXT PRIMARY KEY,
+  user_id TEXT,
+  
+  -- Time-based patterns
+  best_time_for_coding TEXT, -- HH:MM
+  best_time_for_study TEXT,
+  best_time_for_creative TEXT,
+  peak_energy_time TEXT,
+  
+  -- Task preferences
+  preferred_task_duration INTEGER,
+  avg_focus_time INTEGER,
+  break_frequency INTEGER,
+  
+  -- Historical data
+  completion_rate_percentage INTEGER DEFAULT 0,
+  avg_tasks_per_day INTEGER DEFAULT 0,
+  
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);

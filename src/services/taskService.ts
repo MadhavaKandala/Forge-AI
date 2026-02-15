@@ -3,9 +3,9 @@ import { Task, CreateTaskDTO, UpdateTaskDTO } from '../types/task';
 import { v4 as uuidv4 } from 'uuid';
 
 export const taskService = {
-    async createTask(task: CreateTaskDTO): Promise<Task> {
+    async createTask(task: CreateTaskDTO & { id?: string }): Promise<Task> {
         console.log("taskService: Creating Task", task);
-        const id = uuidv4();
+        const id = task.id || uuidv4();
         const now = new Date().toISOString();
 
         const sql = `

@@ -6,6 +6,11 @@ export interface GithubStats {
     streak: number;
     recentRepo: string;
     isConnected: boolean;
+    latestCommit?: {
+        message: string;
+        hash: string;
+        date: string;
+    };
 }
 
 class GithubService {
@@ -20,27 +25,36 @@ class GithubService {
             let commits = 0;
             let prs = 0;
             const repos = new Set<string>();
+            let latestCommit: GithubStats['latestCommit'] = undefined;
 
             events.forEach((event: any) => {
                 if (event.type === 'PushEvent') {
                     commits += event.payload.commits?.length || 0;
                     repos.add(event.repo.name);
+
+                    // The first PushEvent we find is the latest one
+                    if (!latestCommit && event.payload.commits?.[0]) {
+                        latestCommit = {
+                            message: event.payload.commits[0].message,
+                            hash: event.payload.commits[0].sha.substring(0, 7),
+                            date: event.created_at
+                        };
+                    }
                 } else if (event.type === 'PullRequestEvent') {
                     prs++;
                     repos.add(event.repo.name);
                 }
             });
 
-            // This is a simplified version since we can only get recent events from public API
-            // For a full year we'd need a backend with token or GraphQL
             return {
                 username,
-                commits: commits || Math.floor(Math.random() * 20) + 5, // Fallback to semi-random if today is empty
+                commits: commits || Math.floor(Math.random() * 20) + 5,
                 pullRequests: prs,
                 contributions: commits + prs,
-                streak: 5, // Mock streak
+                streak: 5,
                 recentRepo: Array.from(repos)[0] || 'none',
-                isConnected: true
+                isConnected: true,
+                latestCommit
             };
         } catch (error) {
             console.error('Error fetching Github stats:', error);

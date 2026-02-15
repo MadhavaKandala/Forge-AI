@@ -236,3 +236,49 @@ export interface ProgramMilestone {
     isCompleted: boolean;
     xpReward: number;
 }
+
+export interface TaskScore {
+    id: string;
+    task_id: string;
+    priority_score: number;
+    time_fit_score: number;
+    impact_score: number;
+    momentum_score: number;
+    energy_match_score: number;
+    final_score: number;
+    calculated_at: string;
+    context: string; // JSON string: {time, location, energy, etc}
+    reason: string;
+}
+
+export interface SmartSuggestion {
+    id: string;
+    user_id: string;
+    suggested_task_id: string;
+    rank: number;
+    time_available_minutes: number;
+    energy_level: string;
+    current_time: string;
+    day_of_week: string;
+    action_taken?: 'started' | 'skipped' | 'chose_other' | 'ignored';
+    task_completed: number; // 0 or 1
+    time_to_complete?: number;
+    was_correct_suggestion: number; // 0 or 1
+    feedback_score?: number;
+    created_at: string;
+}
+
+export interface UserPattern {
+    id: string;
+    user_id: string;
+    best_time_for_coding?: string;
+    best_time_for_study?: string;
+    best_time_for_creative?: string;
+    peak_energy_time?: string;
+    preferred_task_duration?: number;
+    avg_focus_time?: number;
+    break_frequency?: number;
+    completion_rate_percentage: number;
+    avg_tasks_per_day: number;
+    updated_at: string;
+}

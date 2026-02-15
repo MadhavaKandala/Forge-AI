@@ -431,7 +431,22 @@ export function CodeHub({ challenges, onNavigateBack }: CodeHubProps) {
                         <span>Contributions</span>
                         <span>{userProfile.coding.github.contributions} total</span>
                       </div>
-                      <Progress value={75} className="h-1.5" />
+                      <Progress value={75} className="h-1.5 mb-4" />
+
+                      {userProfile.coding.github.latestCommit && (
+                        <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Latest Commit</span>
+                            <span className="text-[10px] font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded">{userProfile.coding.github.latestCommit.hash}</span>
+                          </div>
+                          <p className="text-xs text-zinc-200 font-medium line-clamp-2 mb-1.5 leading-tight">
+                            {userProfile.coding.github.latestCommit.message}
+                          </p>
+                          <p className="text-[9px] text-zinc-500 italic">
+                            {new Date(userProfile.coding.github.latestCommit.date).toLocaleDateString()} at {new Date(userProfile.coding.github.latestCommit.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </>
                 ) : (

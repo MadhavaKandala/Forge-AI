@@ -8,6 +8,8 @@ import PomodoroPage from "./pages/PomodoroPage";
 import SchedulePage from "./pages/SchedulePage";
 import ProgramsPage from "./pages/ProgramsPage";
 import ProgramDetailPage from "./pages/ProgramDetailPage";
+import WhatNextPage from "./pages/WhatNextPage";
+import TasksPage from "./pages/TasksPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -119,6 +121,8 @@ const App = () => {
             <Route path="/schedule" element={<SchedulePage />} />
             <Route path="/programs" element={<ProgramsPage />} />
             <Route path="/programs/:id" element={<ProgramDetailPage />} />
+            <Route path="/what-next" element={<WhatNextPage />} />
+            <Route path="/tasks" element={<TasksPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
