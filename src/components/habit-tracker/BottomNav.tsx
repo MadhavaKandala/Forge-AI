@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, BarChart2, Users, User, LayoutGrid, Layout } from 'lucide-react';
+import { Home, BarChart2, Users, User, LayoutGrid, Layout, Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface BottomNavProps {
@@ -11,6 +11,7 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
     const navItems = [
         { id: 'hub', icon: Home, label: 'Hub' },
         { id: 'tasks', icon: Layout, label: 'Tasks' },
+        { id: 'voice', icon: Mic, label: 'Voice' },
         { id: 'analytics', icon: BarChart2, label: 'Stats' },
         { id: 'program', icon: LayoutGrid, label: 'Program' },
         { id: 'profile', icon: User, label: 'Profile' },

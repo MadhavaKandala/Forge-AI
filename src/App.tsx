@@ -10,6 +10,7 @@ import ProgramsPage from "./pages/ProgramsPage";
 import ProgramDetailPage from "./pages/ProgramDetailPage";
 import WhatNextPage from "./pages/WhatNextPage";
 import TasksPage from "./pages/TasksPage";
+import VoiceNotePage from "./pages/VoiceNotePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

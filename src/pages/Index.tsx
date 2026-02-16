@@ -15,6 +15,7 @@ import { WhatNextCard } from '@/components/habit-tracker/WhatNextCard';
 import { ProgramSection } from '@/components/habit-tracker/ProgramSection';
 import { AddTaskModal } from '@/components/habit-tracker/AddTaskModal';
 import TasksPage from './TasksPage';
+import VoiceNotePage from './VoiceNotePage';
 import { CodeHub } from '@/components/Hubs/CodeHub';
 import { FitnessHub } from '@/components/Hubs/FitnessHub';
 import { ReadingHub } from '@/components/Hubs/ReadingHub';
@@ -75,7 +76,7 @@ const Index = () => {
         )}
 
         {activeTab === 'tasks' && <TasksPage />}
-
+        {activeTab === 'voice' && <VoiceNotePage />}
         {activeTab === 'analytics' && <AnalyticsSection />}
         {activeTab === 'program' && (
           <div className="px-6 py-6">

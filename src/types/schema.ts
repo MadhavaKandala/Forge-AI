@@ -82,6 +82,8 @@ export interface Task {
     subcategory?: string;
     tags?: string; // JSON array
     priority: 'low' | 'medium' | 'high';
+    size?: 'small' | 'medium' | 'large';
+    quadrant?: 'q1' | 'q2' | 'q3' | 'q4';
     status: 'todo' | 'in_progress' | 'completed' | 'cancelled';
     estimated_minutes?: number;
     actual_minutes?: number;

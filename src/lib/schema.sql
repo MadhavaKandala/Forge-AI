@@ -212,3 +212,37 @@ CREATE TABLE IF NOT EXISTS user_patterns (
   
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Voice Notes Table
+CREATE TABLE IF NOT EXISTS voice_notes (
+  id TEXT PRIMARY KEY,
+  audio_url TEXT,
+  duration_seconds INTEGER,
+  raw_transcript TEXT,
+  processed_transcript TEXT,
+  status TEXT DEFAULT 'new', -- new, processing, processed, confirmed
+  recorded_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Extracted Items Table (temporary storage before confirmation)
+CREATE TABLE IF NOT EXISTS extracted_items (
+  id TEXT PRIMARY KEY,
+  voice_note_id TEXT,
+  type TEXT, -- task, event, reminder
+  title TEXT NOT NULL,
+  description TEXT,
+  
+  -- Extracted data
+  category TEXT,
+  priority TEXT,
+  time_info TEXT, -- JSON string or raw text
+  duration_minutes INTEGER,
+  contact_info TEXT,
+  program_name TEXT,
+  
+  -- Status
+  is_approved INTEGER DEFAULT 0,
+  
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (voice_note_id) REFERENCES voice_notes(id)
+);
