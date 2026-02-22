@@ -17,6 +17,10 @@ export class TaskRepository extends BaseRepository<Task> {
         return this.query(`SELECT * FROM ${this.tableName} WHERE scheduled_date = ? ORDER BY scheduled_time ASC`, [date]);
     }
 
+    async findByListId(listId: string): Promise<Task[]> {
+        return this.query(`SELECT * FROM ${this.tableName} WHERE list_id = ? ORDER BY created_at DESC`, [listId]);
+    }
+
     async getSubtasks(taskId: string): Promise<Subtask[]> {
         const query = `SELECT * FROM subtasks WHERE task_id = ? ORDER BY sort_order ASC`;
         const result = await dbService.query(query, [taskId]);

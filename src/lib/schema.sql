@@ -1,10 +1,21 @@
+-- Blitz Lists Table
+CREATE TABLE IF NOT EXISTS blitz_lists (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  color TEXT,
+  initial TEXT,
+  user_id TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS tasks (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   description TEXT,
   category TEXT, -- coding, gym, diet, personal, academics, devotional
   priority TEXT DEFAULT 'medium', -- low, medium, high
-  status TEXT DEFAULT 'backlog', -- backlog, this_week, today, in_progress, completed
+  status TEXT DEFAULT 'backlog', -- backlog, this_week, today, in_progress, completed, done
   completed INTEGER DEFAULT 0,
   
   -- 1-3-5 and Eisenhower Rule
@@ -26,6 +37,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   
   -- Links & Content
   notes TEXT,
+  list_id TEXT, -- FK to blitz_lists
   external_links TEXT, -- JSON array
   attachments TEXT, -- JSON array
   tags TEXT, -- JSON array
@@ -36,7 +48,31 @@ CREATE TABLE IF NOT EXISTS tasks (
   -- Timestamps
   completed_at TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (list_id) REFERENCES blitz_lists(id)
+);
+
+
+-- Blitz Sessions Table
+CREATE TABLE IF NOT EXISTS blitz_sessions (
+  id TEXT PRIMARY KEY,
+  task_id TEXT,
+  started_at TEXT NOT NULL,
+  ended_at TEXT,
+  duration_seconds INTEGER,
+  est_minutes INTEGER,
+  taken_minutes INTEGER,
+  was_completed INTEGER DEFAULT 0,
+  FOREIGN KEY (task_id) REFERENCES tasks(id)
+);
+
+-- Blitz Breaks Table
+CREATE TABLE IF NOT EXISTS blitz_breaks (
+  id TEXT PRIMARY KEY,
+  session_id TEXT,
+  started_at TEXT NOT NULL,
+  ended_at TEXT,
+  FOREIGN KEY (session_id) REFERENCES blitz_sessions(id)
 );
 
 -- Pomodoro Sessions Table

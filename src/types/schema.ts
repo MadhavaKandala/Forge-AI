@@ -22,6 +22,7 @@ export interface User {
     quiet_hours_start?: string;
     quiet_hours_end?: string;
     joined_at: string;
+    onboarding_completed: number; // 0 or 1
     last_active_at: string;
     created_at: string;
     updated_at: string;
@@ -84,7 +85,7 @@ export interface Task {
     priority: 'low' | 'medium' | 'high';
     size?: 'small' | 'medium' | 'large';
     quadrant?: 'q1' | 'q2' | 'q3' | 'q4';
-    status: 'todo' | 'in_progress' | 'completed' | 'cancelled';
+    status: 'todo' | 'in_progress' | 'completed' | 'cancelled' | 'backlog' | 'this_week' | 'today' | 'done';
     estimated_minutes?: number;
     actual_minutes?: number;
     time_accuracy_score?: number;
@@ -100,6 +101,7 @@ export interface Task {
     completed_subtasks: number;
     total_subtasks: number;
     notes?: string;
+    list_id?: string; // FK to BlitzList
     external_links?: string; // JSON array
     attachments?: string; // JSON array
     xp_value: number;
@@ -120,6 +122,34 @@ export interface Subtask {
     created_at: string;
 }
 
+export interface BlitzList {
+    id: string;
+    title: string;
+    color?: string;
+    initial?: string;
+    user_id?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface BlitzSession {
+    id: string;
+    task_id: string;
+    started_at: string;
+    ended_at?: string;
+    duration_seconds?: number;
+    est_minutes?: number;
+    taken_minutes?: number;
+    was_completed: number; // 0 or 1
+}
+
+export interface BlitzBreak {
+    id: string;
+    session_id: string;
+    started_at: string;
+    ended_at?: string;
+}
+
 export interface PomodoroSession {
     id: string;
     user_id: string;
@@ -131,18 +161,12 @@ export interface PomodoroSession {
     preset_name?: string;
     started_at: string;
     ended_at?: string;
-    paused_at?: string;
-    total_pause_duration_minutes: number;
+    duration_seconds?: number; // Added for compatibility if needed
     was_completed: number; // 0 or 1
     was_interrupted: number; // 0 or 1
     interruption_reason?: string;
     focus_score?: number;
     distractions_count: number;
-    distraction_notes?: string;
-    notes?: string;
-    mood_before?: number;
-    mood_after?: number;
-    xp_earned: number;
     created_at: string;
 }
 

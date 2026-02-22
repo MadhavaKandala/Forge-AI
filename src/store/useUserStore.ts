@@ -27,6 +27,7 @@ export const useUserStore = create<UserState>((set, get) => ({
                     name: 'Madhava', // From previous store
                     level: 1,
                     total_xp: 0,
+                    onboarding_completed: 0,
                     avatar_url: 'https://github.com/shadcn.png'
                 };
                 user = await userRepository.create(defaultUser);

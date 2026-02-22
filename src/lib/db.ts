@@ -99,7 +99,8 @@ class DatabaseService {
         { name: 'external_links', type: 'TEXT' },
         { name: 'attachments', type: 'TEXT' },
         { name: 'tags', type: 'TEXT' },
-        { name: 'subtasks', type: 'TEXT' }
+        { name: 'subtasks', type: 'TEXT' },
+        { name: 'list_id', type: 'TEXT' }
       ];
 
       const existingColumns = await this.query('PRAGMA table_info(tasks)');

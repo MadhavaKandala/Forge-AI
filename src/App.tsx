@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import PomodoroPage from "./pages/PomodoroPage";
 import SchedulePage from "./pages/SchedulePage";
@@ -11,6 +11,8 @@ import ProgramDetailPage from "./pages/ProgramDetailPage";
 import WhatNextPage from "./pages/WhatNextPage";
 import TasksPage from "./pages/TasksPage";
 import VoiceNotePage from "./pages/VoiceNotePage";
+import { OnboardingPage } from "./pages/OnboardingPage";
+import BlitzFocusPage from "./pages/BlitzFocusPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,9 +24,21 @@ import { useHabitStore } from "./store/useHabitStore";
 import { useUserStore } from "./store/useUserStore";
 import { useScheduleStore } from "./store/useScheduleStore";
 
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, isLoading } = useUserStore();
+
+  if (isLoading) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-mono">LOADING...</div>;
+  if (isLoading) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-mono">LOADING...</div>;
+  if (!user || !user.onboarding_completed) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 const App = () => {
   const { setSelectedDate: setHabitDate, fetchHabits, fetchTasks } = useHabitStore();
-  const { setSelectedDate: setScheduleDate } = useScheduleStore(); // If needed to sync both
+  const { setSelectedDate: setScheduleDate } = useScheduleStore();
   const { fetchUser } = useUserStore();
 
   const syncDate = () => {
@@ -34,7 +48,6 @@ const App = () => {
   };
 
   useEffect(() => {
-    // 0. Fetch Initial Data
     const initData = async () => {
       try {
         await fetchUser();
@@ -46,7 +59,6 @@ const App = () => {
     };
     initData();
 
-    // 1. Request Notification Permissions on mount
     const requestPermissions = async () => {
       try {
         const permStatus = await LocalNotifications.checkPermissions();
@@ -60,16 +72,15 @@ const App = () => {
 
     requestPermissions();
 
-    // 1b. Create Notification Channel (Android)
     const createChannel = async () => {
       try {
         await LocalNotifications.createChannel({
           id: 'schedule-channel',
           name: 'Schedule Reminders',
           description: 'Notifications for your scheduled activities',
-          importance: 5, // HIGH
-          visibility: 1, // PUBLIC
-          sound: 'beep.wav', // optional, will use default if not found
+          importance: 5,
+          visibility: 1,
+          sound: 'beep.wav',
           vibration: true,
         });
       } catch (e) {
@@ -78,7 +89,6 @@ const App = () => {
     };
     createChannel();
 
-    // 1c. Listen for Notifications (Foreground)
     LocalNotifications.addListener('localNotificationReceived', (notification) => {
       console.log('Notification received:', notification);
     });
@@ -87,24 +97,20 @@ const App = () => {
       console.log('Notification action performed:', notification);
     });
 
-    // 2. Initial Date Sync
     syncDate();
 
-    // 3. Listen for App State Changes (Resume) to sync date
     const subscription = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
       if (isActive) {
         syncDate();
-        fetchHabits(); // Refresh data on resume
+        fetchHabits();
       }
     });
 
-    // 4. Fallback interval check (every minute)
     const interval = setInterval(() => {
       syncDate();
     }, 60000);
 
     return () => {
-      // Clean up listeners
       subscription.then(sub => sub.remove());
       clearInterval(interval);
     };
@@ -117,15 +123,17 @@ const App = () => {
         <Sonner />
         <HashRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/pomodoro" element={<PomodoroPage />} />
-            <Route path="/schedule" element={<SchedulePage />} />
-            <Route path="/programs" element={<ProgramsPage />} />
-            <Route path="/programs/:id" element={<ProgramDetailPage />} />
-            <Route path="/what-next" element={<WhatNextPage />} />
-            <Route path="/tasks" element={<TasksPage />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+            <Route path="/onboarding" element={<OnboardingPage />} />
+            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/blitz" element={<ProtectedRoute><BlitzFocusPage /></ProtectedRoute>} />
+            <Route path="/pomodoro" element={<ProtectedRoute><PomodoroPage /></ProtectedRoute>} />
+            <Route path="/schedule" element={<ProtectedRoute><SchedulePage /></ProtectedRoute>} />
+            <Route path="/programs" element={<ProtectedRoute><ProgramsPage /></ProtectedRoute>} />
+            <Route path="/programs/:id" element={<ProtectedRoute><ProgramDetailPage /></ProtectedRoute>} />
+            <Route path="/what-next" element={<ProtectedRoute><WhatNextPage /></ProtectedRoute>} />
+            <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
+            <Route path="/voice" element={<ProtectedRoute><VoiceNotePage /></ProtectedRoute>} />
+            <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
           </Routes>
         </HashRouter>
       </TooltipProvider>
