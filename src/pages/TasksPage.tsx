@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { KanbanBoard } from '@/components/tasks/KanbanBoard';
 import { AddTaskModal } from '@/components/habit-tracker/AddTaskModal';
 import { TaskDetailModal } from '@/components/habit-tracker/TaskDetailModal';
-import { taskService } from '@/services/taskService';
 import { Task, TaskCategory, TaskStatus } from '@/types/task';
 import { Button } from '@/components/ui/button';
 import { Filter, Layout, Plus, Clock } from 'lucide-react';
@@ -12,10 +11,11 @@ import { useHabitStore } from '@/store/useHabitStore';
 import { cn } from '@/lib/utils';
 
 const TasksPage = () => {
-    const { tasks, updateTask: updateStoreTask, fetchTasks } = useHabitStore();
+    const { tasks, updateTask: updateStoreTask, completeTask, fetchTasks } = useHabitStore();
     const [filter, setFilter] = useState<{ category?: TaskCategory | 'all' }>({ category: 'all' });
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
+    const [showFilters, setShowFilters] = useState(true);
 
     useEffect(() => {
         fetchTasks();
@@ -23,10 +23,15 @@ const TasksPage = () => {
 
     const handleTaskMove = async (taskId: string, newStatus: TaskStatus) => {
         try {
-            updateStoreTask(taskId, { status: newStatus });
-            await taskService.updateTask(taskId, { status: newStatus });
+            if (newStatus === 'completed') {
+                completeTask(taskId);
+                toast.success('+25 XP');
+                return;
+            }
+
+            updateStoreTask(taskId, { status: newStatus, completed: false });
             toast.success(`Task moved to ${newStatus.replace('_', ' ')}`);
-        } catch (error) {
+        } catch {
             toast.error("Failed to move task");
         }
     };
@@ -75,32 +80,39 @@ const TasksPage = () => {
                             </Button>
                         }
                     />
-                    <Button variant="ghost" size="icon" className="h-10 w-10 bg-zinc-900/50 border border-zinc-800 rounded-xl text-zinc-500">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-10 w-10 bg-zinc-900/50 border border-zinc-800 rounded-xl text-zinc-500"
+                        onClick={() => setShowFilters((prev) => !prev)}
+                    >
                         <Filter className="h-5 w-5" />
                     </Button>
                 </div>
             </div>
 
-            <div className="px-4 pb-4">
-                <ScrollArea className="w-full whitespace-nowrap">
-                    <div className="flex w-max space-x-2 pb-2">
-                        {categories.map((cat) => (
-                            <Button
-                                key={cat}
-                                variant={filter.category === cat ? "secondary" : "outline"}
-                                size="sm"
-                                className={cn(
-                                    "rounded-full capitalize px-4 border-zinc-800",
-                                    filter.category === cat ? "bg-[#dfff4f] text-black hover:bg-[#ccee3e]" : "bg-zinc-900/50 text-zinc-400"
-                                )}
-                                onClick={() => setFilter({ ...filter, category: cat as any })}
-                            >
-                                {cat}
-                            </Button>
-                        ))}
-                    </div>
-                </ScrollArea>
-            </div>
+            {showFilters && (
+                <div className="px-4 pb-4">
+                    <ScrollArea className="w-full whitespace-nowrap">
+                        <div className="flex w-max space-x-2 pb-2">
+                            {categories.map((cat) => (
+                                <Button
+                                    key={cat}
+                                    variant={filter.category === cat ? "secondary" : "outline"}
+                                    size="sm"
+                                    className={cn(
+                                        "rounded-full capitalize px-4 border-zinc-800",
+                                        filter.category === cat ? "bg-[#dfff4f] text-black hover:bg-[#ccee3e]" : "bg-zinc-900/50 text-zinc-400"
+                                    )}
+                                    onClick={() => setFilter({ ...filter, category: cat as TaskCategory | 'all' })}
+                                >
+                                    {cat}
+                                </Button>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                </div>
+            )}
 
             <div className="flex-1 overflow-hidden">
                 <KanbanBoard

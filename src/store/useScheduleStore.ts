@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { Schedule } from '../types/schema';
 import { scheduleRepository } from '../repositories/schedule.repository';
 import { habitRepository } from '../repositories/habit.repository';
@@ -21,20 +22,22 @@ interface ScheduleState {
     addSchedule: (schedule: Omit<Schedule, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
 }
 
-export const useScheduleStore = create<ScheduleState>((set, get) => ({
-    schedules: [],
-    selectedDate: new Date(),
-    isLoading: false,
-    error: null,
+export const useScheduleStore = create<ScheduleState>()(
+    persist(
+        (set, get) => ({
+            schedules: [],
+            selectedDate: new Date(),
+            isLoading: false,
+            error: null,
 
-    setSelectedDate: (date) => {
-        set({ selectedDate: date });
-        get().fetchSchedules(date);
-    },
+            setSelectedDate: (date) => {
+                set({ selectedDate: date });
+                get().fetchSchedules(date);
+            },
 
-    fetchSchedules: async (date) => {
-        set({ isLoading: true });
-        try {
+            fetchSchedules: async (date) => {
+                set({ isLoading: true });
+                try {
             // TODO: Get real user ID
             const dateStr = date.toISOString().split('T')[0];
 
@@ -100,33 +103,42 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
                 return timeA.localeCompare(timeB);
             });
 
-            set({ schedules: allSchedules });
-        } catch (error) {
-            console.error("Error fetching schedules:", error);
-            set({ error: (error as Error).message, schedules: [] }); // Reset to empty array on error
-        } finally {
-            set({ isLoading: false });
-        }
-    },
+                    set({ schedules: allSchedules });
+                } catch (error) {
+                    console.error("Error fetching schedules:", error);
+                    set({ error: (error as Error).message, schedules: [] }); // Reset to empty array on error
+                } finally {
+                    set({ isLoading: false });
+                }
+            },
 
-    addSchedule: async (scheduleData) => {
-        try {
-            const newSchedule: Schedule = {
-                ...scheduleData,
-                id: uuidv4(),
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            } as Schedule;
+            addSchedule: async (scheduleData) => {
+                try {
+                    const newSchedule: Schedule = {
+                        ...scheduleData,
+                        id: uuidv4(),
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    } as Schedule;
 
-            await scheduleRepository.create(newSchedule);
-            // Refresh if it's for the selected date
-            const { selectedDate } = get();
-            const dateStr = selectedDate.toISOString().split('T')[0];
-            if (newSchedule.scheduled_date === dateStr) {
-                get().fetchSchedules(selectedDate);
+                    await scheduleRepository.create(newSchedule);
+                    // Refresh if it's for the selected date
+                    const { selectedDate } = get();
+                    const dateStr = selectedDate.toISOString().split('T')[0];
+                    if (newSchedule.scheduled_date === dateStr) {
+                        get().fetchSchedules(selectedDate);
+                    }
+                } catch (error) {
+                    set({ error: (error as Error).message });
+                }
             }
-        } catch (error) {
-            set({ error: (error as Error).message });
+        }),
+        {
+            name: 'schedule-store',
+            storage: createJSONStorage(() => localStorage),
+            partialize: (state) => ({
+                schedules: state.schedules
+            })
         }
-    }
-}));
+    )
+);

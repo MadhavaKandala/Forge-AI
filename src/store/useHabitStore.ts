@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { toast } from 'sonner';
 import { Task, TaskCategory, TaskPriority, TaskStatus, EisenhowerQuadrant, CreateTaskDTO } from '@/types/task';
 
@@ -62,6 +62,9 @@ interface HabitState {
     waterIntakeLiters: number;
 
     // Actions
+    addXP: (amount: number) => void;
+    completeHabit: (habitId: string) => boolean;
+    completeTask: (taskId: string) => void;
     toggleHabit: (habitId: string, date: Date) => void;
     updateHabitValue: (habitId: string, date: Date, value: number) => void;
     setSelectedDate: (date: Date) => void;
@@ -76,6 +79,7 @@ interface HabitState {
     // Schedule/Habit Actions
     addHabit: (habit: Omit<Habit, 'id' | 'streak' | 'completedDates' | 'history'>) => void;
     fetchHabits: () => Promise<void>;
+    initializeDefaults: () => void;
     addScheduleItem: (item: Omit<ScheduleItem, 'id'>) => void;
     removeScheduleItem: (id: string) => void;
 
@@ -186,12 +190,40 @@ export const useHabitStore = create<HabitState>()(
         (set, get) => ({
             user: INITIAL_USER,
             selectedDate: new Date(),
-            tasks: INITIAL_TASKS,
-            habits: INITIAL_HABITS,
-            schedule: INITIAL_SCHEDULE,
+            tasks: [],
+            habits: [],
+            schedule: [],
             workoutLogs: [],
             dietLogs: [],
             waterIntakeLiters: 0,
+
+            addXP: (amount) => set((state) => ({
+                user: { ...state.user, xp: Math.max(0, state.user.xp + amount) }
+            })),
+
+            completeHabit: (habitId) => {
+                const selectedDate = get().selectedDate;
+                const dateStr = formatDate(selectedDate);
+                const habit = get().habits.find((h) => h.id === habitId);
+                const isAlreadyCompleted = habit?.completedDates.includes(dateStr) ?? false;
+
+                get().toggleHabit(habitId, selectedDate);
+                if (!isAlreadyCompleted) {
+                    get().addXP(10);
+                }
+
+                return !isAlreadyCompleted;
+            },
+
+            completeTask: (taskId) => {
+                const targetTask = get().tasks.find((task) => task.id === taskId);
+                if (!targetTask || targetTask.completed) {
+                    return;
+                }
+
+                get().updateTask(taskId, { completed: true, status: 'completed' });
+                get().addXP(25);
+            },
 
             addWorkoutLog: (log) => set((state: HabitState) => ({
                 workoutLogs: [...state.workoutLogs, { ...log, id: Math.random().toString(36).substr(2, 9) }]
@@ -303,11 +335,11 @@ export const useHabitStore = create<HabitState>()(
                         const newStatus = newCompleted ? 'completed' : 'today';
 
                         import('@/services/taskService').then(({ taskService }) => {
-                            taskService.updateTask(taskId, { completed: newCompleted, status: newStatus as any })
+                            taskService.updateTask(taskId, { completed: newCompleted, status: newStatus })
                                 .catch(err => console.error("Failed to sync task toggle:", err));
                         });
 
-                        return { ...t, completed: newCompleted, status: newStatus as any };
+                        return { ...t, completed: newCompleted, status: newStatus };
                     }
                     return t;
                 });
@@ -378,6 +410,12 @@ export const useHabitStore = create<HabitState>()(
             fetchHabits: async () => {
                 console.log("Habits synchronized");
             },
+
+            initializeDefaults: () => set((state) => ({
+                tasks: state.tasks.length === 0 ? INITIAL_TASKS : state.tasks,
+                habits: state.habits.length === 0 ? INITIAL_HABITS : state.habits,
+                schedule: state.schedule.length === 0 ? INITIAL_SCHEDULE : state.schedule
+            })),
 
             toggleHabit: (habitId, date) => set((state) => {
                 const dateStr = formatDate(date);
@@ -507,7 +545,7 @@ export const useHabitStore = create<HabitState>()(
                 if (version < 6) {
                     return {
                         ...persistedState,
-                        tasks: persistedState.tasks || INITIAL_TASKS,
+                        tasks: persistedState.tasks || [],
                         user: persistedState.user || INITIAL_USER
                     };
                 }

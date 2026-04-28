@@ -6,6 +6,7 @@ import { PillButton } from '@/components/ui/PillButton';
 import { useBlitzStore } from '@/store/useBlitzStore';
 import { useTaskStore } from '@/store/useTaskStore';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const BlitzFocusPage: React.FC = () => {
     const navigate = useNavigate();
@@ -51,6 +52,10 @@ const BlitzFocusPage: React.FC = () => {
         }
     };
 
+    const handleOpenTaskDetails = () => {
+        navigate('/tasks');
+    };
+
     if (!task) return null;
 
     return (
@@ -64,7 +69,10 @@ const BlitzFocusPage: React.FC = () => {
                         <ArrowLeft className="w-6 h-6" />
                     </button>
                     <h1 className="text-xl font-bold tracking-tight">Blitz mode</h1>
-                    <button className="p-2 bg-[#1a1a1a] rounded-full text-muted-foreground">
+                    <button
+                        className="p-2 bg-[#1a1a1a] rounded-full text-muted-foreground"
+                        onClick={() => toast.success('Settings coming soon')}
+                    >
                         <Settings className="w-5 h-5" />
                     </button>
                 </div>
@@ -98,7 +106,10 @@ const BlitzFocusPage: React.FC = () => {
                 {!isFullScreen && (
                     <div className="flex justify-between items-start mb-12">
                         <h2 className="text-xl font-medium max-w-[80%]">{task.title}</h2>
-                        <button className="p-2 bg-black/20 rounded-lg border border-[#262626]">
+                        <button
+                            className="p-2 bg-black/20 rounded-lg border border-[#262626]"
+                            onClick={handleOpenTaskDetails}
+                        >
                             <FileText className="w-5 h-5 text-muted-foreground" />
                         </button>
                     </div>
@@ -135,7 +146,10 @@ const BlitzFocusPage: React.FC = () => {
                         >
                             <Gamepad2 className="w-6 h-6" />
                         </button>
-                        <button className="flex-1 py-4 bg-[#1a1a1a] rounded-2xl flex items-center justify-center border border-white/5 hover:bg-[#222]">
+                        <button
+                            className="flex-1 py-4 bg-[#1a1a1a] rounded-2xl flex items-center justify-center border border-white/5 hover:bg-[#222]"
+                            onClick={handleOpenTaskDetails}
+                        >
                             <FileText className="w-6 h-6" />
                         </button>
                         <button
@@ -144,7 +158,10 @@ const BlitzFocusPage: React.FC = () => {
                         >
                             {isActive ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
                         </button>
-                        <button className="flex-1 py-4 bg-[#1a1a1a] rounded-2xl flex items-center justify-center border border-white/5 hover:bg-[#222]">
+                        <button
+                            className="flex-1 py-4 bg-[#1a1a1a] rounded-2xl flex items-center justify-center border border-white/5 hover:bg-[#222]"
+                            onClick={() => setShowSubtasks(!showSubtasks)}
+                        >
                             <ChevronRight className="w-6 h-6" />
                         </button>
                         <button

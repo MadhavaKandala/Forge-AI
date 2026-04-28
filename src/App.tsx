@@ -28,7 +28,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useUserStore();
 
   if (isLoading) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-mono">LOADING...</div>;
-  if (isLoading) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-mono">LOADING...</div>;
   if (!user || !user.onboarding_completed) {
     return <Navigate to="/onboarding" replace />;
   }

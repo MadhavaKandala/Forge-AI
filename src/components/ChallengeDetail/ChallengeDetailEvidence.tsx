@@ -24,6 +24,7 @@ import {
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
+import { toast } from 'sonner';
 
 interface ChallengeDetailEvidenceProps {
   challenge: Challenge;
@@ -230,13 +231,23 @@ export function ChallengeDetailEvidence({ challenge }: ChallengeDetailEvidencePr
           </p>
           <div className="flex gap-3 justify-center">
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button variant="outline" size="sm" className="glass rounded-xl hover:bg-white/10 gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="glass rounded-xl hover:bg-white/10 gap-2"
+                onClick={() => toast.success('Feature coming soon')}
+              >
                 <Camera className="w-4 h-4" />
                 Upload Photo
               </Button>
             </motion.div>
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button variant="outline" size="sm" className="glass rounded-xl hover:bg-white/10 gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="glass rounded-xl hover:bg-white/10 gap-2"
+                onClick={() => toast.success('Feature coming soon')}
+              >
                 <Plus className="w-4 h-4" />
                 Add Link
               </Button>

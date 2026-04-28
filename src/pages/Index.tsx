@@ -1,263 +1,170 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  ChevronDown,
-  MoreVertical,
-  Plus,
-  Rocket,
-  Settings,
-  CheckCircle2,
-  Clock,
-  LayoutList,
-  Infinity,
-  List as ListIcon
-} from 'lucide-react';
+import { CheckCircle2, Circle, Clock, ListChecks, Target } from 'lucide-react';
+import { toast } from 'sonner';
+import { useHabitStore } from '@/store/useHabitStore';
 import { cn } from '@/lib/utils';
-import { useUserStore } from '@/store/useUserStore';
-import { useTaskStore } from '@/store/useTaskStore';
-import { useBlitzStore } from '@/store/useBlitzStore';
-import { BlitzTaskCard } from '@/components/blitz/BlitzTaskCard';
-import { PillButton } from '@/components/ui/PillButton';
-import { BottomSheet } from '@/components/ui/BottomSheet';
-import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ListManager } from '@/components/blitz/ListManager';
 
-const TABS = [
-  { id: 'backlog', label: 'Backlog' },
-  { id: 'this_week', label: 'This Week' },
-  { id: 'today', label: 'Today' },
-  { id: 'done', label: 'Done' }
-] as const;
+const toMinutes = (timeValue: string): number => {
+  const parsed = timeValue.trim().match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
+  if (!parsed) {
+    return Number.POSITIVE_INFINITY;
+  }
 
-type AppTab = typeof TABS[number]['id'];
+  const rawHour = Number(parsed[1]);
+  const minutes = Number(parsed[2]);
+  const suffix = parsed[3].toUpperCase();
+  const normalizedHour = rawHour % 12 + (suffix === 'PM' ? 12 : 0);
+  return normalizedHour * 60 + minutes;
+};
+
+const formatToday = (): string => new Date().toISOString().split('T')[0];
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user } = useUserStore();
-  const { tasks, fetchTasks, updateTask, deleteTask, addTask } = useTaskStore();
-  const { lists, fetchLists, startBlitzSession } = useBlitzStore();
-
-  const [activeTab, setActiveTab] = useState<AppTab>('today');
-  const [selectedListId, setSelectedListId] = useState<string | null>(null);
-  const [isUnlimited, setIsUnlimited] = useState(false);
-  const [showAddTask, setShowAddTask] = useState(false);
-  const [showManageLists, setShowManageLists] = useState(false);
-
-  // Add Task Form State
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskEst, setNewTaskEst] = useState('30');
+  const {
+    user,
+    habits,
+    tasks,
+    schedule,
+    initializeDefaults,
+    completeHabit,
+  } = useHabitStore();
 
   useEffect(() => {
-    fetchTasks();
-    fetchLists();
-  }, []);
+    initializeDefaults();
+  }, [initializeDefaults]);
 
-  const handleStartBlitz = async (taskId: string, est: number) => {
-    await startBlitzSession(taskId, est);
-    navigate('/blitz');
-  };
+  const today = formatToday();
 
-  const currentList = selectedListId ? lists.find(l => l.id === selectedListId) : null;
+  const todayHabits = useMemo(
+    () => habits.filter((habit) => habit.type === 'checkbox'),
+    [habits]
+  );
 
-  const filteredTasks = tasks.filter(t => {
-    const matchesStatus = (activeTab === 'done' || activeTab === 'completed')
-      ? (t.status === 'done' || t.status === 'completed')
-      : t.status === activeTab;
+  const completedHabitsCount = useMemo(
+    () => todayHabits.filter((habit) => habit.completedDates.includes(today)).length,
+    [today, todayHabits]
+  );
 
-    const matchesList = selectedListId ? t.list_id === selectedListId : true;
+  const completedTasksCount = useMemo(
+    () => tasks.filter((task) => task.completed || task.status === 'completed').length,
+    [tasks]
+  );
 
-    return matchesStatus && matchesList;
-  });
+  const sortedTimeline = useMemo(
+    () =>
+      [...schedule]
+        .filter((item) => item.period === 'today')
+        .sort((a, b) => toMinutes(a.time) - toMinutes(b.time)),
+    [schedule]
+  );
 
-  const doneCount = tasks.filter(t => t.status === 'done' || t.status === 'completed').length;
-  const progress = tasks.length > 0 ? (doneCount / tasks.length) * 100 : 0;
-
-  const handleAddTask = async () => {
-    if (!newTaskTitle) return;
-    await addTask({
-      title: newTaskTitle,
-      status: activeTab === 'done' ? 'today' : activeTab,
-      estimated_minutes: parseInt(newTaskEst),
-      user_id: user?.id || 'default-user',
-      category: 'personal',
-      priority: 'medium',
-      list_id: selectedListId || undefined,
-      has_subtasks: 0,
-      completed_subtasks: 0,
-      total_subtasks: 0,
-      xp_value: 10,
-      difficulty_multiplier: 1
-    });
-    setNewTaskTitle('');
-    setShowAddTask(false);
+  const handleHabitTap = (habitId: string) => {
+    const completedNow = completeHabit(habitId);
+    if (completedNow) {
+      toast.success('+10 XP');
+    }
   };
 
   return (
-    <div className="min-h-screen bg-black text-white font-['Space Grotesk'] pb-40">
-      {/* Top Bar */}
-      <header className="p-6 flex items-center justify-between">
-        <div
-          onClick={() => setShowManageLists(true)}
-          className="flex items-center gap-3 bg-[#1a1a1a] p-2 pr-4 rounded-2xl border border-[#262626] cursor-pointer active:scale-95 transition-all"
-        >
-          <div className="flex -space-x-1.5">
-            {lists.slice(0, 2).map((l, i) => (
-              <div key={l.id} className="w-6 h-6 rounded-lg border-2 border-black" style={{ backgroundColor: l.color }} />
-            ))}
-            {lists.length === 0 && <div className="w-6 h-6 rounded-lg border-2 border-black bg-zinc-700" />}
-          </div>
-          <span className="font-bold text-lg">{currentList?.title || 'All Lists'}</span>
-          <ChevronDown className="w-5 h-5 text-muted-foreground" />
-        </div>
-
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setIsUnlimited(!isUnlimited)}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-full border transition-all font-bold text-sm",
-              isUnlimited ? "bg-gradient-to-r from-[#dfff4f] to-[#2fb58f] text-black border-transparent shadow-[0_0_20px_rgba(223,255,79,0.2)]" : "border-[#262626] text-muted-foreground"
-            )}
-          >
-            <Infinity className="w-4 h-4" />
-            Unlimited
-          </button>
-
-          <Avatar className="w-10 h-10 border border-[#262626]">
-            <AvatarImage src={user?.avatar_url} />
-            <AvatarFallback className="bg-[#1a1a1a] text-xs font-bold">{user?.display_name?.charAt(0) || 'M'}</AvatarFallback>
-          </Avatar>
-        </div>
+    <div className="min-h-screen bg-black text-white pb-28">
+      <header className="px-5 pt-6 pb-4">
+        <p className="text-zinc-500 text-xs uppercase tracking-[0.2em]">Daily Command</p>
+        <h1 className="text-2xl font-black mt-2">{user.name}</h1>
+        <p className="text-zinc-400 text-sm mt-1">XP {user.xp}</p>
       </header>
 
-      {/* Tabs */}
-      <div className="px-6 mb-4 flex items-center gap-6 overflow-x-auto no-scrollbar">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as AppTab)}
-            className={cn(
-              "text-lg font-bold transition-all relative pb-2 whitespace-nowrap",
-              activeTab === tab.id ? "text-white" : "text-zinc-500"
-            )}
-          >
-            {tab.label}
-            {activeTab === tab.id && (
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-[#dfff4f] rounded-full shadow-[0_0_10px_rgba(223,255,79,0.5)]" />
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Overall Progress */}
-      <div className="px-6 mb-8 flex items-center gap-4">
-        <div className="flex-1 h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-[#dfff4f] to-[#2fb58f] transition-all duration-1000"
-            style={{ width: `${progress}%` }}
-          />
+      <section className="px-5 grid grid-cols-2 gap-3">
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
+          <div className="flex items-center gap-2 text-zinc-300 text-xs uppercase tracking-wider">
+            <CheckCircle2 className="w-4 h-4 text-[#C8FF00]" />
+            Habits
+          </div>
+          <p className="text-xl font-black mt-2">{completedHabitsCount}/{todayHabits.length}</p>
         </div>
-        <span className="text-sm font-bold text-zinc-500 font-mono">
-          {doneCount}/{tasks.length} DONE
-        </span>
-      </div>
-
-      {/* Task List */}
-      <div className="px-6 space-y-4">
-        {filteredTasks.length === 0 ? (
-          <div className="py-20 flex flex-col items-center justify-center opacity-40">
-            <CheckCircle2 className="w-16 h-16 mb-4" />
-            <p className="text-xl font-bold">All Clear</p>
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
+          <div className="flex items-center gap-2 text-zinc-300 text-xs uppercase tracking-wider">
+            <Target className="w-4 h-4 text-[#C8FF00]" />
+            Missions
           </div>
-        ) : (
-          filteredTasks.map(task => {
-            const taskList = lists.find(l => l.id === task.list_id);
+          <p className="text-xl font-black mt-2">{completedTasksCount}/{tasks.length}</p>
+        </div>
+      </section>
+
+      <section className="px-5 mt-6">
+        <h2 className="text-sm font-black uppercase tracking-[0.18em] text-zinc-400">Habit Checks</h2>
+        <div className="mt-3 space-y-2">
+          {todayHabits.map((habit) => {
+            const isCompleted = habit.completedDates.includes(today);
             return (
-              <BlitzTaskCard
-                key={task.id}
-                taskId={task.id}
-                title={task.title}
-                estimateMinutes={task.estimated_minutes || 0}
-                status={task.status}
-                onStartBlitz={() => handleStartBlitz(task.id, task.estimated_minutes || 30)}
-                onDelete={() => deleteTask(task.id)}
-                onToggleDone={() => updateTask(task.id, { status: task.status === 'done' ? 'today' : 'done' })}
-                listColor={taskList?.color}
-                listInitial={taskList?.initial || 'T'}
-              />
+              <button
+                key={habit.id}
+                type="button"
+                onClick={() => handleHabitTap(habit.id)}
+                className="w-full rounded-2xl border border-zinc-800 bg-zinc-900/60 p-3 flex items-center justify-between text-left"
+              >
+                <div>
+                  <p className={cn('font-semibold', isCompleted && 'line-through text-zinc-500')}>{habit.title}</p>
+                  <p className="text-xs text-zinc-500 mt-1">{habit.time}</p>
+                </div>
+                {isCompleted ? (
+                  <CheckCircle2 className="w-5 h-5 text-[#C8FF00]" />
+                ) : (
+                  <Circle className="w-5 h-5 text-zinc-600" />
+                )}
+              </button>
             );
-          })
-        )}
-      </div>
-
-      {/* Bottom Bar */}
-      <div className="fixed bottom-8 left-0 w-full px-6 flex items-center gap-4 z-50">
-        <PillButton
-          onClick={() => filteredTasks[0] && handleStartBlitz(filteredTasks[0].id, filteredTasks[0].estimated_minutes || 30)}
-          disabled={filteredTasks.length === 0}
-          className="flex-1 py-7 text-xl flex items-center justify-center gap-3 active:scale-95 shadow-green-500/20 disabled:opacity-50"
-        >
-          <Rocket className="w-6 h-6" />
-          BLITZ NOW
-        </PillButton>
-
-        <button
-          onClick={() => setShowAddTask(true)}
-          className="w-16 h-16 bg-[#1a1a1a] rounded-full border border-[#262626] flex items-center justify-center shadow-2xl active:scale-90 transition-all"
-        >
-          <Plus className="w-8 h-8 text-[#dfff4f]" />
-        </button>
-      </div>
-
-      {/* Add Task Sheet */}
-      <BottomSheet
-        title="Create Task"
-        open={showAddTask}
-        onOpenChange={setShowAddTask}
-      >
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-muted-foreground text-sm uppercase tracking-widest">Title</label>
-            <Input
-              value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
-              placeholder="Leet code potd"
-              className="bg-transparent border-[#262626] text-xl h-14 focus:border-[#dfff4f]"
-              autoFocus
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-muted-foreground text-sm uppercase tracking-widest">Est Time (min)</label>
-              <Input
-                type="number"
-                value={newTaskEst}
-                onChange={(e) => setNewTaskEst(e.target.value)}
-                className="bg-transparent border-[#262626] text-xl h-14"
-              />
+          })}
+          {todayHabits.length === 0 && (
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-3 text-zinc-500 text-sm">
+              No habits available.
             </div>
-            <div className="space-y-2">
-              <label className="text-muted-foreground text-sm uppercase tracking-widest">Bucket</label>
-              <div className="h-14 bg-[#1a1a1a] rounded-md border border-[#262626] flex items-center px-4 font-bold text-sm">
-                {activeTab.replace('_', ' ').toUpperCase()}
+          )}
+        </div>
+      </section>
+
+      <section className="px-5 mt-6">
+        <h2 className="text-sm font-black uppercase tracking-[0.18em] text-zinc-400">Daily Ops</h2>
+        <div className="mt-3 space-y-2">
+          {sortedTimeline.map((item) => (
+            <div key={item.id} className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-3">
+              <div className="flex items-center justify-between">
+                <p className="font-semibold">{item.title}</p>
+                <span className="text-xs text-zinc-500">{item.duration ?? 'Block'}</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-zinc-500 mt-1">
+                <Clock className="w-3.5 h-3.5" />
+                {item.time}
               </div>
             </div>
-          </div>
-          <div className="flex gap-4 pt-4">
-            <button onClick={() => setShowAddTask(false)} className="flex-1 py-4 font-bold text-muted-foreground">Cancel</button>
-            <PillButton onClick={handleAddTask} className="flex-1 py-4">Save</PillButton>
-          </div>
+          ))}
+          {sortedTimeline.length === 0 && (
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-3 text-zinc-500 text-sm">
+              No timeline items scheduled.
+            </div>
+          )}
         </div>
-      </BottomSheet>
+      </section>
 
-      {/* Manage Lists Sheet */}
-      <BottomSheet
-        title="Manage Lists"
-        open={showManageLists}
-        onOpenChange={setShowManageLists}
-      >
-        <ListManager onClose={() => setShowManageLists(false)} />
-      </BottomSheet>
+      <div className="fixed bottom-6 left-0 w-full px-5 grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={() => navigate('/tasks')}
+          className="rounded-full border border-zinc-700 bg-zinc-900 h-12 text-xs font-black tracking-[0.12em] flex items-center justify-center gap-2"
+        >
+          <ListChecks className="w-4 h-4" />
+          MISSIONS
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate('/schedule')}
+          className="rounded-full border border-zinc-700 bg-zinc-900 h-12 text-xs font-black tracking-[0.12em] flex items-center justify-center gap-2"
+        >
+          <Clock className="w-4 h-4" />
+          SCHEDULE
+        </button>
+      </div>
     </div>
   );
 };

@@ -64,13 +64,13 @@ export const BlitzTaskCard: React.FC<BlitzTaskCardProps> = ({
             {/* Action Buttons (Swipe Background) */}
             <div className="absolute inset-0 flex justify-end gap-1">
                 <div
-                    onClick={onStartBlitz}
+                    onClick={() => onStartBlitz?.()}
                     className="w-20 bg-gradient-to-br from-purple-600 to-indigo-700 flex flex-col items-center justify-center cursor-pointer"
                 >
                     <Rocket className="text-white w-6 h-6 mb-1" />
                 </div>
                 <div
-                    onClick={onDelete}
+                    onClick={() => onDelete?.()}
                     className="w-20 bg-destructive flex flex-col items-center justify-center cursor-pointer"
                 >
                     <Trash2 className="text-white w-6 h-6 mb-1" />
@@ -87,7 +87,7 @@ export const BlitzTaskCard: React.FC<BlitzTaskCardProps> = ({
             >
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 flex-1">
-                        <button onClick={onToggleDone} className="mt-1">
+                        <button onClick={() => onToggleDone?.()} className="mt-1">
                             {isCompleted ? (
                                 <CheckCircle2 className="w-5 h-5 text-muted-foreground" />
                             ) : (

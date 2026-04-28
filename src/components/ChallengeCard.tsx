@@ -23,6 +23,7 @@ export function ChallengeCard({ challenge, onViewDetails, onCheckIn }: Challenge
   const progress = getProgress(challenge);
   const checkedIn = hasCheckedInToday(challenge.id);
   const daysRemaining = getDaysRemaining(challenge);
+  const checkInCount = challenge?.checkIns?.length ?? 0;
 
   return (
     <motion.div
@@ -37,7 +38,7 @@ export function ChallengeCard({ challenge, onViewDetails, onCheckIn }: Challenge
               <div className="flex items-center gap-2 flex-wrap">
                 <CategoryBadge category={challenge.category} size="sm" />
                 <span className="text-xs text-muted-foreground">
-                  Day {Math.min(challenge.checkIns.length, 100)}/100
+                  Day {Math.min(checkInCount, 100)}/100
                 </span>
               </div>
               <h3 className="font-bold text-lg leading-tight truncate">

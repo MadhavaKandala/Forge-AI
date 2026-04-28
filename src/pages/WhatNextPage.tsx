@@ -76,6 +76,21 @@ const WhatNextPage = () => {
         navigate('/pomodoro');
     };
 
+    const getRouteForCategory = (category?: string) => {
+        switch (category) {
+            case 'coding':
+            case 'academics':
+            case 'work':
+                return '/pomodoro';
+            case 'gym':
+            case 'diet':
+            case 'personal':
+                return '/schedule';
+            default:
+                return '/tasks';
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#09090b] text-white pb-32">
             {/* Header */}
@@ -183,10 +198,18 @@ const WhatNextPage = () => {
                                     Start Now
                                 </Button>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <Button variant="outline" className="border-zinc-800 bg-transparent hover:bg-zinc-900 font-black uppercase tracking-widest h-12 rounded-2xl text-[10px] text-zinc-400">
+                                    <Button
+                                        variant="outline"
+                                        className="border-zinc-800 bg-transparent hover:bg-zinc-900 font-black uppercase tracking-widest h-12 rounded-2xl text-[10px] text-zinc-400"
+                                        onClick={() => navigate('/')}
+                                    >
                                         <SkipForward className="w-3.5 h-3.5 mr-2" /> Skip
                                     </Button>
-                                    <Button variant="outline" className="border-zinc-800 bg-transparent hover:bg-zinc-900 font-black uppercase tracking-widest h-12 rounded-2xl text-[10px] text-zinc-400">
+                                    <Button
+                                        variant="outline"
+                                        className="border-zinc-800 bg-transparent hover:bg-zinc-900 font-black uppercase tracking-widest h-12 rounded-2xl text-[10px] text-zinc-400"
+                                        onClick={() => navigate('/programs')}
+                                    >
                                         <LayoutList className="w-3.5 h-3.5 mr-2" /> Other Options
                                     </Button>
                                 </div>
@@ -212,7 +235,12 @@ const WhatNextPage = () => {
                                     <h4 className="text-sm font-bold text-zinc-200 group-hover:text-white transition-colors">{alt.title}</h4>
                                     <p className="text-[10px] text-zinc-500 font-medium">({alt.estimatedMinutes || 30} min) - {alt.priority} priority</p>
                                 </div>
-                                <Button size="icon" variant="ghost" className="rounded-xl group-hover:bg-primary group-hover:text-black transition-all">
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="rounded-xl group-hover:bg-primary group-hover:text-black transition-all"
+                                    onClick={() => navigate(getRouteForCategory(alt.category))}
+                                >
                                     <ArrowRight className="w-4 h-4" />
                                 </Button>
                             </Card>

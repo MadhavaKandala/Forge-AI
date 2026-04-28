@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import gsap from 'gsap';
+import { useNavigate } from 'react-router-dom';
 import { Challenge, CATEGORY_CONFIG } from '@/types/challenge';
 import { GlassCard } from '@/components/dashboard/GlassCard';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { toast as sonnerToast } from 'sonner';
 
 interface ChallengeDetailCommunityProps {
   challenge: Challenge;
@@ -49,6 +51,7 @@ const MOCK_MEMBERS = [
 ];
 
 export function ChallengeDetailCommunity({ challenge }: ChallengeDetailCommunityProps) {
+  const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [activeLeaderboardTab, setActiveLeaderboardTab] = useState('streak');
   const leaderboardRef = useRef<HTMLDivElement>(null);
@@ -348,7 +351,11 @@ export function ChallengeDetailCommunity({ challenge }: ChallengeDetailCommunity
 
         <div className="mt-5 text-center">
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Button variant="outline" className="gap-2 glass rounded-xl hover:bg-white/10">
+            <Button
+              variant="outline"
+              className="gap-2 glass rounded-xl hover:bg-white/10"
+              onClick={() => navigate('/programs')}
+            >
               <Users className="w-4 h-4" />
               View All Members
             </Button>
@@ -372,7 +379,10 @@ export function ChallengeDetailCommunity({ challenge }: ChallengeDetailCommunity
             Join the global community of {categoryConfig.label.toLowerCase()} challengers and share your journey
           </p>
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Button className="bg-gradient-fire hover:opacity-90 rounded-xl shadow-glow font-semibold px-6">
+            <Button
+              className="bg-gradient-fire hover:opacity-90 rounded-xl shadow-glow font-semibold px-6"
+              onClick={() => sonnerToast.success('Feature coming soon')}
+            >
               <Sparkles className="w-4 h-4 mr-2" />
               Enable Public Profile
             </Button>

@@ -6,6 +6,7 @@ import { PomodoroTimer } from '../components/timer/PomodoroTimer';
 import { Settings, ArrowLeft, Zap, Trophy, History as HistoryIcon, X, EyeOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 export const PomodoroPage: React.FC = () => {
     const navigate = useNavigate();
@@ -74,7 +75,10 @@ export const PomodoroPage: React.FC = () => {
                         </h1>
                         <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{mode.replace('_', ' ')} session</p>
                     </div>
-                    <button className="p-2 rounded-xl bg-zinc-900/50 border border-zinc-800 text-zinc-400">
+                    <button
+                        className="p-2 rounded-xl bg-zinc-900/50 border border-zinc-800 text-zinc-400"
+                        onClick={() => toast.success('Settings coming soon')}
+                    >
                         <Settings className="w-6 h-6" />
                     </button>
                 </div>
