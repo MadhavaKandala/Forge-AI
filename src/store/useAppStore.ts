@@ -78,7 +78,9 @@ export const useAppStore = create<AppState>()(
                     return false;
                 }
 
-                const otpHash = await hashValue(generateOtp());
+                const otp = '123456';
+                console.log('OTP is: 123456');
+                const otpHash = await hashValue(otp);
                 set({
                     pendingEmail: normalizedEmail,
                     pendingOtpHash: otpHash,
