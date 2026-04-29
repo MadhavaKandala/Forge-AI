@@ -1,13 +1,23 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Circle, Clock, Zap } from 'lucide-react';
 import { toast } from 'sonner';
+import { shallow } from 'zustand/react';
 import { useHabitStore } from '@/store/useHabitStore';
 import { useTaskStore } from '@/store/useTaskStore';
 import { useProgramStore } from '@/store/useProgramStore';
 import { cn } from '@/lib/utils';
 
 const formatToday = (): string => new Date().toISOString().split('T')[0];
+
+const timeToMinutes = (t: string): number => {
+  const match = t.match(/(\d{1,2}):(\d{2})\s?(AM|PM)/i);
+  if (!match) return 1440;
+  const h = parseInt(match[1]) % 12;
+  const m = parseInt(match[2]);
+  const offset = match[3]?.toUpperCase() === 'PM' ? 12 : 0;
+  return (h + offset) * 60 + m;
+};
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -17,10 +27,19 @@ export default function HomePage() {
     schedule,
     completeHabit,
     initializeDefaults,
-  } = useHabitStore();
+  } = useHabitStore(
+    (s) => ({
+      user: s.user,
+      habits: s.habits,
+      schedule: s.schedule,
+      completeHabit: s.completeHabit,
+      initializeDefaults: s.initializeDefaults,
+    }),
+    shallow
+  );
 
-  const { tasks } = useTaskStore();
-  const { activePrograms } = useProgramStore();
+  const { tasks } = useTaskStore((s) => ({ tasks: s.tasks }), shallow);
+  const { activePrograms } = useProgramStore((s) => ({ activePrograms: s.activePrograms }), shallow);
 
   useEffect(() => {
     initializeDefaults();
@@ -33,17 +52,7 @@ export default function HomePage() {
     () =>
       habits
         .filter((h) => h.type === 'checkbox')
-        .sort((a, b) => {
-          const timeToMinutes = (t: string) => {
-            const match = t.match(/(\d{1,2}):(\d{2})\s?(AM|PM)/i);
-            if (!match) return 1440;
-            const h = parseInt(match[1]) % 12;
-            const m = parseInt(match[2]);
-            const offset = match[3]?.toUpperCase() === 'PM' ? 12 : 0;
-            return (h + offset) * 60 + m;
-          };
-          return timeToMinutes(a.time) - timeToMinutes(b.time);
-        }),
+        .sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time)),
     [habits]
   );
 
@@ -61,12 +70,21 @@ export default function HomePage() {
     return { q1, q2, q3, q4 };
   }, [tasks]);
 
-  const handleHabitTap = (habitId: string) => {
+  // Memoize sorted schedule
+  const sortedSchedule = useMemo(
+    () =>
+      schedule
+        .filter((s) => s.period === 'today')
+        .sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time)),
+    [schedule]
+  );
+
+  const handleHabitTap = useCallback((habitId: string) => {
     const isNowCompleted = completeHabit(habitId);
     if (isNowCompleted) {
       toast.success('+10 XP');
     }
-  };
+  }, [completeHabit]);
 
   const quadrantLabels = {
     q1: { label: 'URGENT & IMPORTANT', color: 'bg-red-500/20 border-red-500/50' },
@@ -175,36 +193,23 @@ export default function HomePage() {
       <section className="px-6 mb-8">
         <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">TACTICAL FOCUS</h2>
         <div className="space-y-2">
-          {schedule
-            .filter((s) => s.period === 'today')
-            .sort((a, b) => {
-              const timeToMinutes = (t: string) => {
-                const match = t.match(/(\d{1,2}):(\d{2})\s?(AM|PM)/i);
-                if (!match) return 1440;
-                const h = parseInt(match[1]) % 12;
-                const m = parseInt(match[2]);
-                const offset = match[3]?.toUpperCase() === 'PM' ? 12 : 0;
-                return (h + offset) * 60 + m;
-              };
-              return timeToMinutes(a.time) - timeToMinutes(b.time);
-            })
-            .map((item) => (
-              <div key={item.id} className="rounded-xl border border-zinc-800 bg-[#1C1C1C] p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-sm">{item.title}</p>
-                    <div className="flex items-center gap-2 text-xs text-zinc-400 mt-1">
-                      <Clock className="w-3 h-3" />
-                      {item.time} • {item.duration || 'TBD'}
-                    </div>
+          {sortedSchedule.map((item) => (
+            <div key={item.id} className="rounded-xl border border-zinc-800 bg-[#1C1C1C] p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-sm">{item.title}</p>
+                  <div className="flex items-center gap-2 text-xs text-zinc-400 mt-1">
+                    <Clock className="w-3 h-3" />
+                    {item.time} • {item.duration || 'TBD'}
                   </div>
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: item.color }}
-                  />
                 </div>
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: item.color }}
+                />
               </div>
-            ))}
+            </div>
+          ))}
         </div>
       </section>
 

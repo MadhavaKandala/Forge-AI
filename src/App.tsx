@@ -24,7 +24,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { useHabitStore } from "./store/useHabitStore";
 import { useUserStore } from "./store/useUserStore";
 import { useScheduleStore } from "./store/useScheduleStore";
-import { useAppStore } from "./store/useAppStore";
+import { createSessionIntegrity, useAppStore } from "./store/useAppStore";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useUserStore();
@@ -38,7 +38,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => {
-  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const isAuthenticated = useAppStore((s) => {
+    if (!s.isAuthenticated || !s.sessionToken || !s.sessionEmail || !s.sessionIntegrity) {
+      return false;
+    }
+    return s.sessionIntegrity === createSessionIntegrity(s.sessionToken, s.sessionEmail);
+  });
   const { setSelectedDate: setHabitDate, fetchHabits, fetchTasks } = useHabitStore();
   const { setSelectedDate: setScheduleDate } = useScheduleStore();
   const { fetchUser } = useUserStore();

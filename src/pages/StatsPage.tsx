@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { shallow } from 'zustand/react';
 import { useHabitStore } from '@/store/useHabitStore';
 import { TrendingUp, Target, AlertCircle, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -17,7 +18,10 @@ const getLevelInfo = (xp: number) => {
 };
 
 export default function StatsPage() {
-  const { user, tasks, habits } = useHabitStore();
+  const { user, tasks, habits } = useHabitStore(
+    (s) => ({ user: s.user, tasks: s.tasks, habits: s.habits }),
+    shallow
+  );
   const [dateFilter, setDateFilter] = useState<'day' | 'week' | 'year'>('day');
 
   const today = new Date().toISOString().split('T')[0];

@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, memo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { toast } from 'sonner';
+import { shallow } from 'zustand/react';
 import { useHabitStore } from '@/store/useHabitStore';
 import { Task, TaskStatus } from '@/types/task';
 import { cn } from '@/lib/utils';
@@ -8,7 +9,15 @@ import { Plus, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const MissionControlPage = () => {
-  const { tasks, updateTask, addXP, fetchTasks } = useHabitStore();
+  const { tasks, updateTask, addXP, fetchTasks } = useHabitStore(
+    (s) => ({
+      tasks: s.tasks,
+      updateTask: s.updateTask,
+      addXP: s.addXP,
+      fetchTasks: s.fetchTasks,
+    }),
+    shallow
+  );
   const [filter, setFilter] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
@@ -41,7 +50,7 @@ const MissionControlPage = () => {
     [filteredTasks]
   );
 
-  const handleDragEnd = (result: DropResult) => {
+  const handleDragEnd = useCallback((result: DropResult) => {
     const { source, destination, draggableId } = result;
 
     if (!destination) return;
@@ -59,9 +68,47 @@ const MissionControlPage = () => {
         toast.success(`+${xpReward} XP`);
       }
     }
-  };
+  }, [tasks, updateTask, addXP]);
 
   const categories = Array.from(new Set(tasks.map((t) => t.category))).sort();
+
+  // Memoized task card to prevent re-renders
+  const TaskCard = memo(({ task, index }: { task: Task; index: number }) => (
+    <Draggable key={task.id} draggableId={task.id} index={index}>
+      {(provided, snapshot) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          onClick={() => setSelectedTask(task)}
+          className={cn(
+            'rounded-lg border border-zinc-700 bg-zinc-900 p-3 cursor-grab active:cursor-grabbing transition-all',
+            snapshot.isDragging && 'shadow-lg ring-2 ring-[#C8FF00]',
+            task.status === 'completed' && 'opacity-60 line-through'
+          )}
+        >
+          <p className="text-sm font-semibold">{task.title}</p>
+          <div className="flex items-center gap-2 mt-2 text-xs">
+            <span
+              className={cn(
+                'px-2 py-1 rounded-full font-bold',
+                task.priority === 'high' && 'bg-red-500/20 text-red-400',
+                task.priority === 'medium' && 'bg-yellow-500/20 text-yellow-400',
+                task.priority === 'low' && 'bg-blue-500/20 text-blue-400'
+              )}
+            >
+              {task.priority}
+            </span>
+            <span className="text-zinc-500">{task.category}</span>
+          </div>
+          {task.estimatedMinutes && (
+            <p className="text-xs text-zinc-500 mt-2">~{task.estimatedMinutes}min</p>
+          )}
+        </div>
+      )}
+    </Draggable>
+  ));
+  TaskCard.displayName = 'TaskCard';
 
   return (
     <div className="w-full h-screen bg-[#0A0A0A] text-white overflow-hidden flex flex-col">
