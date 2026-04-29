@@ -1,170 +1,141 @@
-import React, { useEffect, useState } from 'react';
-import { useProgramStore } from '../store/useProgramStore';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '../components/ui/button';
-import { ArrowLeft, Trophy, Flame, Star, Play, Pause, ChevronRight, Sparkles, CheckCircle2 } from 'lucide-react';
-import { Progress } from '../components/ui/progress';
-import { getCurrentPhase, difficultyStars, type ProgramTemplate } from '../services/programService';
+import React, { useEffect, useMemo, useState } from 'react';
+import { BadgeCheck, Flame } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { useProgramStore } from '@/store/useProgramStore';
+import { type ProgramTemplate } from '@/services/programService';
 
-const gradientMap: Record<string, string> = {
-    'leetcode_75': 'from-purple-600 to-blue-600',
-    'gym_progress': 'from-red-600 to-orange-500',
-    'gita_journey': 'from-amber-500 to-yellow-600',
-    'nutrition_mastery': 'from-emerald-500 to-green-600',
-    'academic_excellence': 'from-blue-500 to-indigo-600',
-    'creative_skills': 'from-pink-500 to-rose-600',
-    'productivity_master': 'from-cyan-500 to-teal-600',
+const buildTimeSlots = (): string[] => {
+    const slots: string[] = [];
+    for (let hour = 5; hour <= 23; hour += 1) {
+        slots.push(`${String(hour).padStart(2, '0')}:00`);
+        if (hour !== 23) slots.push(`${String(hour).padStart(2, '0')}:30`);
+    }
+    return slots;
 };
 
-export const ProgramsPage: React.FC = () => {
-    const navigate = useNavigate();
+const to12h = (time24: string): string => {
+    const [hRaw, min] = time24.split(':').map(Number);
+    const suffix = hRaw >= 12 ? 'PM' : 'AM';
+    const h12 = hRaw % 12 === 0 ? 12 : hRaw % 12;
+    return `${h12}:${String(min).padStart(2, '0')} ${suffix}`;
+};
+
+const ProgramsPage: React.FC = () => {
     const {
         activePrograms,
         availablePrograms,
-        completedPrograms,
+        enrollments,
         fetchAll,
-        startProgram,
-        isLoading,
+        enrollInProgram,
+        unenrollFromProgram,
     } = useProgramStore();
 
-    const [confirmStart, setConfirmStart] = useState<ProgramTemplate | null>(null);
-    const [startingType, setStartingType] = useState<string | null>(null);
+    const [selectedProgram, setSelectedProgram] = useState<ProgramTemplate | null>(null);
+    const [selectedTime, setSelectedTime] = useState('09:00');
+    const timeSlots = useMemo(buildTimeSlots, []);
 
     useEffect(() => {
         fetchAll();
-    }, []);
+    }, [fetchAll]);
 
-    const handleStart = async (template: ProgramTemplate) => {
-        setStartingType(template.type);
-        const result = await startProgram(template.type);
-        setStartingType(null);
-        setConfirmStart(null);
-        if (result) {
-            navigate(`/programs/${result.id}`);
-        }
+    const activeProgramIds = useMemo(
+        () => new Set(enrollments.map((e) => e.programId)),
+        [enrollments],
+    );
+
+    const getEnrollmentId = (programType: string): string | null => {
+        const enrollment = enrollments.find((e) => e.programId === programType);
+        return enrollment?.id ?? null;
+    };
+
+    const handleDeploy = async () => {
+        if (!selectedProgram) return;
+        await enrollInProgram(selectedProgram.type, selectedTime);
+        setSelectedProgram(null);
     };
 
     return (
-        <div className="container mx-auto p-4 max-w-md pb-32 min-h-screen bg-black">
-            {/* Header */}
-            <div className="flex items-center gap-4 mb-6">
-                <h1 className="text-2xl font-bold text-white">Programs</h1>
-            </div>
+        <div className="min-h-screen bg-[#0A0A0A] text-white px-4 pt-6 pb-28">
+            <h1 className="text-xl font-black tracking-[0.16em] uppercase text-[#C8FF00]">Programs</h1>
 
-            {/* Active Programs */}
-            <section className="mb-8">
-                <div className="flex items-center gap-2 mb-4">
-                    <div className="w-2 h-2 rounded-full bg-[#dfff4f] animate-pulse"></div>
-                    <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Active Programs ({activePrograms.length})</h2>
-                </div>
-
-                {activePrograms.length === 0 ? (
-                    <div className="bg-[#18181B] border border-[#27272A] rounded-2xl p-8 text-center">
-                        <Sparkles className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
-                        <p className="text-zinc-400 text-sm mb-1">No active programs yet</p>
-                        <p className="text-zinc-600 text-xs">Start a program below to begin your journey</p>
-                    </div>
-                ) : (
-                    <div className="space-y-3">
-                        {activePrograms.map(program => {
-                            const gradient = gradientMap[program.programType] || 'from-purple-600 to-blue-600';
-                            const phase = getCurrentPhase(program.currentDay, program.phases || []);
-                            const progress = program.completionPercentage || 0;
-
-                            return (
-                                <div
-                                    key={program.id}
-                                    className="bg-[#18181B] border border-[#27272A] rounded-2xl p-4 relative overflow-hidden cursor-pointer active:scale-[0.99] transition-all"
-                                    onClick={() => navigate(`/programs/${program.id}`)}
-                                >
-                                    <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${gradient}`}></div>
-
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-2xl">{program.icon}</span>
-                                            <div>
-                                                <h3 className="font-bold text-white">{program.name}</h3>
-                                                <p className="text-xs text-zinc-500">{phase?.name || program.category}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs font-mono bg-[#27272A] text-zinc-300 px-2.5 py-1 rounded-lg">
+            <section className="mt-6">
+                <h2 className="text-xs font-black tracking-[0.18em] uppercase text-zinc-400 mb-3">ACTIVE PROGRAMS</h2>
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                    {activePrograms.map((program) => {
+                        const enrollmentId = getEnrollmentId(program.programType);
+                        return (
+                            <div
+                                key={program.id}
+                                className="min-w-[280px] rounded-2xl border border-zinc-800 bg-[#141414] p-4"
+                            >
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-2xl">{program.icon ?? '🎯'}</span>
+                                        <div>
+                                            <p className="font-black">{program.name}</p>
+                                            <p className="text-xs text-zinc-400">
                                                 Day {program.currentDay}/{program.totalDays}
-                                            </span>
-                                            <ChevronRight className="w-4 h-4 text-zinc-600" />
+                                            </p>
                                         </div>
                                     </div>
-
-                                    <div className="mb-2">
-                                        <Progress value={progress} className="h-2 bg-[#27272A]" />
-                                    </div>
-
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-xs text-zinc-500">{Math.round(progress)}% complete</span>
-                                        <span className="text-xs text-[#dfff4f] font-semibold">{program.xpEarned} XP earned</span>
+                                    <div className="rounded-full bg-zinc-900 px-2 py-1 text-xs text-[#C8FF00] flex items-center gap-1">
+                                        <Flame className="w-3 h-3" />
+                                        {(enrollments.find((e) => e.programId === program.programType)?.streak ?? 0).toString()}
                                     </div>
                                 </div>
-                            );
-                        })}
-                    </div>
-                )}
+
+                                <Progress value={program.completionPercentage ?? 0} className="h-2 mt-4 bg-zinc-800" />
+
+                                <Button
+                                    type="button"
+                                    onClick={() => enrollmentId && unenrollFromProgram(enrollmentId)}
+                                    className="w-full mt-4 bg-[#1C1C1C] border border-zinc-700 text-[#FF4444] hover:bg-zinc-900 font-black uppercase tracking-[0.12em]"
+                                >
+                                    DEACTIVATE
+                                </Button>
+                            </div>
+                        );
+                    })}
+                    {activePrograms.length === 0 && (
+                        <div className="w-full rounded-2xl border border-zinc-800 bg-[#141414] p-4 text-sm text-zinc-500">
+                            No active programs.
+                        </div>
+                    )}
+                </div>
             </section>
 
-            {/* Suggested Programs */}
-            <section className="mb-8">
-                <div className="flex items-center gap-2 mb-4">
-                    <Star className="w-3.5 h-3.5 text-amber-400" />
-                    <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Suggested Programs ({availablePrograms.length})</h2>
-                </div>
-
-                <div className="space-y-3">
-                    {availablePrograms.map(template => {
-                        const gradient = gradientMap[template.type] || 'from-purple-600 to-blue-600';
-                        const isStarting = startingType === template.type;
-
+            <section className="mt-8">
+                <h2 className="text-xs font-black tracking-[0.18em] uppercase text-zinc-400 mb-3">ALL PROGRAMS</h2>
+                <div className="grid grid-cols-2 gap-3">
+                    {availablePrograms.map((program) => {
+                        const isActive = activeProgramIds.has(program.type);
                         return (
-                            <div key={template.type} className="bg-[#18181B] border border-[#27272A] rounded-2xl overflow-hidden">
-                                {/* Gradient top bar */}
-                                <div className={`h-1.5 bg-gradient-to-r ${gradient}`}></div>
-
-                                <div className="p-4">
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex items-center gap-3 flex-1">
-                                            <span className="text-2xl">{template.icon}</span>
-                                            <div className="flex-1">
-                                                <h3 className="font-bold text-white mb-0.5">{template.name}</h3>
-                                                <div className="flex items-center gap-3 text-xs text-zinc-500">
-                                                    <span className="flex items-center gap-1">
-                                                        <Flame className="w-3 h-3 text-orange-500" />
-                                                        {template.days} Days
-                                                    </span>
-                                                    <span>{difficultyStars(template.difficulty)}</span>
-                                                    <span className="text-[#dfff4f]">{template.totalXpPotential.toLocaleString()} XP</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <Button
-                                            size="sm"
-                                            className="bg-[#dfff4f] text-black font-bold hover:bg-[#ccee3e] rounded-xl px-4"
-                                            disabled={isStarting}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setConfirmStart(template);
-                                            }}
-                                        >
-                                            {isStarting ? (
-                                                <span className="animate-pulse">Starting...</span>
-                                            ) : (
-                                                <>
-                                                    <Play className="w-3 h-3 mr-1" />
-                                                    Start
-                                                </>
-                                            )}
-                                        </Button>
+                            <div key={program.type} className="rounded-2xl border border-zinc-800 bg-[#141414] overflow-hidden">
+                                <div className="h-1 bg-[#C8FF00]" />
+                                <div className="p-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xl">{program.icon}</span>
+                                        {isActive && (
+                                            <span className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full bg-zinc-900 text-[#22C55E] font-black">
+                                                <BadgeCheck className="w-3 h-3" />
+                                                ACTIVE
+                                            </span>
+                                        )}
                                     </div>
-
-                                    <p className="text-xs text-zinc-500 mt-2 line-clamp-2">{template.description}</p>
+                                    <p className="font-black text-sm">{program.name}</p>
+                                    <p className="text-[11px] text-zinc-400 mt-1 line-clamp-3">{program.description}</p>
+                                    <p className="text-[10px] text-zinc-500 mt-2 uppercase tracking-[0.1em]">{program.days} days</p>
+                                    {!isActive && (
+                                        <Button
+                                            type="button"
+                                            onClick={() => setSelectedProgram(program)}
+                                            className="w-full mt-3 bg-[#C8FF00] text-black hover:bg-[#b8ef00] font-black uppercase tracking-[0.12em]"
+                                        >
+                                            ACTIVATE
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -172,91 +143,61 @@ export const ProgramsPage: React.FC = () => {
                 </div>
             </section>
 
-            {/* Completed Programs */}
-            {completedPrograms.length > 0 && (
-                <section className="mb-8">
-                    <div className="flex items-center gap-2 mb-4">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
-                        <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Completed ({completedPrograms.length})</h2>
-                    </div>
+            <Sheet open={!!selectedProgram} onOpenChange={(open) => !open && setSelectedProgram(null)}>
+                <SheetContent
+                    side="bottom"
+                    className="bg-[#141414] border-zinc-800 rounded-t-3xl max-h-[85vh] overflow-y-auto"
+                >
+                    {selectedProgram && (
+                        <div className="space-y-4">
+                            <SheetHeader>
+                                <SheetTitle className="text-white font-black uppercase tracking-[0.12em]">
+                                    {selectedProgram.name}
+                                </SheetTitle>
+                                <SheetDescription className="text-zinc-400">
+                                    Set mission slot. Deploy requirements.
+                                </SheetDescription>
+                            </SheetHeader>
 
-                    <div className="space-y-3">
-                        {completedPrograms.map(program => (
-                            <div
-                                key={program.id}
-                                className="bg-[#18181B] border border-[#27272A] rounded-2xl p-4 opacity-80 cursor-pointer"
-                                onClick={() => navigate(`/programs/${program.id}`)}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <span className="text-xl">{program.icon}</span>
-                                    <div className="flex-1">
-                                        <h3 className="font-bold text-white text-sm">{program.name}</h3>
-                                        <p className="text-xs text-green-400">{program.xpEarned} XP earned ✅</p>
-                                    </div>
-                                    <span className="text-xs text-zinc-500">{program.totalDays} days</span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            {/* Confirmation Modal */}
-            {confirmStart && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setConfirmStart(null)}>
-                    <div
-                        className="w-full max-w-md bg-[#18181B] border border-[#27272A] rounded-3xl p-6 max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-300"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="w-12 h-1 bg-zinc-700 rounded-full mx-auto mb-6"></div>
-
-                        <div className="text-center mb-6">
-                            <span className="text-5xl mb-4 block">{confirmStart.icon}</span>
-                            <h2 className="text-xl font-bold text-white mb-2">Start {confirmStart.name}?</h2>
-                            <p className="text-sm text-zinc-400 mb-4">{confirmStart.description}</p>
-
-                            <div className="flex justify-center gap-6 text-xs text-zinc-500 mb-4">
-                                <div className="flex flex-col items-center gap-1">
-                                    <Flame className="w-4 h-4 text-orange-500" />
-                                    <span>{confirmStart.days} Days</span>
-                                </div>
-                                <div className="flex flex-col items-center gap-1">
-                                    <Star className="w-4 h-4 text-amber-400" />
-                                    <span>{difficultyStars(confirmStart.difficulty)}</span>
-                                </div>
-                                <div className="flex flex-col items-center gap-1">
-                                    <Trophy className="w-4 h-4 text-[#dfff4f]" />
-                                    <span>{confirmStart.totalXpPotential.toLocaleString()} XP</span>
+                            <div className="rounded-2xl bg-[#1C1C1C] p-3 border border-zinc-800">
+                                <p className="text-xs text-zinc-500 uppercase font-black tracking-[0.14em] mb-2">Requirements</p>
+                                <div className="space-y-2">
+                                    {selectedProgram.dailyRequirements.map((requirement, idx) => (
+                                        <p key={idx} className="text-sm text-zinc-200">• {requirement}</p>
+                                    ))}
                                 </div>
                             </div>
 
-                            <div className="bg-[#0a0a0a] rounded-xl p-3 mb-4 text-left">
-                                <p className="text-xs text-zinc-500 font-semibold mb-2">DAILY REQUIREMENTS</p>
-                                {confirmStart.dailyRequirements.map((req, i) => (
-                                    <p key={i} className="text-xs text-zinc-300 mb-1">☐ {req}</p>
-                                ))}
+                            <div>
+                                <p className="text-xs text-zinc-500 uppercase font-black tracking-[0.14em] mb-2">Time Slot</p>
+                                <div className="max-h-52 overflow-y-auto rounded-2xl border border-zinc-800 bg-[#1C1C1C] p-2 grid grid-cols-3 gap-2">
+                                    {timeSlots.map((slot) => (
+                                        <button
+                                            key={slot}
+                                            type="button"
+                                            onClick={() => setSelectedTime(slot)}
+                                            className={`text-xs font-black rounded-xl px-2 py-2 border ${selectedTime === slot
+                                                    ? 'border-[#C8FF00] bg-[#C8FF00] text-black'
+                                                    : 'border-zinc-700 text-zinc-300 bg-zinc-900'
+                                                }`}
+                                        >
+                                            {to12h(slot)}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="flex gap-3">
                             <Button
-                                variant="outline"
-                                className="flex-1 border-zinc-700 text-zinc-400 rounded-xl"
-                                onClick={() => setConfirmStart(null)}
+                                type="button"
+                                onClick={handleDeploy}
+                                className="w-full h-11 bg-[#C8FF00] text-black hover:bg-[#b8ef00] font-black uppercase tracking-[0.14em]"
                             >
-                                Cancel
-                            </Button>
-                            <Button
-                                className="flex-1 bg-[#dfff4f] text-black font-bold hover:bg-[#ccee3e] rounded-xl"
-                                onClick={() => handleStart(confirmStart)}
-                                disabled={!!startingType}
-                            >
-                                {startingType ? 'Starting...' : '🚀 Start Program'}
+                                DEPLOY PROGRAM
                             </Button>
                         </div>
-                    </div>
-                </div>
-            )}
+                    )}
+                </SheetContent>
+            </Sheet>
         </div>
     );
 };

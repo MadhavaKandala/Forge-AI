@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { KanbanBoard } from '@/components/tasks/KanbanBoard';
 import { AddTaskModal } from '@/components/habit-tracker/AddTaskModal';
 import { TaskDetailModal } from '@/components/habit-tracker/TaskDetailModal';
+import { NewMissionModal } from '@/components/NewMissionModal';
 import { Task, TaskCategory, TaskStatus } from '@/types/task';
 import { Button } from '@/components/ui/button';
 import { Filter, Layout, Plus, Clock } from 'lucide-react';
@@ -9,8 +10,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { useHabitStore } from '@/store/useHabitStore';
 import { cn } from '@/lib/utils';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const TasksPage = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
     const { tasks, updateTask: updateStoreTask, completeTask, fetchTasks } = useHabitStore();
     const [filter, setFilter] = useState<{ category?: TaskCategory | 'all' }>({ category: 'all' });
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -47,6 +51,7 @@ const TasksPage = () => {
     });
 
     const categories: string[] = ['all', 'coding', 'gym', 'diet', 'personal', 'academics', 'devotional', 'other'];
+    const isNewMissionRoute = location.pathname === '/missions/new';
 
     return (
         <div className="w-full h-screen overflow-hidden flex flex-col relative bg-background text-foreground">
@@ -125,6 +130,15 @@ const TasksPage = () => {
             <div className="fixed bottom-24 right-4 z-50">
                 <AddTaskModal onTaskAdded={fetchTasks} />
             </div>
+
+            <NewMissionModal
+                isOpen={isNewMissionRoute}
+                onClose={() => navigate('/tasks', { replace: true })}
+                onTaskAdded={() => {
+                    fetchTasks();
+                    navigate('/tasks', { replace: true });
+                }}
+            />
 
             <TaskDetailModal
                 task={selectedTask}

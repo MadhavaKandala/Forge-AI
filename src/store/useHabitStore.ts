@@ -29,6 +29,7 @@ export interface Habit {
     goal?: number;
     unit?: string;
     history: Record<string, number>;
+    fromProgramId?: string;
 }
 
 export interface User {
@@ -70,14 +71,15 @@ interface HabitState {
     setSelectedDate: (date: Date) => void;
 
     // Task Actions
-    addTask: (taskData: CreateTaskDTO) => void;
+    addTask: (taskData: CreateTaskDTO) => Promise<void>;
     toggleTask: (taskId: string) => void;
     updateTask: (taskId: string, updates: Partial<Task>) => void;
     deleteTask: (taskId: string) => void;
     fetchTasks: () => Promise<void>;
 
     // Schedule/Habit Actions
-    addHabit: (habit: Omit<Habit, 'id' | 'streak' | 'completedDates' | 'history'>) => void;
+    addHabit: (habit: Omit<Habit, 'id' | 'streak' | 'completedDates' | 'history'> & { fromProgramId?: string }) => void;
+    removeHabitsByProgramId: (programId: string) => void;
     fetchHabits: () => Promise<void>;
     initializeDefaults: () => void;
     addScheduleItem: (item: Omit<ScheduleItem, 'id'>) => void;
@@ -263,9 +265,14 @@ export const useHabitStore = create<HabitState>()(
                         id: Math.random().toString(36).substr(2, 9),
                         streak: 0,
                         completedDates: [],
-                        history: {}
+                        history: {},
+                        fromProgramId: newHabit.fromProgramId
                     }
                 ]
+            })),
+
+            removeHabitsByProgramId: (programId) => set((state) => ({
+                habits: state.habits.filter((habit) => habit.fromProgramId !== programId)
             })),
 
             // Task Actions

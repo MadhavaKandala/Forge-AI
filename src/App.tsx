@@ -10,10 +10,11 @@ import ProgramsPage from "./pages/ProgramsPage";
 import ProgramDetailPage from "./pages/ProgramDetailPage";
 import WhatNextPage from "./pages/WhatNextPage";
 import TasksPage from "./pages/TasksPage";
-import VoiceNotePage from "./pages/VoiceNotePage";
+import VoicePage from "./pages/VoicePage";
 import { OnboardingPage } from "./pages/OnboardingPage";
 import BlitzFocusPage from "./pages/BlitzFocusPage";
 import NotFound from "./pages/NotFound";
+import AuthPage from "./pages/AuthPage";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { useHabitStore } from "./store/useHabitStore";
 import { useUserStore } from "./store/useUserStore";
 import { useScheduleStore } from "./store/useScheduleStore";
+import { useAppStore } from "./store/useAppStore";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useUserStore();
@@ -36,6 +38,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => {
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const { setSelectedDate: setHabitDate, fetchHabits, fetchTasks } = useHabitStore();
   const { setSelectedDate: setScheduleDate } = useScheduleStore();
   const { fetchUser } = useUserStore();
@@ -88,11 +91,11 @@ const App = () => {
     };
     createChannel();
 
-    LocalNotifications.addListener('localNotificationReceived', (notification) => {
+    const notificationReceivedListener = LocalNotifications.addListener('localNotificationReceived', (notification) => {
       console.log('Notification received:', notification);
     });
 
-    LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
+    const notificationActionListener = LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
       console.log('Notification action performed:', notification);
     });
 
@@ -111,6 +114,8 @@ const App = () => {
 
     return () => {
       subscription.then(sub => sub.remove());
+      notificationReceivedListener.then(listener => listener.remove());
+      notificationActionListener.then(listener => listener.remove());
       clearInterval(interval);
     };
   }, []);
@@ -121,19 +126,24 @@ const App = () => {
         <Toaster />
         <Sonner />
         <HashRouter>
-          <Routes>
-            <Route path="/onboarding" element={<OnboardingPage />} />
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/blitz" element={<ProtectedRoute><BlitzFocusPage /></ProtectedRoute>} />
-            <Route path="/pomodoro" element={<ProtectedRoute><PomodoroPage /></ProtectedRoute>} />
-            <Route path="/schedule" element={<ProtectedRoute><SchedulePage /></ProtectedRoute>} />
-            <Route path="/programs" element={<ProtectedRoute><ProgramsPage /></ProtectedRoute>} />
-            <Route path="/programs/:id" element={<ProtectedRoute><ProgramDetailPage /></ProtectedRoute>} />
-            <Route path="/what-next" element={<ProtectedRoute><WhatNextPage /></ProtectedRoute>} />
-            <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
-            <Route path="/voice" element={<ProtectedRoute><VoiceNotePage /></ProtectedRoute>} />
-            <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
-          </Routes>
+          {!isAuthenticated ? (
+            <AuthPage />
+          ) : (
+            <Routes>
+              <Route path="/onboarding" element={<OnboardingPage />} />
+              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/blitz" element={<ProtectedRoute><BlitzFocusPage /></ProtectedRoute>} />
+              <Route path="/pomodoro" element={<ProtectedRoute><PomodoroPage /></ProtectedRoute>} />
+              <Route path="/schedule" element={<ProtectedRoute><SchedulePage /></ProtectedRoute>} />
+              <Route path="/programs" element={<ProtectedRoute><ProgramsPage /></ProtectedRoute>} />
+              <Route path="/programs/:id" element={<ProtectedRoute><ProgramDetailPage /></ProtectedRoute>} />
+              <Route path="/what-next" element={<ProtectedRoute><WhatNextPage /></ProtectedRoute>} />
+              <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
+              <Route path="/missions/new" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
+              <Route path="/voice" element={<ProtectedRoute><VoicePage /></ProtectedRoute>} />
+              <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
+            </Routes>
+          )}
         </HashRouter>
       </TooltipProvider>
     </QueryClientProvider>

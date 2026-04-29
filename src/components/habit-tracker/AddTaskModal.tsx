@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useHabitStore } from '@/store/useHabitStore';
 import { TaskCategory, EisenhowerQuadrant } from '@/types/task';
 import { X, Plus, Clock, Target, ShieldCheck, AlignLeft } from 'lucide-react';
@@ -9,9 +9,10 @@ interface AddTaskModalProps {
     onClose?: () => void;
     onTaskAdded?: () => void;
     trigger?: React.ReactNode;
+    initialTitle?: string;
 }
 
-export const AddTaskModal = ({ isOpen: controlledIsOpen, onClose, onTaskAdded, trigger }: AddTaskModalProps) => {
+export const AddTaskModal = ({ isOpen: controlledIsOpen, onClose, onTaskAdded, trigger, initialTitle }: AddTaskModalProps) => {
     const { addTask } = useHabitStore();
     const [internalIsOpen, setInternalIsOpen] = useState(false);
 
@@ -26,6 +27,12 @@ export const AddTaskModal = ({ isOpen: controlledIsOpen, onClose, onTaskAdded, t
     const [scheduledDate, setScheduledDate] = useState<string>(new Date().toISOString().split('T')[0]);
     const [subtasks, setSubtasks] = useState<{ id: string; title: string; completed: boolean }[]>([]);
     const [newSubtask, setNewSubtask] = useState('');
+
+    useEffect(() => {
+        if (isOpen && initialTitle) {
+            setTitle(initialTitle);
+        }
+    }, [isOpen, initialTitle]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
