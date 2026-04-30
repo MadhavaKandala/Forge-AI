@@ -66,6 +66,7 @@ interface HabitState {
     tasks: Task[];
     todayMood: MoodHistoryEntry | null;
     moodHistory: MoodHistoryEntry[];
+    dismissedMotivationDate: string | null;
     selectedDate: Date;
     workoutLogs: WorkoutLog[];
     dietLogs: import('@/types/challenge').DietLog[];
@@ -113,6 +114,9 @@ interface HabitState {
     // Mood Actions
     setTodayMood: (mood: MoodKey, date?: Date) => void;
     getMoodForDate: (date: Date) => MoodHistoryEntry | null;
+
+    // Motivation Actions
+    dismissMotivationForToday: (date?: Date) => void;
 
     // Selectors
     getDailyProgress: (date: Date) => number;
@@ -208,6 +212,7 @@ export const useHabitStore = create<HabitState>()(
             tasks: [],
             todayMood: null,
             moodHistory: [],
+            dismissedMotivationDate: null,
             habits: [],
             schedule: [],
             workoutLogs: [],
@@ -284,6 +289,11 @@ export const useHabitStore = create<HabitState>()(
             getMoodForDate: (date) => {
                 const dateStr = formatDate(date);
                 return get().moodHistory.find((item) => item.date === dateStr) ?? null;
+            },
+
+            dismissMotivationForToday: (date = new Date()) => {
+                set({ dismissedMotivationDate: formatDate(date) });
+                toast.success('Daily Intel Dismissed');
             },
 
             addScheduleItem: (item) => set((state) => ({
@@ -553,7 +563,7 @@ export const useHabitStore = create<HabitState>()(
                     habits: currentState.habits,
                     schedule: currentState.schedule,
                     tasks: currentState.tasks,
-                    version: 6,
+                    version: 8,
                     timestamp: new Date().toISOString()
                 }));
 
@@ -565,6 +575,7 @@ export const useHabitStore = create<HabitState>()(
                     tasks: INITIAL_TASKS,
                     todayMood: null,
                     moodHistory: [],
+                    dismissedMotivationDate: null,
                     selectedDate: new Date()
                 });
             },
@@ -592,23 +603,30 @@ export const useHabitStore = create<HabitState>()(
         }),
         {
             name: 'habit-tracker-storage',
-            version: 7,
+            version: 8,
             migrate: (persistedState: any, version: number) => {
+                let nextState = persistedState;
                 if (version < 6) {
-                    return {
-                        ...persistedState,
-                        tasks: persistedState.tasks || [],
-                        user: persistedState.user || INITIAL_USER
+                    nextState = {
+                        ...nextState,
+                        tasks: nextState.tasks || [],
+                        user: nextState.user || INITIAL_USER
                     };
                 }
                 if (version < 7) {
-                    return {
-                        ...persistedState,
-                        todayMood: persistedState.todayMood || null,
-                        moodHistory: persistedState.moodHistory || []
+                    nextState = {
+                        ...nextState,
+                        todayMood: nextState.todayMood || null,
+                        moodHistory: nextState.moodHistory || []
                     };
                 }
-                return persistedState;
+                if (version < 8) {
+                    nextState = {
+                        ...nextState,
+                        dismissedMotivationDate: nextState.dismissedMotivationDate || null
+                    };
+                }
+                return nextState;
             },
             partialize: (state) => ({
                 user: state.user,
@@ -617,7 +635,8 @@ export const useHabitStore = create<HabitState>()(
                 tasks: state.tasks,
                 workoutLogs: state.workoutLogs,
                 todayMood: state.todayMood,
-                moodHistory: state.moodHistory
+                moodHistory: state.moodHistory,
+                dismissedMotivationDate: state.dismissedMotivationDate
             }),
         }
     )

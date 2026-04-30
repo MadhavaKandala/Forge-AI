@@ -5,10 +5,12 @@ import { toast } from 'sonner';
 import { shallow } from 'zustand/react';
 import { AnimatePresence } from 'framer-motion';
 import MoodCheck from '@/components/MoodCheck';
+import MotivationCard from '@/components/MotivationCard';
 import { useHabitStore } from '@/store/useHabitStore';
 import { useTaskStore } from '@/store/useTaskStore';
 import { useProgramStore } from '@/store/useProgramStore';
 import { MOOD_CONTENT, MoodKey } from '@/lib/moodContent';
+import { getDailyMotivationCard } from '@/lib/motivationCards';
 import { cn } from '@/lib/utils';
 
 const formatToday = (): string => new Date().toISOString().split('T')[0];
@@ -43,8 +45,10 @@ export default function HomePage() {
     schedule,
     todayMood,
     moodHistory,
+    dismissedMotivationDate,
     completeHabit,
     setTodayMood,
+    dismissMotivationForToday,
     initializeDefaults,
   } = useHabitStore(
     (s) => ({
@@ -53,8 +57,10 @@ export default function HomePage() {
       schedule: s.schedule,
       todayMood: s.todayMood,
       moodHistory: s.moodHistory,
+      dismissedMotivationDate: s.dismissedMotivationDate,
       completeHabit: s.completeHabit,
       setTodayMood: s.setTodayMood,
+      dismissMotivationForToday: s.dismissMotivationForToday,
       initializeDefaults: s.initializeDefaults,
     }),
     shallow
@@ -79,6 +85,22 @@ export default function HomePage() {
   const handleMoodSelect = useCallback((mood: MoodKey) => {
     setTodayMood(mood);
   }, [setTodayMood]);
+
+  const activeStreak = useMemo(
+    () => habits.reduce((max, habit) => Math.max(max, habit.streak), 0),
+    [habits]
+  );
+
+  const motivationCard = useMemo(
+    () => getDailyMotivationCard(new Date(), activeStreak),
+    [activeStreak]
+  );
+
+  const isMotivationDismissed = dismissedMotivationDate === today;
+
+  const handleDismissMotivation = useCallback(() => {
+    dismissMotivationForToday();
+  }, [dismissMotivationForToday]);
 
   // Daily Ops - habits scheduled for today, sorted by time
   const todayHabits = useMemo(
@@ -170,6 +192,16 @@ export default function HomePage() {
         <h1 className="text-4xl font-black mt-2">{user.name}</h1>
         <p className="text-sm text-zinc-400 mt-2">Level {user.level} • {user.xp} XP</p>
       </header>
+
+      <AnimatePresence>
+        {!isMotivationDismissed && (
+          <MotivationCard
+            card={motivationCard}
+            streak={activeStreak}
+            onDismiss={handleDismissMotivation}
+          />
+        )}
+      </AnimatePresence>
 
       {moodContent && (
         <section className="px-6 mb-6">
