@@ -209,9 +209,27 @@ export default function HomePage() {
                     </button>
                 ) : (
                     !isMoodPillHidden && (
-                        <div className="inline-flex items-center gap-2 rounded-full border border-[#C8FF00]/30 bg-[#1C1C1C] px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-[#C8FF00]">
+                        <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setIsMoodOpen(true)}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    setIsMoodOpen(true);
+                                }
+                            }}
+                            className="inline-flex items-center gap-2 rounded-full border border-[#C8FF00]/30 bg-[#1C1C1C] px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-[#C8FF00]"
+                        >
                             <span>{moodContent?.emoji} {moodContent?.label}</span>
-                            <button type="button" onClick={() => setIsMoodPillHidden(true)} aria-label="Dismiss mood badge">
+                            <button
+                                type="button"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    setIsMoodPillHidden(true);
+                                }}
+                                aria-label="Dismiss mood badge"
+                            >
                                 <X className="h-3.5 w-3.5" />
                             </button>
                         </div>
@@ -265,6 +283,14 @@ export default function HomePage() {
                     </button>
                 )}
             </section>
+
+            <button
+                type="button"
+                onClick={() => navigate('/schedule')}
+                className="mt-4 h-11 w-full rounded-lg border border-[#C8FF00]/30 bg-[#141414] text-xs font-black uppercase tracking-[0.16em] text-[#C8FF00]"
+            >
+                VIEW HISTORY
+            </button>
 
             <AnimatePresence>
                 {!isMotivationDismissed && (

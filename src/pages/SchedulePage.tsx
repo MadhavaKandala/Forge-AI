@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+import React, { useState, useEffect, useMemo } from 'react';
+import { format } from 'date-fns';
 import { Calendar } from '../components/ui/calendar';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, Plus } from 'lucide-react';
@@ -7,8 +7,10 @@ import { useNavigate } from 'react-router-dom';
 import { AddScheduleModal } from '../components/habit-tracker/AddScheduleModal';
 import { scheduleService, ScheduleItem } from '../services/scheduleService';
 import { cn } from '../lib/utils';
+import { useHabitStore } from '../store/useHabitStore';
 
 const displayTime = (item: ScheduleItem): string => item.scheduledTime || item.time || 'All Day';
+const toDateKey = (target: Date): string => target.toISOString().split('T')[0];
 
 export const SchedulePage: React.FC = () => {
     const navigate = useNavigate();
@@ -16,6 +18,7 @@ export const SchedulePage: React.FC = () => {
     const [items, setItems] = useState<ScheduleItem[]>([]);
     const [view, setView] = useState<'day' | 'week' | 'month'>('day');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const habits = useHabitStore((s) => s.habits);
 
     useEffect(() => {
         if (date) {
@@ -27,6 +30,25 @@ export const SchedulePage: React.FC = () => {
         const data = await scheduleService.getScheduleForDate(selectedDate);
         setItems(data);
     };
+
+    const completedDayKeys = useMemo(
+        () => Array.from(new Set(habits.flatMap((habit) => habit.completedDates))),
+        [habits],
+    );
+    const selectedDateKey = date ? toDateKey(date) : '';
+    const completedOnSelectedDate = useMemo(
+        () => habits.filter((habit) => habit.completedDates.includes(selectedDateKey)).length,
+        [habits, selectedDateKey],
+    );
+    const historyRows = useMemo(
+        () =>
+            habits.map((habit) => ({
+                id: habit.id,
+                title: habit.title,
+                completed: habit.completedDates.includes(selectedDateKey),
+            })),
+        [habits, selectedDateKey],
+    );
 
     return (
         <div className="container mx-auto p-4 max-w-md pb-24 min-h-screen bg-background">
@@ -69,8 +91,31 @@ export const SchedulePage: React.FC = () => {
                     mode="single"
                     selected={date}
                     onSelect={setDate}
+                    modifiers={{ completed: completedDayKeys.map((day) => new Date(`${day}T00:00:00`)) }}
+                    modifiersClassNames={{ completed: 'border border-[#C8FF00] text-[#C8FF00]' }}
                     className="rounded-md border shadow"
                 />
+            </div>
+
+            <div className="mb-6 rounded-xl border border-zinc-800 bg-[#1C1C1C] p-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Habit History</p>
+                        <p className="mt-1 text-sm text-zinc-400">{date ? format(date, 'MMM d, yyyy') : 'Select a date'}</p>
+                    </div>
+                    <p className="text-xl font-black text-[#C8FF00]">{completedOnSelectedDate}/{habits.length}</p>
+                </div>
+                <div className="mt-3 space-y-2">
+                    {historyRows.map((habit) => (
+                        <div key={habit.id} className="flex items-center justify-between rounded-lg bg-[#141414] px-3 py-2">
+                            <span className={cn('text-sm', habit.completed ? 'text-white' : 'text-zinc-500')}>{habit.title}</span>
+                            <span className={cn('text-xs font-black', habit.completed ? 'text-[#C8FF00]' : 'text-zinc-600')}>
+                                {habit.completed ? 'DONE' : 'OPEN'}
+                            </span>
+                        </div>
+                    ))}
+                    {historyRows.length === 0 && <p className="text-sm text-zinc-500">No habits found.</p>}
+                </div>
             </div>
 
             <div className="space-y-4">
