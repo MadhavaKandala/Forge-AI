@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { shallow } from 'zustand/react';
+import { useShallow } from 'zustand/react/shallow';
 import { useHabitStore } from '@/store/useHabitStore';
 import { TrendingUp, Target, AlertCircle, Zap } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -21,8 +21,7 @@ const getLevelInfo = (xp: number) => {
 
 export default function StatsPage() {
   const { user, tasks, habits, moodHistory } = useHabitStore(
-    (s) => ({ user: s.user, tasks: s.tasks, habits: s.habits, moodHistory: s.moodHistory }),
-    shallow
+    useShallow((s) => ({ user: s.user, tasks: s.tasks, habits: s.habits, moodHistory: s.moodHistory }))
   );
   const [dateFilter, setDateFilter] = useState<'day' | 'week' | 'year'>('day');
 

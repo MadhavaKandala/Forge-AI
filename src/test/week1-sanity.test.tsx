@@ -1,0 +1,188 @@
+import React from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import MoodCheck from '@/components/MoodCheck';
+import HomePage from '@/pages/HomePage';
+import ProgramsPage from '@/pages/ProgramsPage';
+import { useAppStore } from '@/store/useAppStore';
+import { useHabitStore } from '@/store/useHabitStore';
+import { useTaskStore } from '@/store/useTaskStore';
+import { MOOD_CONTENT, MOOD_ORDER, MoodKey } from '@/lib/moodContent';
+import { DAILY_CARDS } from '@/lib/motivationCards';
+import { PROGRAM_TEMPLATES } from '@/lib/programs';
+
+const today = new Date().toISOString().split('T')[0];
+
+const resetStores = () => {
+    localStorage.clear();
+    useAppStore.setState({
+        isAuthenticated: false,
+        sessionToken: null,
+        sessionEmail: null,
+        sessionIntegrity: null,
+        pendingEmail: null,
+        pendingOtpHash: null,
+        otpExpiresAt: null,
+        failedOtpAttempts: 0,
+        otpLockUntil: null,
+        authError: null,
+    });
+    useHabitStore.setState({
+        user: { name: 'Madhava', level: 1, xp: 2840, notificationsEnabled: true },
+        habits: [
+            { id: 'h1', title: 'Small Habit', time: '6:00 AM', streak: 7, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
+            { id: 'h2', title: 'Second Habit', time: '7:00 AM', streak: 2, completedDates: [], type: 'checkbox', category: 'coding', history: {} },
+            { id: 'h3', title: 'Third Habit', time: '8:00 AM', streak: 0, completedDates: [], type: 'checkbox', category: 'gym', history: {} },
+            { id: 'h4', title: 'Fourth Habit', time: '9:00 AM', streak: 0, completedDates: [], type: 'checkbox', category: 'diet', history: {} },
+        ],
+        schedule: [
+            { id: 's1', title: 'Small Habit', time: '6:00 AM', duration: '5m', color: '#C8FF00', period: 'today' },
+            { id: 's2', title: 'Second Habit', time: '7:00 AM', duration: '10m', color: '#C8FF00', period: 'today' },
+            { id: 's3', title: 'Third Habit', time: '8:00 AM', duration: '15m', color: '#C8FF00', period: 'today' },
+            { id: 's4', title: 'Fourth Schedule', time: '9:00 AM', duration: '20m', color: '#C8FF00', period: 'today' },
+        ],
+        tasks: [],
+        todayMood: null,
+        moodHistory: [],
+        dismissedMotivationDate: null,
+        selectedDate: new Date(),
+        workoutLogs: [],
+        dietLogs: [],
+        waterIntakeLiters: 0,
+    });
+    useTaskStore.setState({
+        tasks: [
+            {
+                id: 'hard',
+                user_id: 'u1',
+                title: 'Hard Mission',
+                category: 'coding',
+                priority: 'high',
+                size: 'large',
+                quadrant: 'q1',
+                status: 'today',
+                is_recurring: 0,
+                has_subtasks: 0,
+                completed_subtasks: 0,
+                total_subtasks: 0,
+                xp_value: 100,
+                difficulty_multiplier: 1,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            },
+            {
+                id: 'easy',
+                user_id: 'u1',
+                title: 'Easy Mission',
+                category: 'personal',
+                priority: 'low',
+                size: 'small',
+                quadrant: 'q2',
+                status: 'today',
+                is_recurring: 0,
+                has_subtasks: 0,
+                completed_subtasks: 0,
+                total_subtasks: 0,
+                xp_value: 10,
+                difficulty_multiplier: 1,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            },
+        ],
+        isLoading: false,
+        error: null,
+    });
+};
+
+const renderHomeWithMood = (mood: MoodKey) => {
+    useHabitStore.getState().setTodayMood(mood, new Date());
+    render(
+        <MemoryRouter>
+            <HomePage />
+        </MemoryRouter>,
+    );
+};
+
+describe('week 1 sanity', () => {
+    let consoleError: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+        resetStores();
+        consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    });
+
+    afterEach(() => {
+        consoleError.mockRestore();
+    });
+
+    it('verifies OTP 123456 after request', async () => {
+        await expect(useAppStore.getState().requestOtp('test@test.com')).resolves.toBe(true);
+        await expect(useAppStore.getState().verifyOtp('test@test.com', '123456')).resolves.toBe(true);
+        expect(useAppStore.getState().isAuthenticated).toBe(true);
+    });
+
+    it('renders MoodCheck and saves selected mood to store', () => {
+        render(<MoodCheck onSelect={(mood) => useHabitStore.getState().setTodayMood(mood)} />);
+        fireEvent.click(screen.getByText('LOCKED IN'));
+        expect(useHabitStore.getState().todayMood).toMatchObject({ date: today, mood: 'locked_in' });
+    });
+
+    it.each(MOOD_ORDER)('applies HomePage behavior for %s', (mood) => {
+        renderHomeWithMood(mood);
+
+        expect(screen.getByText(MOOD_CONTENT[mood].label)).toBeInTheDocument();
+
+        if (mood === 'rock_bottom') {
+            expect(screen.queryByText('PRIORITY MATRIX')).not.toBeInTheDocument();
+            expect(screen.getByText((content) => content.replace(/\s+/g, ' ').includes('0/3 COMPLETED'))).toBeInTheDocument();
+        }
+
+        if (mood === 'overwhelmed' || mood === 'numb') {
+            expect(screen.getByText('TACTICAL FOCUS')).toBeInTheDocument();
+            expect(screen.queryByText('Fourth Schedule')).not.toBeInTheDocument();
+        }
+
+        if (mood === 'locked_in' || mood === 'frustrated') {
+            expect(screen.getByText('Hard Mission')).toBeInTheDocument();
+        }
+    });
+
+    it('shows MotivationCard on HomePage', () => {
+        useHabitStore.getState().setTodayMood('locked_in', new Date());
+        render(
+            <MemoryRouter>
+                <HomePage />
+            </MemoryRouter>,
+        );
+
+        const streakTitles = DAILY_CARDS.filter((card) => card.type === 'streak').map((card) => card.title);
+        expect(screen.getByText((content) => streakTitles.includes(content))).toBeInTheDocument();
+    });
+
+    it('shows placement prep programs on ProgramsPage', async () => {
+        expect(PROGRAM_TEMPLATES.find((program) => program.type === 'leetcode_150')?.taskList).toHaveLength(150);
+        expect(PROGRAM_TEMPLATES.find((program) => program.type === 'dsa_sheet')?.taskList).toHaveLength(90);
+
+        render(
+            <MemoryRouter>
+                <ProgramsPage />
+            </MemoryRouter>,
+        );
+
+        expect(await screen.findByText('LeetCode 150')).toBeInTheDocument();
+        expect(await screen.findByText('DSA Sheet')).toBeInTheDocument();
+    });
+
+    it('does not emit console errors during sanity renders', () => {
+        useHabitStore.getState().setTodayMood('locked_in', new Date());
+        render(
+            <MemoryRouter>
+                <HomePage />
+                <ProgramsPage />
+            </MemoryRouter>,
+        );
+
+        expect(consoleError).not.toHaveBeenCalled();
+    });
+});

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Circle, Clock, Zap } from 'lucide-react';
 import { toast } from 'sonner';
-import { shallow } from 'zustand/react';
+import { useShallow } from 'zustand/react/shallow';
 import { AnimatePresence } from 'framer-motion';
 import MoodCheck from '@/components/MoodCheck';
 import MotivationCard from '@/components/MotivationCard';
@@ -51,7 +51,7 @@ export default function HomePage() {
     dismissMotivationForToday,
     initializeDefaults,
   } = useHabitStore(
-    (s) => ({
+    useShallow((s) => ({
       user: s.user,
       habits: s.habits,
       schedule: s.schedule,
@@ -62,12 +62,11 @@ export default function HomePage() {
       setTodayMood: s.setTodayMood,
       dismissMotivationForToday: s.dismissMotivationForToday,
       initializeDefaults: s.initializeDefaults,
-    }),
-    shallow
+    }))
   );
 
-  const { tasks } = useTaskStore((s) => ({ tasks: s.tasks }), shallow);
-  const { activePrograms } = useProgramStore((s) => ({ activePrograms: s.activePrograms }), shallow);
+  const { tasks } = useTaskStore(useShallow((s) => ({ tasks: s.tasks })));
+  const { activePrograms } = useProgramStore(useShallow((s) => ({ activePrograms: s.activePrograms })));
 
   useEffect(() => {
     initializeDefaults();
