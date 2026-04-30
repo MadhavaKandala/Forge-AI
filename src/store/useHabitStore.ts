@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { toast } from 'sonner';
 import { Task, TaskCategory, TaskPriority, TaskStatus, EisenhowerQuadrant, CreateTaskDTO } from '@/types/task';
+import { MoodKey } from '@/lib/moodContent';
 
 export type HabitType = 'checkbox' | 'numeric' | 'timer';
 export type Category = 'coding' | 'devotional' | 'diet' | 'gym' | 'personal' | 'academics' | 'breaks';
@@ -52,11 +53,19 @@ export interface ScheduleItem {
     isFixed?: boolean; // e.g. College classes
 }
 
+export interface MoodHistoryEntry {
+    date: string;
+    mood: MoodKey;
+    selectedAt: string;
+}
+
 interface HabitState {
     user: User;
     habits: Habit[];
     schedule: ScheduleItem[];
     tasks: Task[];
+    todayMood: MoodHistoryEntry | null;
+    moodHistory: MoodHistoryEntry[];
     selectedDate: Date;
     workoutLogs: WorkoutLog[];
     dietLogs: import('@/types/challenge').DietLog[];
@@ -100,6 +109,10 @@ interface HabitState {
     addDietLog: (log: Omit<import('@/types/challenge').DietLog, 'id'>) => void;
     addWater: (amount: number) => void;
     updateDietGoal: (calories: number, water: number) => void;
+
+    // Mood Actions
+    setTodayMood: (mood: MoodKey, date?: Date) => void;
+    getMoodForDate: (date: Date) => MoodHistoryEntry | null;
 
     // Selectors
     getDailyProgress: (date: Date) => number;
@@ -193,6 +206,8 @@ export const useHabitStore = create<HabitState>()(
             user: INITIAL_USER,
             selectedDate: new Date(),
             tasks: [],
+            todayMood: null,
+            moodHistory: [],
             habits: [],
             schedule: [],
             workoutLogs: [],
@@ -245,6 +260,30 @@ export const useHabitStore = create<HabitState>()(
 
             updateDietGoal: (calories, water) => {
                 // This could update the user profile in useChallenges or the store
+            },
+
+            setTodayMood: (mood, date = new Date()) => {
+                const dateStr = formatDate(date);
+                const entry: MoodHistoryEntry = {
+                    date: dateStr,
+                    mood,
+                    selectedAt: new Date().toISOString()
+                };
+
+                set((state) => ({
+                    todayMood: entry,
+                    moodHistory: [
+                        entry,
+                        ...state.moodHistory.filter((item) => item.date !== dateStr)
+                    ]
+                }));
+
+                toast.success('Mood Intel Synced');
+            },
+
+            getMoodForDate: (date) => {
+                const dateStr = formatDate(date);
+                return get().moodHistory.find((item) => item.date === dateStr) ?? null;
             },
 
             addScheduleItem: (item) => set((state) => ({
@@ -495,7 +534,11 @@ export const useHabitStore = create<HabitState>()(
                 const { selectedDate } = get();
                 const today = new Date();
                 if (formatDate(selectedDate) !== formatDate(today)) {
-                    set({ selectedDate: today });
+                    const todayStr = formatDate(today);
+                    set((state) => ({
+                        selectedDate: today,
+                        todayMood: state.moodHistory.find((item) => item.date === todayStr) ?? null
+                    }));
                 }
             },
 
@@ -520,6 +563,8 @@ export const useHabitStore = create<HabitState>()(
                     habits: INITIAL_HABITS,
                     schedule: INITIAL_SCHEDULE,
                     tasks: INITIAL_TASKS,
+                    todayMood: null,
+                    moodHistory: [],
                     selectedDate: new Date()
                 });
             },
@@ -547,13 +592,20 @@ export const useHabitStore = create<HabitState>()(
         }),
         {
             name: 'habit-tracker-storage',
-            version: 6,
+            version: 7,
             migrate: (persistedState: any, version: number) => {
                 if (version < 6) {
                     return {
                         ...persistedState,
                         tasks: persistedState.tasks || [],
                         user: persistedState.user || INITIAL_USER
+                    };
+                }
+                if (version < 7) {
+                    return {
+                        ...persistedState,
+                        todayMood: persistedState.todayMood || null,
+                        moodHistory: persistedState.moodHistory || []
                     };
                 }
                 return persistedState;
@@ -563,7 +615,9 @@ export const useHabitStore = create<HabitState>()(
                 habits: state.habits,
                 schedule: state.schedule,
                 tasks: state.tasks,
-                workoutLogs: state.workoutLogs
+                workoutLogs: state.workoutLogs,
+                todayMood: state.todayMood,
+                moodHistory: state.moodHistory
             }),
         }
     )

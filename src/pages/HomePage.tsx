@@ -3,9 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Circle, Clock, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { shallow } from 'zustand/react';
+import { AnimatePresence } from 'framer-motion';
+import MoodCheck from '@/components/MoodCheck';
 import { useHabitStore } from '@/store/useHabitStore';
 import { useTaskStore } from '@/store/useTaskStore';
 import { useProgramStore } from '@/store/useProgramStore';
+import { MOOD_CONTENT, MoodKey } from '@/lib/moodContent';
 import { cn } from '@/lib/utils';
 
 const formatToday = (): string => new Date().toISOString().split('T')[0];
@@ -19,20 +22,39 @@ const timeToMinutes = (t: string): number => {
   return (h + offset) * 60 + m;
 };
 
+const missionScore = (mission: any): number => {
+  const priorityScore = { high: 30, medium: 20, low: 10 }[mission.priority as 'high' | 'medium' | 'low'] ?? 0;
+  const sizeScore = { big: 30, large: 30, medium: 20, small: 10 }[mission.size as 'big' | 'large' | 'medium' | 'small'] ?? 0;
+  const quadrantScore = { q1: 30, q2: 20, q3: 10, q4: 0 }[mission.quadrant as 'q1' | 'q2' | 'q3' | 'q4'] ?? 0;
+  const estimateScore = Math.min((mission.estimatedMinutes ?? mission.estimated_minutes ?? 0) / 10, 20);
+  return priorityScore + sizeScore + quadrantScore + estimateScore;
+};
+
+const isActiveMission = (mission: any): boolean => {
+  const status = mission.status;
+  return status !== 'completed' && status !== 'done' && status !== 'cancelled' && !mission.completed;
+};
+
 export default function HomePage() {
   const navigate = useNavigate();
   const {
     user,
     habits,
     schedule,
+    todayMood,
+    moodHistory,
     completeHabit,
+    setTodayMood,
     initializeDefaults,
   } = useHabitStore(
     (s) => ({
       user: s.user,
       habits: s.habits,
       schedule: s.schedule,
+      todayMood: s.todayMood,
+      moodHistory: s.moodHistory,
       completeHabit: s.completeHabit,
+      setTodayMood: s.setTodayMood,
       initializeDefaults: s.initializeDefaults,
     }),
     shallow
@@ -46,6 +68,17 @@ export default function HomePage() {
   }, [initializeDefaults]);
 
   const today = formatToday();
+  const currentMood = useMemo(
+    () => (todayMood?.date === today ? todayMood : moodHistory.find((item) => item.date === today) ?? null),
+    [moodHistory, today, todayMood]
+  );
+  const currentMoodKey = currentMood?.mood;
+  const moodContent = currentMoodKey ? MOOD_CONTENT[currentMoodKey] : null;
+  const moodBehavior = moodContent?.behavior ?? {};
+
+  const handleMoodSelect = useCallback((mood: MoodKey) => {
+    setTodayMood(mood);
+  }, [setTodayMood]);
 
   // Daily Ops - habits scheduled for today, sorted by time
   const todayHabits = useMemo(
@@ -56,19 +89,42 @@ export default function HomePage() {
     [habits]
   );
 
+  const visibleTodayHabits = useMemo(() => {
+    const sortedHabits = moodBehavior.preferSmallestHabit
+      ? [...todayHabits].sort((a, b) => {
+          const aScore = a.type === 'checkbox' ? 0 : a.goal ?? 999;
+          const bScore = b.type === 'checkbox' ? 0 : b.goal ?? 999;
+          return aScore - bScore || timeToMinutes(a.time) - timeToMinutes(b.time);
+        })
+      : todayHabits;
+
+    return moodBehavior.showMinimalView ? sortedHabits.slice(0, 3) : sortedHabits;
+  }, [moodBehavior.preferSmallestHabit, moodBehavior.showMinimalView, todayHabits]);
+
+  const visibleMissions = useMemo(() => {
+    if (moodBehavior.showHabitsOnly) return [];
+
+    const activeMissions = tasks.filter(isActiveMission);
+    const orderedMissions = moodBehavior.hardestMissionFirst || moodBehavior.reorderTasks
+      ? [...activeMissions].sort((a, b) => missionScore(b) - missionScore(a))
+      : activeMissions;
+
+    return moodBehavior.showOnlyThreeTasks ? orderedMissions.slice(0, 3) : orderedMissions;
+  }, [moodBehavior.hardestMissionFirst, moodBehavior.reorderTasks, moodBehavior.showHabitsOnly, moodBehavior.showOnlyThreeTasks, tasks]);
+
   const completedTodayCount = useMemo(
-    () => todayHabits.filter((h) => h.completedDates.includes(today)).length,
-    [todayHabits, today]
+    () => visibleTodayHabits.filter((h) => h.completedDates.includes(today)).length,
+    [visibleTodayHabits, today]
   );
 
   // Priority matrix - group tasks by quadrant
   const missionsByQuadrant = useMemo(() => {
-    const q1 = tasks.filter((t) => t.quadrant === 'q1' && t.status !== 'completed').slice(0, 3);
-    const q2 = tasks.filter((t) => t.quadrant === 'q2' && t.status !== 'completed').slice(0, 3);
-    const q3 = tasks.filter((t) => t.quadrant === 'q3' && t.status !== 'completed').slice(0, 3);
-    const q4 = tasks.filter((t) => t.quadrant === 'q4' && t.status !== 'completed').slice(0, 3);
+    const q1 = visibleMissions.filter((t) => t.quadrant === 'q1').slice(0, 3);
+    const q2 = visibleMissions.filter((t) => t.quadrant === 'q2').slice(0, 3);
+    const q3 = visibleMissions.filter((t) => t.quadrant === 'q3').slice(0, 3);
+    const q4 = visibleMissions.filter((t) => t.quadrant === 'q4').slice(0, 3);
     return { q1, q2, q3, q4 };
-  }, [tasks]);
+  }, [visibleMissions]);
 
   // Memoize sorted schedule
   const sortedSchedule = useMemo(
@@ -79,6 +135,15 @@ export default function HomePage() {
     [schedule]
   );
 
+  const visibleSchedule = useMemo(() => {
+    if (moodBehavior.showHabitsOnly) {
+      const habitTitles = new Set(visibleTodayHabits.map((habit) => habit.title.toLowerCase()));
+      return sortedSchedule.filter((item) => habitTitles.has(item.title.toLowerCase()));
+    }
+
+    return moodBehavior.showOnlyThreeTasks ? sortedSchedule.slice(0, 3) : sortedSchedule;
+  }, [moodBehavior.showHabitsOnly, moodBehavior.showOnlyThreeTasks, sortedSchedule, visibleTodayHabits]);
+
   const handleHabitTap = useCallback((habitId: string) => {
     const isNowCompleted = completeHabit(habitId);
     if (isNowCompleted) {
@@ -88,19 +153,39 @@ export default function HomePage() {
 
   const quadrantLabels = {
     q1: { label: 'URGENT & IMPORTANT', color: 'bg-red-500/20 border-red-500/50' },
-    q2: { label: 'STRATEGIC BUILD', color: 'bg-blue-500/20 border-blue-500/50' },
+    q2: { label: 'STRATEGIC BUILD', color: 'bg-[#C8FF00]/10 border-[#C8FF00]/40' },
     q3: { label: 'DELEGATE', color: 'bg-yellow-500/20 border-yellow-500/50' },
     q4: { label: 'ELIMINATE', color: 'bg-gray-500/20 border-gray-500/50' },
   };
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white pb-40">
+      <AnimatePresence>
+        {!currentMood && <MoodCheck onSelect={handleMoodSelect} />}
+      </AnimatePresence>
+
       {/* Header */}
       <header className="px-6 pt-8 pb-6">
         <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">COMMAND CENTER</p>
         <h1 className="text-4xl font-black mt-2">{user.name}</h1>
         <p className="text-sm text-zinc-400 mt-2">Level {user.level} • {user.xp} XP</p>
       </header>
+
+      {moodContent && (
+        <section className="px-6 mb-6">
+          <div className="rounded-xl border border-[#C8FF00]/30 bg-[#141414] p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-3xl">{moodContent.emoji}</span>
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#C8FF00]">{moodContent.label}</p>
+                <p className="mt-2 text-lg font-black">{moodContent.message}</p>
+                <p className="mt-1 text-sm text-zinc-400">{moodContent.action}</p>
+                <p className="mt-3 border-l-2 border-[#C8FF00] pl-3 text-xs leading-5 text-zinc-500">{moodContent.quote}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Program Status Bar */}
       {activePrograms.length > 0 && (
@@ -125,42 +210,43 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Priority Matrix */}
-      <section className="px-6 mb-8">
-        <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">PRIORITY MATRIX</h2>
-        <div className="grid grid-cols-2 gap-3">
-          {(Object.entries(missionsByQuadrant) as Array<[keyof typeof missionsByQuadrant, any]>).map(([quadrant, missions]) => (
-            <div
-              key={quadrant}
-              className={cn(
-                'rounded-xl border p-3 min-h-[140px] flex flex-col',
-                quadrantLabels[quadrant].color
-              )}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-black uppercase">{quadrantLabels[quadrant].label}</span>
-                <span className="text-lg font-black">{missions.length}</span>
+      {!moodBehavior.showHabitsOnly && (
+        <section className="px-6 mb-8">
+          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">PRIORITY MATRIX</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {(Object.entries(missionsByQuadrant) as Array<[keyof typeof missionsByQuadrant, any]>).map(([quadrant, missions]) => (
+              <div
+                key={quadrant}
+                className={cn(
+                  'rounded-xl border p-3 min-h-[140px] flex flex-col',
+                  quadrantLabels[quadrant].color
+                )}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-black uppercase">{quadrantLabels[quadrant].label}</span>
+                  <span className="text-lg font-black">{missions.length}</span>
+                </div>
+                <div className="text-xs space-y-1 flex-1">
+                  {missions.map((m) => (
+                    <p key={m.id} className="line-clamp-1">{m.title}</p>
+                  ))}
+                </div>
               </div>
-              <div className="text-xs space-y-1 flex-1">
-                {missions.map((m) => (
-                  <p key={m.id} className="line-clamp-1">{m.title}</p>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Daily Habits */}
       <section className="px-6 mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">DAILY HABITS</h2>
           <span className="text-xs font-mono text-zinc-400">
-            {completedTodayCount}/{todayHabits.length} COMPLETED
+            {completedTodayCount}/{visibleTodayHabits.length} COMPLETED
           </span>
         </div>
         <div className="space-y-2">
-          {todayHabits.map((habit) => {
+          {visibleTodayHabits.map((habit) => {
             const isCompleted = habit.completedDates.includes(today);
             return (
               <button
@@ -193,7 +279,7 @@ export default function HomePage() {
       <section className="px-6 mb-8">
         <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">TACTICAL FOCUS</h2>
         <div className="space-y-2">
-          {sortedSchedule.map((item) => (
+          {visibleSchedule.map((item) => (
             <div key={item.id} className="rounded-xl border border-zinc-800 bg-[#1C1C1C] p-3">
               <div className="flex items-center justify-between">
                 <div>

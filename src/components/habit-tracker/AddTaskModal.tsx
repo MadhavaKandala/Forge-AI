@@ -97,9 +97,9 @@ export const AddTaskModal = ({ isOpen: controlledIsOpen, onClose, onTaskAdded, t
             )}
 
             {isOpen && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center px-6">
+                <div className="fixed inset-0 z-[110]">
                     <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={handleClose}></div>
-                    <div className="bg-[#09090B] border border-[#27272A] w-full max-w-md rounded-[32px] p-6 relative z-10 animate-in zoom-in-95 duration-200">
+                    <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 max-h-[90vh] overflow-y-auto bg-[#09090B] border border-[#27272A] w-full max-w-md rounded-[32px] p-6 animate-in zoom-in-95 duration-200 px-6">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-black italic uppercase tracking-tighter">New Mission</h2>
                             <button onClick={handleClose} className="p-2 rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 transition-colors">

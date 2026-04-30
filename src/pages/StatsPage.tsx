@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { shallow } from 'zustand/react';
 import { useHabitStore } from '@/store/useHabitStore';
 import { TrendingUp, Target, AlertCircle, Zap } from 'lucide-react';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { MOOD_CONTENT, MOOD_SCORE } from '@/lib/moodContent';
 import { cn } from '@/lib/utils';
 
 const getLevelInfo = (xp: number) => {
@@ -18,8 +20,8 @@ const getLevelInfo = (xp: number) => {
 };
 
 export default function StatsPage() {
-  const { user, tasks, habits } = useHabitStore(
-    (s) => ({ user: s.user, tasks: s.tasks, habits: s.habits }),
+  const { user, tasks, habits, moodHistory } = useHabitStore(
+    (s) => ({ user: s.user, tasks: s.tasks, habits: s.habits, moodHistory: s.moodHistory }),
     shallow
   );
   const [dateFilter, setDateFilter] = useState<'day' | 'week' | 'year'>('day');
@@ -63,6 +65,37 @@ export default function StatsPage() {
   // Velocity Index - total XP and level
   const velocityXP = user?.xp ?? 0;
   const levelInfo = getLevelInfo(velocityXP);
+
+  const moodChartData = useMemo(() => {
+    const historyByDate = new Map(moodHistory.map((entry) => [entry.date, entry.mood]));
+    const days = Array.from({ length: 30 }, (_, index) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (29 - index));
+      const dateKey = date.toISOString().split('T')[0];
+      const mood = historyByDate.get(dateKey);
+
+      return {
+        date: dateKey,
+        label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        mood: mood ? MOOD_CONTENT[mood].label : 'NO CHECK',
+        score: mood ? MOOD_SCORE[mood] : 0,
+      };
+    });
+
+    return days;
+  }, [moodHistory]);
+
+  const moodInsight = useMemo(() => {
+    const recentMoods = moodChartData.filter((item) => item.score > 0);
+    if (recentMoods.length === 0) return 'No mood intel yet. Check in tomorrow and the pattern starts.';
+
+    const totals = recentMoods.reduce<Record<string, number>>((acc, item) => {
+      acc[item.mood] = (acc[item.mood] ?? 0) + 1;
+      return acc;
+    }, {});
+    const [topMood, count] = Object.entries(totals).sort((a, b) => b[1] - a[1])[0];
+    return `${topMood} showed up ${count} time${count === 1 ? '' : 's'} in the last 30 days.`;
+  }, [moodChartData]);
 
   // Filter missions by date range
   const filteredTaskCount = useMemo(() => {
@@ -108,8 +141,8 @@ export default function StatsPage() {
       value: strategicCount,
       sublabel: 'Important, Non-Urgent',
       icon: Target,
-      color: 'text-blue-400',
-      bgColor: 'bg-blue-500/10 border-blue-500/30',
+      color: 'text-[#C8FF00]',
+      bgColor: 'bg-[#C8FF00]/10 border-[#C8FF00]/30',
     },
     {
       label: 'FUTURE VISION',
@@ -183,6 +216,54 @@ export default function StatsPage() {
             </div>
           );
         })}
+      </div>
+
+      {/* Mood History */}
+      <div className="px-6 mb-8">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase font-bold text-zinc-500">MOOD HISTORY</p>
+            <p className="mt-1 text-sm text-zinc-400">Energy over the last 30 days</p>
+          </div>
+          <span className="rounded-lg border border-[#C8FF00]/30 bg-[#C8FF00]/10 px-3 py-2 text-xs font-black text-[#C8FF00]">
+            30D
+          </span>
+        </div>
+        <div className="rounded-xl border border-zinc-800 bg-[#1C1C1C] p-4">
+          <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={moodChartData} margin={{ top: 8, right: 4, left: -24, bottom: 0 }}>
+                <CartesianGrid stroke="#27272A" vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fill: '#666666', fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval={6}
+                />
+                <YAxis
+                  domain={[0, 5]}
+                  ticks={[0, 1, 2, 3, 4, 5]}
+                  tick={{ fill: '#666666', fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  cursor={{ fill: 'rgba(200, 255, 0, 0.08)' }}
+                  contentStyle={{
+                    background: '#141414',
+                    border: '1px solid #3F3F46',
+                    borderRadius: 8,
+                    color: '#FFFFFF',
+                  }}
+                  labelStyle={{ color: '#C8FF00' }}
+                />
+                <Bar dataKey="score" fill="#C8FF00" radius={[4, 4, 0, 0]} name="Mood Score" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <p className="mt-3 text-xs leading-5 text-zinc-400">{moodInsight}</p>
+        </div>
       </div>
 
       {/* Date Filter & Mission Count */}

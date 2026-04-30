@@ -9,16 +9,20 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const generateOtp = (): string => Math.floor(100000 + Math.random() * 900000).toString();
 
+const normalizeOtp = (otp: string): string => otp.trim();
+
 const toHex = (buffer: ArrayBuffer): string =>
     Array.from(new Uint8Array(buffer))
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('');
 
-const hashValue = async (value: string): Promise<string> => {
+const sha256Hex = async (value: string): Promise<string> => {
     const encoded = new TextEncoder().encode(value);
     const digest = await crypto.subtle.digest('SHA-256', encoded);
     return toHex(digest);
 };
+
+const hashOtp = (otp: string): Promise<string> => sha256Hex(normalizeOtp(otp));
 
 export const createSessionIntegrity = (token: string, email: string): string => {
     const source = `${token}:${email}:forge-auth-v1`;
@@ -79,8 +83,7 @@ export const useAppStore = create<AppState>()(
                 }
 
                 const otp = '123456';
-                console.log('OTP is: 123456');
-                const otpHash = await hashValue(otp);
+                const otpHash = await hashOtp(otp);
                 set({
                     pendingEmail: normalizedEmail,
                     pendingOtpHash: otpHash,
@@ -113,7 +116,9 @@ export const useAppStore = create<AppState>()(
                     return false;
                 }
 
-                if (normalizedEmail !== pendingEmail || !/^\d{6}$/.test(otp) || otp.length !== OTP_LENGTH) {
+                const normalizedOtp = normalizeOtp(otp);
+
+                if (normalizedEmail !== pendingEmail || !/^\d{6}$/.test(normalizedOtp) || normalizedOtp.length !== OTP_LENGTH) {
                     const attempts = failedOtpAttempts + 1;
                     if (attempts >= MAX_OTP_ATTEMPTS) {
                         set({
@@ -131,7 +136,7 @@ export const useAppStore = create<AppState>()(
                     return false;
                 }
 
-                const otpHash = await hashValue(otp);
+                const otpHash = await hashOtp(normalizedOtp);
                 if (otpHash !== pendingOtpHash) {
                     const attempts = failedOtpAttempts + 1;
                     if (attempts >= MAX_OTP_ATTEMPTS) {
