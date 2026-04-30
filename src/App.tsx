@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
-import Index from "./pages/Index";
+import HomePage from "./pages/HomePage";
 import PomodoroPage from "./pages/PomodoroPage";
 import SchedulePage from "./pages/SchedulePage";
 import ProgramsPage from "./pages/ProgramsPage";
@@ -11,10 +11,13 @@ import ProgramDetailPage from "./pages/ProgramDetailPage";
 import WhatNextPage from "./pages/WhatNextPage";
 import TasksPage from "./pages/TasksPage";
 import VoicePage from "./pages/VoicePage";
+import StatsPage from "./pages/StatsPage";
+import ProfilePage from "./pages/ProfilePage";
 import { OnboardingPage } from "./pages/OnboardingPage";
 import BlitzFocusPage from "./pages/BlitzFocusPage";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
+import BottomNav from "./components/BottomNav";
 
 const queryClient = new QueryClient();
 
@@ -34,7 +37,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/onboarding" replace />;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <BottomNav />
+    </>
+  );
 };
 
 const App = () => {
@@ -136,7 +144,7 @@ const App = () => {
           ) : (
             <Routes>
               <Route path="/onboarding" element={<OnboardingPage />} />
-              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
               <Route path="/blitz" element={<ProtectedRoute><BlitzFocusPage /></ProtectedRoute>} />
               <Route path="/pomodoro" element={<ProtectedRoute><PomodoroPage /></ProtectedRoute>} />
               <Route path="/schedule" element={<ProtectedRoute><SchedulePage /></ProtectedRoute>} />
@@ -146,6 +154,8 @@ const App = () => {
               <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
               <Route path="/missions/new" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
               <Route path="/voice" element={<ProtectedRoute><VoicePage /></ProtectedRoute>} />
+              <Route path="/stats" element={<ProtectedRoute><StatsPage /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
               <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
             </Routes>
           )}

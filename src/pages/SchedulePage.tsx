@@ -8,6 +8,8 @@ import { AddScheduleModal } from '../components/habit-tracker/AddScheduleModal';
 import { scheduleService, ScheduleItem } from '../services/scheduleService';
 import { cn } from '../lib/utils';
 
+const displayTime = (item: ScheduleItem): string => item.scheduledTime || item.time || 'All Day';
+
 export const SchedulePage: React.FC = () => {
     const navigate = useNavigate();
     const [date, setDate] = useState<Date | undefined>(new Date());
@@ -81,7 +83,7 @@ export const SchedulePage: React.FC = () => {
                         {items.map((item, index) => (
                             <div key={index} className="flex gap-4 p-3 rounded-xl border bg-card items-start">
                                 <div className="flex flex-col items-center min-w-[3rem]">
-                                    <span className="font-bold text-sm">{item.time}</span>
+                                    <span className="font-bold text-sm">{displayTime(item)}</span>
                                     <div className="h-full w-0.5 bg-muted mt-2"></div>
                                 </div>
                                 <div className="flex-1">

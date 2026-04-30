@@ -15,7 +15,7 @@ export default function MotivationCard({ card, streak, onDismiss }: MotivationCa
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -8, opacity: 0 }}
             transition={{ duration: 0.24 }}
-            className="px-6 mb-6"
+            className="mb-6"
         >
             <div className="relative overflow-hidden rounded-xl border border-[#C8FF00]/30 bg-[#141414] p-4">
                 <div className="absolute left-0 top-0 h-full w-1 bg-[#C8FF00]" />

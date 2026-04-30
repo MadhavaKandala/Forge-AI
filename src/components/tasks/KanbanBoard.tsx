@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Task, TaskStatus } from '@/types/task';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,17 @@ const COLUMNS: { id: TaskStatus; label: string; color: string }[] = [
     { id: 'completed', label: 'Done', color: 'bg-green-500/10' },
 ];
 
+const STAGE_META: Record<TaskStatus, { label: string; className: string }> = {
+    backlog: { label: 'BACKLOG', className: 'bg-zinc-700/40 text-zinc-300 border-zinc-600' },
+    this_week: { label: 'THIS WEEK', className: 'bg-sky-500/20 text-sky-300 border-sky-500/40' },
+    today: { label: 'TODAY', className: 'bg-orange-500/20 text-orange-300 border-orange-500/40' },
+    in_progress: { label: 'IN PROGRESS', className: 'bg-violet-500/20 text-violet-300 border-violet-500/40' },
+    completed: { label: 'DONE', className: 'bg-[#C8FF00]/20 text-[#C8FF00] border-[#C8FF00]/40' },
+    cancelled: { label: 'BACKLOG', className: 'bg-zinc-700/40 text-zinc-300 border-zinc-600' },
+};
+
+const STAGE_OPTIONS: TaskStatus[] = ['backlog', 'this_week', 'today', 'in_progress', 'completed'];
+
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskMove, onTaskClick }) => {
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -36,11 +47,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskMove, onT
 
         return filtered;
     };
-
-    console.log("KanbanBoard: Rendering with tasks:", tasks.length);
-    if (tasks.length > 0) {
-        console.log("KanbanBoard: Task statuses:", tasks.map(t => t.status));
-    }
 
     return (
         <div className="w-full h-full overflow-hidden flex flex-col">
@@ -89,11 +95,14 @@ interface KanbanCardProps {
 }
 
 const KanbanCard: React.FC<KanbanCardProps> = ({ task, onMove, onClick }) => {
+    const [isStagePickerOpen, setIsStagePickerOpen] = useState(false);
     const priorityColors = {
         low: 'bg-blue-500/20 text-blue-400',
         medium: 'bg-yellow-500/20 text-yellow-400',
         high: 'bg-red-500/20 text-red-400'
     };
+    const currentStatus = (task.status || 'backlog') as TaskStatus;
+    const stage = STAGE_META[currentStatus] ?? STAGE_META.backlog;
 
     return (
         <motion.div
@@ -137,21 +146,44 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ task, onMove, onClick }) => {
                 )}
             </div>
 
-            {/* Simple Status Quick Actions - Fixed for mobile visibility */}
-            <div className="flex gap-1.5 mt-3 pt-3 border-t border-zinc-900/50">
-                {COLUMNS.filter(c => c.id !== task.status).map(c => (
-                    <button
-                        key={c.id}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onMove(task.id, c.id);
-                        }}
-                        className="flex-1 py-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-[#dfff4f] hover:text-[#dfff4f] flex items-center justify-center text-[8px] font-black uppercase tracking-tighter transition-all"
-                        title={`Move to ${c.label}`}
+            <div className="relative mt-3 border-t border-zinc-900/50 pt-3">
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsStagePickerOpen((open) => !open);
+                    }}
+                    className={cn(
+                        'inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em]',
+                        stage.className
+                    )}
+                >
+                    {stage.label}
+                </button>
+
+                {isStagePickerOpen && (
+                    <div
+                        className="absolute left-0 top-11 z-30 flex w-52 flex-wrap gap-1.5 rounded-xl border border-zinc-800 bg-[#141414] p-2 shadow-xl"
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        {c.label.split(' ')[0]}
-                    </button>
-                ))}
+                        {STAGE_OPTIONS.map((status) => (
+                            <button
+                                key={status}
+                                type="button"
+                                onClick={() => {
+                                    setIsStagePickerOpen(false);
+                                    if (status !== task.status) onMove(task.id, status);
+                                }}
+                                className={cn(
+                                    'rounded-full border px-2.5 py-1.5 text-[10px] font-black uppercase',
+                                    STAGE_META[status].className
+                                )}
+                            >
+                                {STAGE_META[status].label}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
         </motion.div>
     );

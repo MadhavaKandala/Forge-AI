@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils';
 import { Bell, Info } from 'lucide-react';
 import { LocalNotifications } from '@capacitor/local-notifications';
 
+const ctaStyle = { backgroundColor: '#C8FF00', color: '#000000' };
+
 export const OnboardingPage: React.FC = () => {
     const navigate = useNavigate();
     const { updateUser } = useUserStore();
@@ -54,7 +56,7 @@ export const OnboardingPage: React.FC = () => {
                         We collect minimal data to provide you with the best experience. This includes analytics about task completion and focus sessions.
                     </p>
                     <div className="space-y-4">
-                        <PillButton onClick={handleAgree} className="w-full py-6 text-xl">AGREE</PillButton>
+                        <PillButton onClick={handleAgree} className="w-full py-6 text-xl hover:opacity-90" style={ctaStyle}>AGREE</PillButton>
                         <button
                             onClick={() => setStep('privacy')} // Could show more info or just stay here, avoiding loop
                             className="w-full py-4 text-muted-foreground font-medium"
@@ -83,7 +85,7 @@ export const OnboardingPage: React.FC = () => {
                         </p>
                         <div className="grid grid-cols-2 gap-4">
                             <button onClick={() => setStep('name')} className="py-3 text-muted-foreground font-medium">Not Now</button>
-                            <PillButton onClick={handleAllowNotifications} className="py-3">Allow</PillButton>
+                            <PillButton onClick={handleAllowNotifications} className="py-3 uppercase" style={ctaStyle}>ALLOW</PillButton>
                         </div>
                     </div>
                 </div>
@@ -115,6 +117,7 @@ export const OnboardingPage: React.FC = () => {
                             onClick={handleContinue}
                             disabled={!firstName || !lastName}
                             className="w-full py-6 text-xl disabled:opacity-50"
+                            style={ctaStyle}
                         >
                             CONTINUE
                         </PillButton>

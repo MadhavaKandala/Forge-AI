@@ -7,6 +7,7 @@ export interface ScheduleItem {
     id: string;
     title: string;
     time: string; // HH:MM
+    scheduledTime?: string;
     date: string; // YYYY-MM-DD
     type: 'task' | 'habit' | 'event';
     duration?: number; // minutes
@@ -44,17 +45,7 @@ export const scheduleService = {
         const habits = habitStore.habits;
 
         habits.forEach(habit => {
-            // Simple heuristic for time: check if habit.time looks like HH:MM or simple string
-            // If "Morning", assign 08:00
-            // If "Evening", assign 20:00
-            let time = '09:00';
-            if (habit.time.match(/\d{1,2}:\d{2}/)) {
-                time = habit.time; // "10:00 AM" needs parsing
-            } else if (habit.time.toLowerCase().includes('morning')) {
-                time = '08:00';
-            } else if (habit.time.toLowerCase().includes('evening')) {
-                time = '20:00';
-            }
+            const scheduledTime = (habit as any).scheduledTime ?? habit.time ?? 'All Day';
 
             // Check if completed for this date
             const isCompleted = habit.completedDates.includes(dateStr);
@@ -63,7 +54,8 @@ export const scheduleService = {
             items.push({
                 id: habit.id,
                 title: habit.title,
-                time: time, // potentially needs simpler format
+                time: scheduledTime,
+                scheduledTime,
                 date: dateStr,
                 type: 'habit',
                 status: isCompleted ? 'completed' : 'pending',
