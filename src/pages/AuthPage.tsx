@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -9,17 +9,14 @@ import { useHabitStore } from '@/store/useHabitStore';
 import { seedDemoData } from '@/lib/demoData';
 
 const OTP_LENGTH = 6;
-const PASSWORD_MIN_LENGTH = 8;
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-type AuthScreen = 'email' | 'otp' | 'password' | 'demo';
+type AuthScreen = 'email' | 'otp' | 'demo';
 
 const AuthPage: React.FC = () => {
     const navigate = useNavigate();
     const requestOtp = useAppStore((s) => s.requestOtp);
     const verifyOtp = useAppStore((s) => s.verifyOtp);
-    const completePasswordCreation = useAppStore((s) => s.completePasswordCreation);
-    const requiresPasswordCreation = useAppStore((s) => s.requiresPasswordCreation);
     const authError = useAppStore((s) => s.authError);
     const otpLockUntil = useAppStore((s) => s.otpLockUntil);
     const clearAuthError = useAppStore((s) => s.clearAuthError);
@@ -27,11 +24,7 @@ const AuthPage: React.FC = () => {
 
     const [email, setEmail] = useState('');
     const [otpDigits, setOtpDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''));
-    const [screen, setScreen] = useState<AuthScreen>(requiresPasswordCreation ? 'password' : 'email');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [screen, setScreen] = useState<AuthScreen>('email');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [lockSeconds, setLockSeconds] = useState(0);
@@ -59,10 +52,6 @@ const AuthPage: React.FC = () => {
     useEffect(() => {
         if (authError) setError(authError);
     }, [authError]);
-
-    useEffect(() => {
-        if (requiresPasswordCreation) setScreen('password');
-    }, [requiresPasswordCreation]);
 
     const validateEmail = (value: string): boolean => emailRegex.test(value.trim());
 
@@ -113,8 +102,8 @@ const AuthPage: React.FC = () => {
         try {
             const ok = await verifyOtp(email, otp);
             if (ok) {
-                toast.success('OTP verified.');
-                setScreen('password');
+                toast.success('OTP verified. Welcome to Forge AI.');
+                setScreen('demo');
                 return;
             }
             const message = useAppStore.getState().authError ?? 'Invalid code. Try again.';
@@ -123,49 +112,6 @@ const AuthPage: React.FC = () => {
         } finally {
             setIsSubmitting(false);
         }
-    };
-
-    const handleCreatePassword = async () => {
-        if (password.length < PASSWORD_MIN_LENGTH) {
-            const message = 'Password must be at least 8 characters.';
-            setError(message);
-            toast.error(message);
-            return;
-        }
-
-        if (password !== confirmPassword) {
-            const message = 'Passwords must match.';
-            setError(message);
-            toast.error(message);
-            return;
-        }
-
-        setIsSubmitting(true);
-        setError('');
-        clearAuthError();
-        try {
-            const ok = await completePasswordCreation(password);
-            if (ok) {
-                toast.success('Password created.');
-                setScreen('demo');
-                return;
-            }
-            const message = useAppStore.getState().authError ?? 'Unable to create password.';
-            setError(message);
-            toast.error(message);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleLoadDemo = () => {
-        seedDemoData();
-        navigate('/');
-    };
-
-    const handleStartFresh = () => {
-        markFreshStart();
-        navigate('/');
     };
 
     const handleResend = async () => {
@@ -262,58 +208,6 @@ const AuthPage: React.FC = () => {
                             Resend OTP
                         </button>
                     </div>
-                ) : screen === 'password' ? (
-                    <div className="w-full max-w-sm space-y-5">
-                        <h2 className="text-center text-xl font-black uppercase tracking-[0.12em]">Create Your Password</h2>
-                        <p className="text-center text-sm text-zinc-400">SECURE YOUR FORGE AI LOGIN</p>
-
-                        <div className="relative">
-                            <Input
-                                type={showPassword ? 'text' : 'password'}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Password"
-                                className="h-12 bg-[#1C1C1C] border-zinc-700 pr-12 text-white placeholder:text-zinc-500 focus-visible:ring-0 focus-visible:border-[#C8FF00]"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword((value) => !value)}
-                                className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-zinc-400 hover:text-[#C8FF00]"
-                                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                            >
-                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </button>
-                        </div>
-
-                        <div className="relative">
-                            <Input
-                                type={showConfirmPassword ? 'text' : 'password'}
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                placeholder="Confirm password"
-                                className="h-12 bg-[#1C1C1C] border-zinc-700 pr-12 text-white placeholder:text-zinc-500 focus-visible:ring-0 focus-visible:border-[#C8FF00]"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowConfirmPassword((value) => !value)}
-                                className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-zinc-400 hover:text-[#C8FF00]"
-                                aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-                            >
-                                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </button>
-                        </div>
-
-                        {error && <p className="text-center text-sm text-[#FF4444]">{error}</p>}
-
-                        <Button
-                            type="button"
-                            onClick={handleCreatePassword}
-                            disabled={isSubmitting}
-                            className="w-full h-12 bg-[#C8FF00] text-black hover:bg-[#b8ef00] font-black tracking-[0.14em] uppercase"
-                        >
-                            CREATE PASSWORD
-                        </Button>
-                    </div>
                 ) : (
                     <div className="w-full max-w-sm space-y-5">
                         <h2 className="text-center text-xl font-black uppercase tracking-[0.12em]">Want to see a sample schedule?</h2>
@@ -323,7 +217,7 @@ const AuthPage: React.FC = () => {
 
                         <Button
                             type="button"
-                            onClick={handleLoadDemo}
+                            onClick={() => { seedDemoData(); navigate('/'); }}
                             className="w-full h-12 bg-[#C8FF00] text-black hover:bg-[#b8ef00] font-black tracking-[0.14em] uppercase"
                         >
                             LOAD DEMO
@@ -331,7 +225,7 @@ const AuthPage: React.FC = () => {
 
                         <button
                             type="button"
-                            onClick={handleStartFresh}
+                            onClick={() => { markFreshStart(); navigate('/'); }}
                             className="w-full text-center text-sm font-bold uppercase tracking-[0.12em] text-zinc-400 hover:text-[#C8FF00]"
                         >
                             START FRESH

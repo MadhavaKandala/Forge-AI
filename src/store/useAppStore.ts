@@ -146,7 +146,6 @@ const saveSupabaseUserProfile = async (session: Session) => {
 
 interface AppState {
     isAuthenticated: boolean;
-    requiresPasswordCreation: boolean;
     sessionToken: string | null;
     sessionEmail: string | null;
     sessionIntegrity: string | null;
@@ -160,7 +159,6 @@ interface AppState {
 
     requestOtp: (email: string) => Promise<boolean>;
     verifyOtp: (email: string, otp: string) => Promise<boolean>;
-    completePasswordCreation: (password: string) => Promise<boolean>;
     hydrateSession: (session: Session | null) => Promise<void>;
     syncHabitsToSupabase: () => Promise<boolean>;
     syncMissionsToSupabase: () => Promise<boolean>;
@@ -173,7 +171,6 @@ export const useAppStore = create<AppState>()(
     persist(
         (set, get) => ({
             isAuthenticated: false,
-            requiresPasswordCreation: false,
             sessionToken: null,
             sessionEmail: null,
             sessionIntegrity: null,
@@ -261,8 +258,6 @@ export const useAppStore = create<AppState>()(
                     return false;
                 }
 
-                set({ requiresPasswordCreation: true });
-
                 const { data, error } = await supabase.auth.verifyOtp({
                     email: normalizedEmail,
                     token: normalizedOtp,
@@ -270,7 +265,6 @@ export const useAppStore = create<AppState>()(
                 });
 
                 if (error || !data.session) {
-                    set({ requiresPasswordCreation: false });
                     const attempts = failedOtpAttempts + 1;
                     if (attempts >= MAX_OTP_ATTEMPTS) {
                         set({
@@ -290,11 +284,10 @@ export const useAppStore = create<AppState>()(
 
                 const sessionToken = data.session.access_token;
                 const sessionIntegrity = createSessionIntegrity(sessionToken, normalizedEmail);
-                const supabaseProfile = await fetchSupabaseUserProfile(data.session.user.id);
+                const supabaseProfile = await saveSupabaseUserProfile(data.session);
 
                 set({
-                    isAuthenticated: false,
-                    requiresPasswordCreation: true,
+                    isAuthenticated: true,
                     sessionToken,
                     sessionEmail: normalizedEmail,
                     sessionIntegrity,
@@ -308,47 +301,10 @@ export const useAppStore = create<AppState>()(
                 return true;
             },
 
-            completePasswordCreation: async (password: string) => {
-                const { data: sessionData } = await supabase.auth.getSession();
-                const session = sessionData.session;
-
-                if (!session) {
-                    set({ authError: 'Session expired. Resend OTP.' });
-                    return false;
-                }
-
-                const { error } = await supabase.auth.updateUser({ password });
-                if (error) {
-                    set({ authError: error.message });
-                    return false;
-                }
-
-                const { data: refreshedSessionData } = await supabase.auth.getSession();
-                const activeSession = refreshedSessionData.session ?? session;
-                const email = sessionEmail(activeSession);
-                const supabaseProfile = await saveSupabaseUserProfile(activeSession);
-
-                set({
-                    isAuthenticated: true,
-                    requiresPasswordCreation: false,
-                    sessionToken: activeSession.access_token,
-                    sessionEmail: email,
-                    sessionIntegrity: createSessionIntegrity(activeSession.access_token, email),
-                    supabaseUserId: activeSession.user.id,
-                    supabaseProfile,
-                    pendingEmail: null,
-                    failedOtpAttempts: 0,
-                    otpLockUntil: null,
-                    authError: null,
-                });
-                return true;
-            },
-
             hydrateSession: async (session: Session | null) => {
                 if (!session) {
                     set({
                         isAuthenticated: false,
-                        requiresPasswordCreation: false,
                         sessionToken: null,
                         sessionEmail: null,
                         sessionIntegrity: null,
@@ -359,12 +315,10 @@ export const useAppStore = create<AppState>()(
                 }
 
                 const email = sessionEmail(session);
-                const supabaseProfile = await fetchSupabaseUserProfile(session.user.id);
-                const requiresPasswordCreation = get().requiresPasswordCreation;
+                const supabaseProfile = await saveSupabaseUserProfile(session);
 
                 set({
-                    isAuthenticated: !requiresPasswordCreation,
-                    requiresPasswordCreation,
+                    isAuthenticated: true,
                     sessionToken: session.access_token,
                     sessionEmail: email,
                     sessionIntegrity: createSessionIntegrity(session.access_token, email),
@@ -519,7 +473,6 @@ export const useAppStore = create<AppState>()(
                 await supabase.auth.signOut();
                 set({
                     isAuthenticated: false,
-                    requiresPasswordCreation: false,
                     sessionToken: null,
                     sessionEmail: null,
                     sessionIntegrity: null,
@@ -537,7 +490,6 @@ export const useAppStore = create<AppState>()(
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
                 isAuthenticated: state.isAuthenticated,
-                requiresPasswordCreation: state.requiresPasswordCreation,
                 sessionToken: state.sessionToken,
                 sessionEmail: state.sessionEmail,
                 sessionIntegrity: state.sessionIntegrity,
