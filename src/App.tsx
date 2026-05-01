@@ -21,13 +21,14 @@ import BottomNav from "./components/BottomNav";
 
 const queryClient = new QueryClient();
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { App as CapacitorApp } from '@capacitor/app';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { useHabitStore } from "./store/useHabitStore";
 import { useUserStore } from "./store/useUserStore";
 import { useScheduleStore } from "./store/useScheduleStore";
 import { createSessionIntegrity, useAppStore } from "./store/useAppStore";
+import { supabase } from "./lib/supabase";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useUserStore();
@@ -46,12 +47,15 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => {
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   const isAuthenticated = useAppStore((s) => {
     if (!s.isAuthenticated || !s.sessionToken || !s.sessionEmail || !s.sessionIntegrity) {
       return false;
     }
     return s.sessionIntegrity === createSessionIntegrity(s.sessionToken, s.sessionEmail);
   });
+  const hydrateSession = useAppStore((s) => s.hydrateSession);
+  const fetchUserData = useAppStore((s) => s.fetchUserData);
   const { setSelectedDate: setHabitDate, fetchHabits, fetchTasks } = useHabitStore();
   const { setSelectedDate: setScheduleDate } = useScheduleStore();
   const { fetchUser } = useUserStore();
@@ -63,6 +67,26 @@ const App = () => {
   };
 
   useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        await hydrateSession(data.session);
+        if (data.session) {
+          await fetchUserData();
+        }
+      } finally {
+        setIsCheckingSession(false);
+      }
+    };
+
+    initAuth();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      void hydrateSession(session).then(() => {
+        if (session) void fetchUserData();
+      });
+    });
+
     const initData = async () => {
       try {
         await fetchUser();
@@ -129,9 +153,10 @@ const App = () => {
       subscription.then(sub => sub.remove());
       notificationReceivedListener.then(listener => listener.remove());
       notificationActionListener.then(listener => listener.remove());
+      authListener.subscription.unsubscribe();
       clearInterval(interval);
     };
-  }, []);
+  }, [fetchUserData, hydrateSession, fetchHabits, fetchTasks, fetchUser, setHabitDate, setScheduleDate]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -139,7 +164,9 @@ const App = () => {
         <Toaster />
         <Sonner />
         <HashRouter>
-          {!isAuthenticated ? (
+          {isCheckingSession ? (
+            <div className="min-h-screen bg-black flex items-center justify-center text-white font-mono">LOADING...</div>
+          ) : !isAuthenticated ? (
             <AuthPage />
           ) : (
             <Routes>
