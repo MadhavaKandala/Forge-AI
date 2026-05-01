@@ -5,12 +5,14 @@ import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/store/useAppStore';
+import { useHabitStore } from '@/store/useHabitStore';
+import { seedDemoData } from '@/lib/demoData';
 
 const OTP_LENGTH = 6;
 const PASSWORD_MIN_LENGTH = 8;
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-type AuthScreen = 'email' | 'otp' | 'password';
+type AuthScreen = 'email' | 'otp' | 'password' | 'demo';
 
 const AuthPage: React.FC = () => {
     const navigate = useNavigate();
@@ -21,6 +23,7 @@ const AuthPage: React.FC = () => {
     const authError = useAppStore((s) => s.authError);
     const otpLockUntil = useAppStore((s) => s.otpLockUntil);
     const clearAuthError = useAppStore((s) => s.clearAuthError);
+    const markFreshStart = useHabitStore((s) => s.markFreshStart);
 
     const [email, setEmail] = useState('');
     const [otpDigits, setOtpDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''));
@@ -144,7 +147,7 @@ const AuthPage: React.FC = () => {
             const ok = await completePasswordCreation(password);
             if (ok) {
                 toast.success('Password created.');
-                navigate('/');
+                setScreen('demo');
                 return;
             }
             const message = useAppStore.getState().authError ?? 'Unable to create password.';
@@ -153,6 +156,16 @@ const AuthPage: React.FC = () => {
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleLoadDemo = () => {
+        seedDemoData();
+        navigate('/');
+    };
+
+    const handleStartFresh = () => {
+        markFreshStart();
+        navigate('/');
     };
 
     const handleResend = async () => {
@@ -249,7 +262,7 @@ const AuthPage: React.FC = () => {
                             Resend OTP
                         </button>
                     </div>
-                ) : (
+                ) : screen === 'password' ? (
                     <div className="w-full max-w-sm space-y-5">
                         <h2 className="text-center text-xl font-black uppercase tracking-[0.12em]">Create Your Password</h2>
                         <p className="text-center text-sm text-zinc-400">SECURE YOUR FORGE AI LOGIN</p>
@@ -300,6 +313,29 @@ const AuthPage: React.FC = () => {
                         >
                             CREATE PASSWORD
                         </Button>
+                    </div>
+                ) : (
+                    <div className="w-full max-w-sm space-y-5">
+                        <h2 className="text-center text-xl font-black uppercase tracking-[0.12em]">Want to see a sample schedule?</h2>
+                        <p className="text-center text-sm text-zinc-400">
+                            Load a demo day with meditation, code, gym, LeetCode, review, and sleep. Demo items stay local until you edit them.
+                        </p>
+
+                        <Button
+                            type="button"
+                            onClick={handleLoadDemo}
+                            className="w-full h-12 bg-[#C8FF00] text-black hover:bg-[#b8ef00] font-black tracking-[0.14em] uppercase"
+                        >
+                            LOAD DEMO
+                        </Button>
+
+                        <button
+                            type="button"
+                            onClick={handleStartFresh}
+                            className="w-full text-center text-sm font-bold uppercase tracking-[0.12em] text-zinc-400 hover:text-[#C8FF00]"
+                        >
+                            START FRESH
+                        </button>
                     </div>
                 )}
             </div>

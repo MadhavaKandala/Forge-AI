@@ -62,6 +62,24 @@ const toProgram = (template: ProgramTemplate, enrollment: ProgramEnrollment): Pr
     };
 };
 
+const toDemoMorningProtocol = (enrollment: ProgramEnrollment): Program => ({
+    id: enrollment.id,
+    name: 'Morning Protocol',
+    description: 'Meditation, code, gym, and planning before the day gets noisy.',
+    programType: 'routine',
+    totalDays: enrollment.totalDays,
+    currentDay: enrollment.currentDay,
+    status: 'active',
+    startedAt: enrollment.startedAt,
+    category: 'productivity',
+    difficulty: 'beginner',
+    dailyRequirements: ['Morning Meditation', 'Morning Code Session', 'Gym'],
+    totalXpPotential: 3000,
+    xpEarned: enrollment.completedDays * 100,
+    completionPercentage: (enrollment.completedDays / Math.max(enrollment.totalDays, 1)) * 100,
+    icon: '⚡',
+});
+
 const toTimeLabel = (time24: string): string => {
     const [hRaw, m] = time24.split(':').map(Number);
     const suffix = hRaw >= 12 ? 'PM' : 'AM';
@@ -96,6 +114,9 @@ export const useProgramStore = create<ProgramState>()(
                 const { enrollments } = get();
                 const active = enrollments
                     .map((enrollment) => {
+                        if (enrollment.programId === 'demo-morning-protocol') {
+                            return toDemoMorningProtocol(enrollment);
+                        }
                         const template = PROGRAM_TEMPLATES.find((p) => p.type === enrollment.programId);
                         return template ? toProgram(template, enrollment) : null;
                     })

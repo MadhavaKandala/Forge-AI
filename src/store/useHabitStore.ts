@@ -64,6 +64,7 @@ interface HabitState {
     habits: Habit[];
     schedule: ScheduleItem[];
     tasks: Task[];
+    onboardingDataChoice: 'unset' | 'demo' | 'fresh';
     todayMood: MoodHistoryEntry | null;
     moodHistory: MoodHistoryEntry[];
     dismissedMotivationDate: string | null;
@@ -92,6 +93,7 @@ interface HabitState {
     removeHabitsByProgramId: (programId: string) => void;
     fetchHabits: () => Promise<void>;
     initializeDefaults: () => void;
+    markFreshStart: () => void;
     addScheduleItem: (item: Omit<ScheduleItem, 'id'>) => void;
     removeScheduleItem: (id: string) => void;
 
@@ -209,6 +211,7 @@ export const useHabitStore = create<HabitState>()(
         (set, get) => ({
             user: INITIAL_USER,
             selectedDate: new Date(),
+            onboardingDataChoice: 'unset',
             tasks: [],
             todayMood: null,
             moodHistory: [],
@@ -467,11 +470,22 @@ export const useHabitStore = create<HabitState>()(
                 console.log("Habits synchronized");
             },
 
-            initializeDefaults: () => set((state) => ({
-                tasks: state.tasks.length === 0 ? INITIAL_TASKS : state.tasks,
-                habits: state.habits.length === 0 ? INITIAL_HABITS : state.habits,
-                schedule: state.schedule.length === 0 ? INITIAL_SCHEDULE : state.schedule
-            })),
+            initializeDefaults: () => set((state) => {
+                if (state.onboardingDataChoice !== 'unset') return {};
+
+                return {
+                    tasks: state.tasks.length === 0 ? INITIAL_TASKS : state.tasks,
+                    habits: state.habits.length === 0 ? INITIAL_HABITS : state.habits,
+                    schedule: state.schedule.length === 0 ? INITIAL_SCHEDULE : state.schedule
+                };
+            }),
+
+            markFreshStart: () => set({
+                onboardingDataChoice: 'fresh',
+                habits: [],
+                schedule: [],
+                tasks: [],
+            }),
 
             toggleHabit: (habitId, date) => set((state) => {
                 const dateStr = formatDate(date);
@@ -633,6 +647,7 @@ export const useHabitStore = create<HabitState>()(
                 habits: state.habits,
                 schedule: state.schedule,
                 tasks: state.tasks,
+                onboardingDataChoice: state.onboardingDataChoice,
                 workoutLogs: state.workoutLogs,
                 todayMood: state.todayMood,
                 moodHistory: state.moodHistory,

@@ -383,8 +383,9 @@ export const useAppStore = create<AppState>()(
 
                 const { useHabitStore } = await import('./useHabitStore');
                 const { habits } = useHabitStore.getState();
-                const habitRows = habits.map((habit) => toHabitRow(habit, supabaseUserId));
-                const completionRows = habits.flatMap((habit) => toHabitCompletionRows(habit, supabaseUserId));
+                const userHabits = habits.filter((habit) => !habit.id.startsWith('demo-'));
+                const habitRows = userHabits.map((habit) => toHabitRow(habit, supabaseUserId));
+                const completionRows = userHabits.flatMap((habit) => toHabitCompletionRows(habit, supabaseUserId));
 
                 if (habitRows.length > 0) {
                     const { error } = await supabase
@@ -421,7 +422,9 @@ export const useAppStore = create<AppState>()(
 
                 const { useHabitStore } = await import('./useHabitStore');
                 const { tasks } = useHabitStore.getState();
-                const missionRows = tasks.map((task) => toMissionRow(task, supabaseUserId));
+                const missionRows = tasks
+                    .filter((task) => !task.id.startsWith('demo-'))
+                    .map((task) => toMissionRow(task, supabaseUserId));
 
                 if (missionRows.length === 0) {
                     set({ authError: null });
