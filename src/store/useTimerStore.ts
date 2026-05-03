@@ -89,11 +89,9 @@ export const useTimerStore = create<TimerState>()(
                         session_type: mode,
                         duration_minutes: settings[mode] / 60,
                         started_at: new Date().toISOString(),
-                        total_pause_duration_minutes: 0,
                         was_completed: 0,
                         was_interrupted: 0,
                         distractions_count: 0,
-                        xp_earned: 0,
                         created_at: new Date().toISOString()
                     };
                     await timerRepository.create(session);
@@ -131,8 +129,7 @@ export const useTimerStore = create<TimerState>()(
                 if (sessionId) {
                     await timerRepository.update(sessionId, {
                         was_completed: 1,
-                        ended_at: new Date().toISOString(),
-                        xp_earned: 25 // TODO: dynamic XP
+                        ended_at: new Date().toISOString()
                     });
                     // Refresh stats and history
                     get().fetchTodayStats();

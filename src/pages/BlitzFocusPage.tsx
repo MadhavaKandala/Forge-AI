@@ -46,7 +46,7 @@ const BlitzFocusPage: React.FC = () => {
             const taken = Math.floor((est * 60 - seconds) / 60);
             await completeBlitzSession(taken);
             if (task) {
-                await updateTask(task.id, { status: 'done', completed: 1, completed_at: new Date().toISOString() });
+                await updateTask(task.id, { status: 'completed', completed_at: new Date().toISOString() });
             }
             navigate('/');
         }

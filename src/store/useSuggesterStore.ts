@@ -42,22 +42,25 @@ export const useSuggesterStore = create<SuggesterState>()(
             },
 
             recordAction: async (taskId, action) => {
-                const { currentSuggestion } = get();
-                if (!currentSuggestion || !currentSuggestion.nextAction) return;
-
-                try {
-                    await suggesterService.saveSuggestion({
-                        taskId,
-                        rank: 1,
-                        actionTaken: action,
-                        availableMinutes: 120, // Context should be passed or re-gathered
-                        energyLevel: 'medium'
-                    });
-                    // Refresh history after recording action
-                    await get().fetchHistory();
-                } catch (error) {
-                    console.error("Error recording action:", error);
-                }
+                set((state) => ({
+                    suggestionHistory: [
+                        ...state.suggestionHistory,
+                        {
+                            id: `${taskId}-${Date.now()}`,
+                            user_id: 'local-user',
+                            suggested_task_id: taskId,
+                            rank: 1,
+                            time_available_minutes: 120,
+                            energy_level: 'medium',
+                            current_time: new Date().toISOString(),
+                            day_of_week: new Date().toLocaleDateString('en-US', { weekday: 'long' }),
+                            action_taken: action,
+                            task_completed: action === 'started' ? 1 : 0,
+                            was_correct_suggestion: action === 'started' ? 1 : 0,
+                            created_at: new Date().toISOString()
+                        }
+                    ]
+                }));
             },
 
             fetchHistory: async () => {

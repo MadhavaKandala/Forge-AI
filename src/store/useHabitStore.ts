@@ -391,7 +391,7 @@ export const useHabitStore = create<HabitState>()(
                 const updatedTasks = state.tasks.map(t => {
                     if (t.id === taskId) {
                         const newCompleted = !t.completed;
-                        const newStatus = newCompleted ? 'completed' : 'today';
+                        const newStatus: TaskStatus = newCompleted ? 'completed' : 'today';
 
                         import('@/services/taskService').then(({ taskService }) => {
                             taskService.updateTask(taskId, { completed: newCompleted, status: newStatus })

@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import * as rtl from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import MoodCheck from '@/components/MoodCheck';
 import HomePage from '@/pages/HomePage';
@@ -13,19 +13,15 @@ import { DAILY_CARDS } from '@/lib/motivationCards';
 import { PROGRAM_TEMPLATES } from '@/lib/programs';
 
 const today = new Date().toISOString().split('T')[0];
+const { render, fireEvent, screen } = rtl as any;
 
 const resetStores = () => {
     localStorage.clear();
     useAppStore.setState({
         isAuthenticated: false,
-        sessionToken: null,
-        sessionEmail: null,
-        sessionIntegrity: null,
-        pendingEmail: null,
-        pendingOtpHash: null,
-        otpExpiresAt: null,
-        failedOtpAttempts: 0,
-        otpLockUntil: null,
+        user: null,
+        supabaseUserId: null,
+        supabaseProfile: null,
         authError: null,
     });
     useHabitStore.setState({
@@ -116,9 +112,14 @@ describe('week 1 sanity', () => {
         consoleError.mockRestore();
     });
 
-    it('verifies OTP 123456 after request', async () => {
-        await expect(useAppStore.getState().requestOtp('test@test.com')).resolves.toBe(true);
-        await expect(useAppStore.getState().verifyOtp('test@test.com', '123456')).resolves.toBe(true);
+    it('supports local login helper for authenticated session checks', async () => {
+        useAppStore.getState().login({
+            id: 'u1',
+            email: 'test@test.com',
+            name: 'Operator',
+            avatar: '',
+            totalXP: 0,
+        });
         expect(useAppStore.getState().isAuthenticated).toBe(true);
     });
 

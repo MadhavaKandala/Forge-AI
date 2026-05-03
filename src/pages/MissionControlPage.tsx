@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback, memo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { toast } from 'sonner';
-import { shallow } from 'zustand/react';
 import { useHabitStore } from '@/store/useHabitStore';
 import { Task, TaskStatus } from '@/types/task';
 import { cn } from '@/lib/utils';
@@ -9,20 +8,15 @@ import { Plus, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const MissionControlPage = () => {
-  const { tasks, updateTask, addXP, fetchTasks } = useHabitStore(
-    (s) => ({
-      tasks: s.tasks,
-      updateTask: s.updateTask,
-      addXP: s.addXP,
-      fetchTasks: s.fetchTasks,
-    }),
-    shallow
-  );
+  const tasks = useHabitStore((s) => s.tasks);
+  const updateTask = useHabitStore((s) => s.updateTask);
+  const addXP = useHabitStore((s) => s.addXP);
+  const fetchTasks = useHabitStore((s) => s.fetchTasks);
   const [filter, setFilter] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   useEffect(() => {
-    fetchTasks();
+    void fetchTasks();
   }, [fetchTasks]);
 
   const columns: { id: TaskStatus; label: string; color: string }[] = [

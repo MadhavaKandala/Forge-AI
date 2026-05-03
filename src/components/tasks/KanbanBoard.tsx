@@ -40,7 +40,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskMove, onT
             const taskStatus = t.status || 'backlog';
 
             if (status === 'backlog') {
-                return taskStatus === 'backlog' || taskStatus === 'todo' || taskStatus === 'cancelled' || !taskStatus;
+                return taskStatus === 'backlog' || taskStatus === 'cancelled' || !taskStatus;
             }
             return taskStatus === status;
         });

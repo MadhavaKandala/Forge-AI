@@ -1,4 +1,4 @@
-import { Challenge, ChallengeCheckIn } from '../types/challenge';
+import { Challenge, CheckIn } from '../types/challenge';
 import { differenceInDays, format, parseISO } from 'date-fns';
 
 export interface ReflectionWhisper {
@@ -46,14 +46,14 @@ class ReflectionService {
       whisper,
       milestones,
       summary: {
-        totalEvidence: checkIns.filter(c => c.evidenceLink || c.evidencePhoto).length,
+        totalEvidence: checkIns.filter(c => c.link || (c.photos?.length ?? 0) > 0).length,
         mostProductiveDay: this.calculateMostProductiveDay(checkIns),
         intensityGrowth: this.calculateIntensityGrowth(checkIns),
       }
     };
   }
 
-  private generateWhisper(challenge: Challenge, checkIns: ChallengeCheckIn[]): ReflectionWhisper {
+  private generateWhisper(challenge: Challenge, checkIns: CheckIn[]): ReflectionWhisper {
     const totalDays = checkIns.length;
     const recentCheckIns = checkIns.slice(-7);
     const hasEvidence = recentCheckIns.some(c => c.notes && c.notes.length > 20);
@@ -108,7 +108,7 @@ class ReflectionService {
     };
   }
 
-  private extractMilestones(challenge: Challenge, checkIns: ChallengeCheckIn[]): JourneyMilestone[] {
+  private extractMilestones(challenge: Challenge, checkIns: CheckIn[]): JourneyMilestone[] {
     const milestones: JourneyMilestone[] = [];
     
     // 1. The Start
@@ -152,25 +152,25 @@ class ReflectionService {
     return milestones.sort((a, b) => a.day - b.day);
   }
 
-  private isOnHotStreak(checkIns: ChallengeCheckIn[]): boolean {
+  private isOnHotStreak(checkIns: CheckIn[]): boolean {
     return this.getCurrentStreak(checkIns) >= 5;
   }
 
-  private getCurrentStreak(checkIns: ChallengeCheckIn[]): number {
+  private getCurrentStreak(checkIns: CheckIn[]): number {
     let streak = 0;
     const today = new Date();
     // Simplified streak logic for mock
     return checkIns.length > 5 ? 7 : checkIns.length;
   }
 
-  private isRecovering(checkIns: ChallengeCheckIn[]): boolean {
+  private isRecovering(checkIns: CheckIn[]): boolean {
       if (checkIns.length < 2) return false;
       const last = parseISO(checkIns[checkIns.length - 1].date);
       const prev = parseISO(checkIns[checkIns.length - 2].date);
       return differenceInDays(last, prev) > 1;
   }
 
-  private calculateMostProductiveDay(checkIns: ChallengeCheckIn[]): string {
+  private calculateMostProductiveDay(checkIns: CheckIn[]): string {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const counts: Record<string, number> = {};
     checkIns.forEach(c => {
@@ -180,7 +180,7 @@ class ReflectionService {
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Unknown';
   }
 
-  private calculateIntensityGrowth(checkIns: ChallengeCheckIn[]): number {
+  private calculateIntensityGrowth(checkIns: CheckIn[]): number {
     if (checkIns.length < 5) return 0;
     const firstHalf = checkIns.slice(0, Math.floor(checkIns.length / 2));
     const secondHalf = checkIns.slice(Math.floor(checkIns.length / 2));

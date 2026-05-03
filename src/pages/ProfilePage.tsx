@@ -20,7 +20,7 @@ export default function ProfilePage() {
     const profileUser = useUserStore((s) => s.user);
     const activePrograms = useProgramStore((s) => s.activePrograms);
     const enrollments = useProgramStore((s) => s.enrollments);
-    const logout = useAppStore((s) => s.logout);
+    const signOut = useAppStore((s) => s.signOut);
     const name = profileUser?.display_name || profileUser?.name || habitUser.name;
     const xp = habitUser.xp ?? profileUser?.total_xp ?? 0;
     const levelInfo = getLevelInfo(xp);
@@ -104,7 +104,7 @@ export default function ProfilePage() {
 
             <button
                 type="button"
-                onClick={logout}
+                onClick={() => { void signOut(); }}
                 className="mt-8 flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-[#FF4444]/40 bg-[#141414] text-xs font-black uppercase tracking-[0.16em] text-[#FF4444]"
             >
                 <LogOut className="h-4 w-4" />

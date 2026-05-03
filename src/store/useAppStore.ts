@@ -1,16 +1,10 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import type { Session } from '@supabase/supabase-js';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { toast } from 'sonner';
+
 import { supabase } from '@/lib/supabase';
-import type { Habit } from './useHabitStore';
 import type { Task, TaskPriority, TaskStatus } from '@/types/task';
-
-const OTP_LENGTH = 6;
-const OTP_LOCK_MS = 30 * 1000;
-const MAX_OTP_ATTEMPTS = 5;
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const normalizeOtp = (otp: string): string => otp.trim();
+import type { Habit } from './useHabitStore';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -33,11 +27,6 @@ const deterministicUuid = (source: string): string => {
 const toSupabaseUuid = (userId: string, kind: string, localId: string): string => (
     UUID_REGEX.test(localId) ? localId : deterministicUuid(`${userId}:${kind}:${localId}`)
 );
-
-const toIsoDate = (value?: string): string | null => {
-    if (!value) return null;
-    return value.split('T')[0] || null;
-};
 
 const toMissionStage = (status: TaskStatus): 'BACKLOG' | 'THIS_WEEK' | 'TODAY' | 'IN_PROGRESS' | 'DONE' => {
     if (status === 'completed' || status === 'cancelled') return 'DONE';
@@ -98,14 +87,13 @@ const toMissionRow = (task: Task, userId: string) => ({
     created_at: task.createdAt,
 });
 
-export const createSessionIntegrity = (token: string, email: string): string => {
-    const source = `${token}:${email}:forge-auth-v1`;
-    let hash = 5381;
-    for (let i = 0; i < source.length; i += 1) {
-        hash = (hash * 33) ^ source.charCodeAt(i);
-    }
-    return (hash >>> 0).toString(16);
-};
+interface AppUser {
+    id: string;
+    email: string;
+    name: string;
+    avatar: string;
+    totalXP: number;
+}
 
 const fetchSupabaseUserProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -118,214 +106,186 @@ const fetchSupabaseUserProfile = async (userId: string) => {
     return data;
 };
 
-const sessionEmail = (session: Session): string => session.user.email?.trim().toLowerCase() ?? '';
-
-const saveSupabaseUserProfile = async (session: Session) => {
-    const existingProfile = await fetchSupabaseUserProfile(session.user.id);
+const ensureSupabaseUserProfile = async (user: {
+    id: string;
+    email?: string | null;
+    user_metadata?: Record<string, unknown> | null;
+}) => {
+    const existingProfile = await fetchSupabaseUserProfile(user.id);
     if (existingProfile) return existingProfile;
 
     const now = new Date().toISOString();
-    const email = sessionEmail(session);
-    const fallbackName = email.split('@')[0] || 'Operator';
+    const email = user.email?.trim().toLowerCase() ?? '';
+    const metadataName = typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null;
+    const fallbackName = metadataName ?? email.split('@')[0] ?? 'Operator';
 
     const { data, error } = await supabase
         .from('users')
         .insert({
-            id: session.user.id,
+            id: user.id,
             email,
-            name: fallbackName,
+            name: fallbackName || 'Operator',
             total_xp: 0,
             created_at: now,
         })
         .select('*')
         .maybeSingle();
 
-    if (error) return fetchSupabaseUserProfile(session.user.id);
+    if (error) return fetchSupabaseUserProfile(user.id);
     return data;
 };
 
+const toAppUser = (user: {
+    id: string;
+    email?: string | null;
+    user_metadata?: Record<string, unknown> | null;
+}, profileTotalXp?: number): AppUser => ({
+    id: user.id,
+    email: user.email ?? '',
+    name: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : 'Operator',
+    avatar: typeof user.user_metadata?.avatar_url === 'string' ? user.user_metadata.avatar_url : '',
+    totalXP: profileTotalXp ?? 0,
+});
+
 interface AppState {
     isAuthenticated: boolean;
-    sessionToken: string | null;
-    sessionEmail: string | null;
-    sessionIntegrity: string | null;
+    user: AppUser | null;
     supabaseUserId: string | null;
     supabaseProfile: unknown | null;
-
-    pendingEmail: string | null;
-    failedOtpAttempts: number;
-    otpLockUntil: number | null;
     authError: string | null;
 
-    requestOtp: (email: string) => Promise<boolean>;
-    verifyOtp: (email: string, otp: string) => Promise<boolean>;
-    hydrateSession: (session: Session | null) => Promise<void>;
+    login: (user: AppUser) => void;
+    logout: () => Promise<void>;
+    signInWithGoogle: () => Promise<boolean>;
+    signOut: () => Promise<void>;
+    checkSession: () => Promise<boolean>;
     syncHabitsToSupabase: () => Promise<boolean>;
     syncMissionsToSupabase: () => Promise<boolean>;
     fetchUserData: () => Promise<boolean>;
     clearAuthError: () => void;
-    logout: () => Promise<void>;
 }
 
 export const useAppStore = create<AppState>()(
     persist(
         (set, get) => ({
             isAuthenticated: false,
-            sessionToken: null,
-            sessionEmail: null,
-            sessionIntegrity: null,
+            user: null,
             supabaseUserId: null,
             supabaseProfile: null,
-
-            pendingEmail: null,
-            failedOtpAttempts: 0,
-            otpLockUntil: null,
             authError: null,
 
-            requestOtp: async (email: string) => {
-                const normalizedEmail = email.trim().toLowerCase();
-                const now = Date.now();
-                const { otpLockUntil } = get();
-
-                if (!emailRegex.test(normalizedEmail)) {
-                    set({ authError: 'Enter valid email.' });
-                    return false;
-                }
-
-                if (otpLockUntil && now < otpLockUntil) {
-                    set({ authError: `Too many attempts. Try again in ${Math.ceil((otpLockUntil - now) / 1000)}s.` });
-                    return false;
-                }
-
-                const { error } = await supabase.auth.signInWithOtp({
-                    email: normalizedEmail,
-                    options: {
-                        shouldCreateUser: true,
-                    },
-                });
-
-                if (error) {
-                    set({ authError: error.message });
-                    return false;
-                }
-
-                set({
-                    pendingEmail: normalizedEmail,
-                    failedOtpAttempts: 0,
-                    otpLockUntil: null,
-                    requiresPasswordCreation: false,
-                    authError: null,
-                });
-                return true;
-            },
-
-            verifyOtp: async (email: string, otp: string) => {
-                const normalizedEmail = email.trim().toLowerCase();
-                const now = Date.now();
-                const {
-                    pendingEmail,
-                    failedOtpAttempts,
-                    otpLockUntil,
-                } = get();
-
-                if (otpLockUntil && now < otpLockUntil) {
-                    set({ authError: `Too many attempts. Try again in ${Math.ceil((otpLockUntil - now) / 1000)}s.` });
-                    return false;
-                }
-
-                if (!pendingEmail) {
-                    set({ authError: 'OTP expired. Resend code.' });
-                    return false;
-                }
-
-                const normalizedOtp = normalizeOtp(otp);
-
-                if (normalizedEmail !== pendingEmail || !/^\d{6}$/.test(normalizedOtp) || normalizedOtp.length !== OTP_LENGTH) {
-                    const attempts = failedOtpAttempts + 1;
-                    if (attempts >= MAX_OTP_ATTEMPTS) {
-                        set({
-                            failedOtpAttempts: 0,
-                            otpLockUntil: now + OTP_LOCK_MS,
-                            authError: 'Too many attempts. Wait 30 seconds.',
-                        });
-                        return false;
-                    }
-
-                    set({
-                        failedOtpAttempts: attempts,
-                        authError: 'Invalid code. Try again.',
-                    });
-                    return false;
-                }
-
-                const { data, error } = await supabase.auth.verifyOtp({
-                    email: normalizedEmail,
-                    token: normalizedOtp,
-                    type: 'email',
-                });
-
-                if (error || !data.session) {
-                    const attempts = failedOtpAttempts + 1;
-                    if (attempts >= MAX_OTP_ATTEMPTS) {
-                        set({
-                            failedOtpAttempts: 0,
-                            otpLockUntil: now + OTP_LOCK_MS,
-                            authError: 'Too many attempts. Wait 30 seconds.',
-                        });
-                        return false;
-                    }
-
-                    set({
-                        failedOtpAttempts: attempts,
-                        authError: error?.message ?? 'Invalid code. Try again.',
-                    });
-                    return false;
-                }
-
-                const sessionToken = data.session.access_token;
-                const sessionIntegrity = createSessionIntegrity(sessionToken, normalizedEmail);
-                const supabaseProfile = await saveSupabaseUserProfile(data.session);
-
+            login: (user: AppUser) => {
                 set({
                     isAuthenticated: true,
-                    sessionToken,
-                    sessionEmail: normalizedEmail,
-                    sessionIntegrity,
-                    supabaseUserId: data.session.user.id,
-                    supabaseProfile,
-                    pendingEmail: null,
-                    failedOtpAttempts: 0,
-                    otpLockUntil: null,
+                    user,
+                    supabaseUserId: user.id,
                     authError: null,
                 });
-                return true;
             },
 
-            hydrateSession: async (session: Session | null) => {
-                if (!session) {
-                    set({
-                        isAuthenticated: false,
-                        sessionToken: null,
-                        sessionEmail: null,
-                        sessionIntegrity: null,
-                        supabaseUserId: null,
-                        supabaseProfile: null,
+            logout: async () => {
+                await get().signOut();
+            },
+
+            signInWithGoogle: async () => {
+                try {
+                    const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+                    await GoogleAuth.initialize({
+                        clientId: '275760652639-4flj5gar1op7tfsr5gkkcd13t8t4t2im.apps.googleusercontent.com',
+                        scopes: ['profile', 'email'],
+                        grantOfflineAccess: true,
                     });
-                    return;
+
+                    const googleUser = await GoogleAuth.signIn();
+                    const idToken = googleUser.authentication?.idToken;
+                    if (!idToken) throw new Error('Missing Google ID token');
+
+                    const { data, error } = await supabase.auth.signInWithIdToken({
+                        provider: 'google',
+                        token: idToken,
+                    });
+
+                    if (error || !data.user) throw error ?? new Error('Unable to sign in');
+
+                    const supabaseProfile = await ensureSupabaseUserProfile(data.user);
+                    const googleProfile = googleUser as {
+                        displayName?: string;
+                        name?: string;
+                        imageUrl?: string;
+                    };
+                    const profile = {
+                        id: data.user.id,
+                        email: data.user.email ?? '',
+                        name: googleProfile.displayName ?? googleProfile.name ?? 'Operator',
+                        avatar: googleProfile.imageUrl ?? '',
+                        totalXP: typeof supabaseProfile?.total_xp === 'number' ? supabaseProfile.total_xp : 0,
+                    };
+
+                    set({
+                        isAuthenticated: true,
+                        user: profile,
+                        supabaseUserId: data.user.id,
+                        supabaseProfile,
+                        authError: null,
+                    });
+                    toast.success(`Welcome, ${profile.name}`);
+                    return true;
+                } catch (err) {
+                    const message = err instanceof Error ? err.message : 'Google sign-in failed. Try again.';
+                    set({ authError: message });
+                    toast.error('Google sign-in failed. Try again.');
+                    return false;
+                }
+            },
+
+            signOut: async () => {
+                try {
+                    const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+                    await GoogleAuth.signOut();
+                    await supabase.auth.signOut();
+                } catch {
+                    try {
+                        await supabase.auth.signOut();
+                    } catch {
+                        // noop
+                    }
                 }
 
-                const email = sessionEmail(session);
-                const supabaseProfile = await saveSupabaseUserProfile(session);
-
                 set({
-                    isAuthenticated: true,
-                    sessionToken: session.access_token,
-                    sessionEmail: email,
-                    sessionIntegrity: createSessionIntegrity(session.access_token, email),
-                    supabaseUserId: session.user.id,
-                    supabaseProfile,
+                    isAuthenticated: false,
+                    user: null,
+                    supabaseUserId: null,
+                    supabaseProfile: null,
                     authError: null,
                 });
+                toast.success('Signed out.');
+            },
+
+            checkSession: async () => {
+                const { data } = await supabase.auth.getSession();
+                if (data.session) {
+                    const sessionUser = data.session.user;
+                    const supabaseProfile = await ensureSupabaseUserProfile(sessionUser);
+                    set({
+                        isAuthenticated: true,
+                        user: toAppUser(
+                            sessionUser,
+                            typeof supabaseProfile?.total_xp === 'number' ? supabaseProfile.total_xp : 0,
+                        ),
+                        supabaseUserId: sessionUser.id,
+                        supabaseProfile,
+                        authError: null,
+                    });
+                    return true;
+                }
+
+                set({
+                    isAuthenticated: false,
+                    user: null,
+                    supabaseUserId: null,
+                    supabaseProfile: null,
+                });
+                return false;
             },
 
             syncHabitsToSupabase: async () => {
@@ -399,7 +359,7 @@ export const useAppStore = create<AppState>()(
             },
 
             fetchUserData: async () => {
-                const { supabaseUserId } = get();
+                const { supabaseUserId, user } = get();
                 if (!supabaseUserId) return false;
 
                 const [profileResult, habitsResult, completionsResult, missionsResult] = await Promise.all([
@@ -460,7 +420,10 @@ export const useAppStore = create<AppState>()(
                     useHabitStore.setState({ tasks });
                 }
 
+                const totalXp = typeof profileResult.data?.total_xp === 'number' ? profileResult.data.total_xp : user?.totalXP ?? 0;
+
                 set({
+                    user: user ? { ...user, totalXP: totalXp } : user,
                     supabaseProfile: profileResult.data,
                     authError: null,
                 });
@@ -468,31 +431,13 @@ export const useAppStore = create<AppState>()(
             },
 
             clearAuthError: () => set({ authError: null }),
-
-            logout: async () => {
-                await supabase.auth.signOut();
-                set({
-                    isAuthenticated: false,
-                    sessionToken: null,
-                    sessionEmail: null,
-                    sessionIntegrity: null,
-                    supabaseUserId: null,
-                    supabaseProfile: null,
-                    pendingEmail: null,
-                    failedOtpAttempts: 0,
-                    otpLockUntil: null,
-                    authError: null,
-                });
-            },
         }),
         {
             name: 'app-auth-store',
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
                 isAuthenticated: state.isAuthenticated,
-                sessionToken: state.sessionToken,
-                sessionEmail: state.sessionEmail,
-                sessionIntegrity: state.sessionIntegrity,
+                user: state.user,
                 supabaseUserId: state.supabaseUserId,
                 supabaseProfile: state.supabaseProfile,
             }),

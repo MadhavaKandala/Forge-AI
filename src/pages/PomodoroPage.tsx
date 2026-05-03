@@ -171,9 +171,9 @@ export const PomodoroPage: React.FC = () => {
                                             <p className="text-[10px] text-zinc-500 font-medium">{format(new Date(session.started_at), 'HH:mm')} • {session.duration_minutes} min</p>
                                         </div>
                                     </div>
-                                    {session.xp_earned > 0 && (
+                                    {session.was_completed === 1 && (
                                         <div className="px-2 py-1 bg-[#dfff4f]/10 border border-[#dfff4f]/20 rounded-lg">
-                                            <p className="text-[10px] font-black text-[#dfff4f]">+{session.xp_earned} XP</p>
+                                            <p className="text-[10px] font-black text-[#dfff4f]">COMPLETED</p>
                                         </div>
                                     )}
                                 </div>
