@@ -25,20 +25,20 @@ import VoicePage from '@/pages/VoicePage';
 import WhatNextPage from '@/pages/WhatNextPage';
 import { useHabitStore } from '@/store/useHabitStore';
 import { useScheduleStore } from '@/store/useScheduleStore';
-import { useUserStore } from '@/store/useUserStore';
 import { useAppStore } from '@/store/useAppStore';
 import { supabase } from '@/lib/supabase';
 
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
-    const { user, isLoading } = useUserStore();
+    const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+    const onboardingComplete = useAppStore((s) => s.onboardingComplete);
 
-    if (isLoading) {
-        return <div className="min-h-screen bg-black flex items-center justify-center text-white font-mono">LOADING...</div>;
+    if (!isAuthenticated) {
+        return <AuthPage />;
     }
 
-    if (!user || !user.onboarding_completed) {
+    if (!onboardingComplete) {
         return <Navigate to="/onboarding" replace />;
     }
 
@@ -55,9 +55,9 @@ const App = () => {
     const isAuthenticated = useAppStore((s) => s.isAuthenticated);
     const checkSession = useAppStore((s) => s.checkSession);
     const fetchUserData = useAppStore((s) => s.fetchUserData);
+    const onboardingComplete = useAppStore((s) => s.onboardingComplete);
     const { setSelectedDate: setHabitDate, fetchHabits, fetchTasks } = useHabitStore();
     const { setSelectedDate: setScheduleDate } = useScheduleStore();
-    const { fetchUser } = useUserStore();
 
     const syncDate = () => {
         const today = new Date();
@@ -89,7 +89,6 @@ const App = () => {
 
         const initData = async () => {
             try {
-                await fetchUser();
                 await fetchHabits();
                 await fetchTasks();
             } catch (err) {
@@ -156,7 +155,7 @@ const App = () => {
             authListener.subscription.unsubscribe();
             clearInterval(interval);
         };
-    }, [checkSession, fetchHabits, fetchTasks, fetchUser, fetchUserData, setHabitDate, setScheduleDate]);
+    }, [checkSession, fetchHabits, fetchTasks, fetchUserData, setHabitDate, setScheduleDate]);
 
     if (isCheckingSession) {
         return <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center text-[#C8FF00] font-black uppercase tracking-[0.2em]">LOADING</div>;
@@ -172,7 +171,7 @@ const App = () => {
                         <AuthPage />
                     ) : (
                         <Routes>
-                            <Route path="/onboarding" element={<OnboardingPage />} />
+                            <Route path="/onboarding" element={onboardingComplete ? <Navigate to="/" replace /> : <OnboardingPage />} />
                             <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
                             <Route path="/blitz" element={<ProtectedRoute><BlitzFocusPage /></ProtectedRoute>} />
                             <Route path="/pomodoro" element={<ProtectedRoute><PomodoroPage /></ProtectedRoute>} />

@@ -17,7 +17,7 @@ export const CommunitySection = () => {
                 await navigator.share({
                     title: '100 Days Challenge',
                     text: `I'm on Level ${user.level} with ${user.xp} XP! Join me!`,
-                    url: 'https://github.com/MadhavaKandala/a100dayschallenge',
+                    url: window.location.origin,
                 });
             } catch (err) {
                 console.log('Error sharing', err);

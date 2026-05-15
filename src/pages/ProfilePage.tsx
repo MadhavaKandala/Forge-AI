@@ -18,11 +18,12 @@ export default function ProfilePage() {
     const habitUser = useHabitStore((s) => s.user);
     const habits = useHabitStore((s) => s.habits);
     const profileUser = useUserStore((s) => s.user);
+    const appUser = useAppStore((s) => s.user);
     const activePrograms = useProgramStore((s) => s.activePrograms);
     const enrollments = useProgramStore((s) => s.enrollments);
     const signOut = useAppStore((s) => s.signOut);
-    const name = profileUser?.display_name || profileUser?.name || habitUser.name;
-    const xp = habitUser.xp ?? profileUser?.total_xp ?? 0;
+    const name = appUser?.name || profileUser?.display_name || profileUser?.name || habitUser?.name || 'Operator';
+    const xp = habitUser?.xp ?? appUser?.totalXP ?? profileUser?.total_xp ?? 0;
     const levelInfo = getLevelInfo(xp);
     const nextLevel = LEVELS.find((level) => level.threshold > xp);
     const levelStart = levelInfo.threshold;
@@ -90,7 +91,7 @@ export default function ProfilePage() {
                     <Bell className="h-5 w-5 text-[#C8FF00]" />
                     <div>
                         <p className="text-sm font-bold">Reminders</p>
-                        <p className="text-xs text-zinc-500">{habitUser.notificationsEnabled ? 'Enabled' : 'Configure in onboarding'}</p>
+                        <p className="text-xs text-zinc-500">{habitUser?.notificationsEnabled ? 'Enabled' : 'Configure in onboarding'}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-[#141414] p-4">

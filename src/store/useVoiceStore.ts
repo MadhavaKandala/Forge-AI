@@ -4,6 +4,7 @@ import { VoiceNote, ExtractedItem, VoiceNoteStatus } from '../types/voice';
 import { voiceService } from '../services/voiceService';
 import { NLPService } from '../services/nlpService';
 import { v4 as uuidv4 } from 'uuid';
+import { getCurrentStoreUserId, getUserScopedStoreName } from './useAppStore';
 
 interface VoiceState {
     isRecording: boolean;
@@ -21,6 +22,7 @@ interface VoiceState {
     removeItem: (itemId: string) => void;
     updateItem: (itemId: string, updates: Partial<ExtractedItem>) => void;
     clearState: () => void;
+    clearAll: () => void;
 }
 
 export const useVoiceStore = create<VoiceState>()(
@@ -117,10 +119,18 @@ export const useVoiceStore = create<VoiceState>()(
                 currentNote: null,
                 pendingItems: [],
                 liveTranscript: ''
+            }),
+
+            clearAll: () => set({
+                isRecording: false,
+                isProcessing: false,
+                currentNote: null,
+                pendingItems: [],
+                liveTranscript: ''
             })
         }),
         {
-            name: 'voice-store',
+            name: getUserScopedStoreName('voice-store', getCurrentStoreUserId()),
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
                 currentNote: state.currentNote,

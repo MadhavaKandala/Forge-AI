@@ -1,129 +1,221 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PillButton } from '@/components/ui/PillButton';
+import { toast } from 'sonner';
+import { Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useUserStore } from '@/store/useUserStore';
+import { PillButton } from '@/components/ui/PillButton';
+import { useAppStore } from '@/store/useAppStore';
+import { useProgramStore } from '@/store/useProgramStore';
 import { cn } from '@/lib/utils';
-import { Bell, Info } from 'lucide-react';
-import { LocalNotifications } from '@capacitor/local-notifications';
 
 const ctaStyle = { backgroundColor: '#C8FF00', color: '#000000' };
 
+const PROGRAM_OPTIONS = [
+    { id: 'leetcode_75', label: 'LeetCode 75', icon: '⚡' },
+    { id: 'gym_progress', label: 'Gym Protocol', icon: '💪' },
+    { id: 'leetcode_150', label: 'Placement Prep', icon: '📚' },
+    { id: 'dsa_sheet', label: 'DSA Sheet', icon: '🎯' },
+    { id: 'core_subjects', label: 'Core Subjects', icon: '🏆' },
+];
+
+const STUDY_WINDOWS = [
+    { id: 'morning', label: 'MORNING', detail: '6 AM - 12 PM', time: '06:00' },
+    { id: 'afternoon', label: 'AFTERNOON', detail: '12 PM - 6 PM', time: '12:00' },
+    { id: 'night', label: 'NIGHT', detail: '8 PM - 2 AM', time: '20:00' },
+];
+
 export const OnboardingPage: React.FC = () => {
     const navigate = useNavigate();
-    const { updateUser } = useUserStore();
-    const [step, setStep] = useState<'privacy' | 'notifications' | 'name'>('privacy');
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
+    const appUser = useAppStore((s) => s.user);
+    const setOnboardingComplete = useAppStore((s) => s.setOnboardingComplete);
+    const enrollInProgram = useProgramStore((s) => s.enrollInProgram);
+    const [step, setStep] = useState(0);
+    const [name, setName] = useState(() => appUser?.name ?? '');
+    const [goal, setGoal] = useState('all');
+    const [selectedPrograms, setSelectedPrograms] = useState<string[]>([]);
+    const [wakeTime, setWakeTime] = useState('05:30');
+    const [studyWindow, setStudyWindow] = useState(STUDY_WINDOWS[0].id);
+    const [isDeploying, setIsDeploying] = useState(false);
 
-    const handleAgree = () => {
-        setStep('notifications');
+    const selectedStudyTime = useMemo(
+        () => STUDY_WINDOWS.find((item) => item.id === studyWindow)?.time ?? '06:00',
+        [studyWindow],
+    );
+
+    const toggleProgram = (programId: string) => {
+        setSelectedPrograms((current) => (
+            current.includes(programId)
+                ? current.filter((id) => id !== programId)
+                : [...current, programId]
+        ));
     };
 
-    const handleAllowNotifications = async () => {
+    const deploySchedule = async () => {
+        if (!name.trim()) {
+            toast.error('Enter your name before deployment.');
+            setStep(0);
+            return;
+        }
+
+        setIsDeploying(true);
         try {
-            const permStatus = await LocalNotifications.requestPermissions();
-            if (permStatus.display === 'granted') {
-                await updateUser({ notifications_enabled: 1 });
+            for (const programId of selectedPrograms) {
+                await enrollInProgram(programId, selectedStudyTime);
             }
-        } catch (error) {
-            console.error("Permission request failed", error);
+            setOnboardingComplete();
+            toast.success('Schedule deployed.');
+            navigate('/');
         } finally {
-            setStep('name');
+            setIsDeploying(false);
         }
     };
 
-    const handleContinue = async () => {
-        if (!firstName || !lastName) return;
-
-        await updateUser({
-            name: `${firstName} ${lastName}`,
-            display_name: firstName,
-            notifications_enabled: 1,
-            onboarding_completed: 1,
-            joined_at: new Date().toISOString()
-        });
-
-        navigate('/');
-    };
-
     return (
-        <div className="min-h-screen bg-black text-white p-6 flex flex-col justify-between font-['Space Grotesk']">
-            {step === 'privacy' && (
-                <div className="flex-1 flex flex-col justify-center">
-                    <h1 className="text-3xl font-bold mb-4">Privacy & Data Collection</h1>
-                    <p className="text-muted-foreground text-lg mb-8">
-                        We collect minimal data to provide you with the best experience. This includes analytics about task completion and focus sessions.
-                    </p>
-                    <div className="space-y-4">
-                        <PillButton onClick={handleAgree} className="w-full py-6 text-xl hover:opacity-90" style={ctaStyle}>AGREE</PillButton>
-                        <button
-                            onClick={() => setStep('privacy')} // Could show more info or just stay here, avoiding loop
-                            className="w-full py-4 text-muted-foreground font-medium"
-                        >
-                            DISAGREE
-                        </button>
-                    </div>
-                    <div className="mt-auto flex justify-center gap-4 text-sm text-muted-foreground pt-8">
-                        <a href="https://example.com/terms" target="_blank" rel="noopener noreferrer" className="underline">Terms & Conditions</a>
-                        <a href="https://example.com/privacy" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>
-                    </div>
+        <div className="min-h-screen bg-[#0A0A0A] px-6 py-8 text-white">
+            <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col">
+                <div className="mb-8 flex gap-2">
+                    {[0, 1, 2].map((item) => (
+                        <div
+                            key={item}
+                            className={cn('h-1 flex-1 rounded-full bg-[#1C1C1C]', item <= step && 'bg-[#C8FF00]')}
+                        />
+                    ))}
                 </div>
-            )}
 
-            {step === 'notifications' && (
-                <div className="flex-1 flex flex-col items-center justify-center">
-                    {/* Backdrop Blur Simulation for Modal */}
-                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40" />
-                    <div className="relative z-50 bg-[#1a1a1a] rounded-3xl p-8 w-full max-w-sm text-center border border-[#262626]">
-                        <div className="w-16 h-16 bg-[#dfff4f]/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                            <Bell className="w-8 h-8 text-[#dfff4f]" />
+                {step === 0 && (
+                    <section className="flex flex-1 flex-col">
+                        <div className="flex-1">
+                            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#C8FF00]">FORGE AI</p>
+                            <h1 className="mt-4 text-4xl font-black uppercase leading-tight">Built for people who are building themselves.</h1>
+                            <div className="mt-10 space-y-3">
+                                <label className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Your name</label>
+                                <Input
+                                    value={name}
+                                    onChange={(event) => setName(event.target.value)}
+                                    className="h-13 border-zinc-800 bg-[#141414] text-lg font-bold text-white focus-visible:ring-[#C8FF00]"
+                                />
+                            </div>
+                            <div className="mt-8 space-y-3">
+                                <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">What are you working towards?</p>
+                                {[
+                                    ['placement', 'Placement / Job hunting'],
+                                    ['consistency', 'Building consistency'],
+                                    ['fitness', 'Getting fit'],
+                                    ['all', 'All of the above'],
+                                ].map(([id, label]) => (
+                                    <button
+                                        key={id}
+                                        type="button"
+                                        onClick={() => setGoal(id)}
+                                        className={cn(
+                                            'flex h-13 w-full items-center justify-between rounded-lg border border-zinc-800 bg-[#141414] px-4 text-left text-sm font-black uppercase',
+                                            goal === id && 'border-[#C8FF00] text-[#C8FF00]',
+                                        )}
+                                    >
+                                        {label}
+                                        {goal === id && <Check className="h-4 w-4" />}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                        <h2 className="text-2xl font-bold mb-2">Enable Reminder</h2>
-                        <p className="text-muted-foreground mb-8">
-                            Allow notification to get timely reminders for your tasks.
-                        </p>
-                        <div className="grid grid-cols-2 gap-4">
-                            <button onClick={() => setStep('name')} className="py-3 text-muted-foreground font-medium">Not Now</button>
-                            <PillButton onClick={handleAllowNotifications} className="py-3 uppercase" style={ctaStyle}>ALLOW</PillButton>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {step === 'name' && (
-                <div className="flex-1 flex flex-col justify-center">
-                    <h1 className="text-3xl font-bold mb-12">Tell us your name?</h1>
-                    <div className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="text-muted-foreground text-sm uppercase tracking-widest ml-1">First name</label>
-                            <Input
-                                value={firstName}
-                                onChange={(e) => setFirstName(e.target.value)}
-                                className="bg-transparent border-b-2 border-x-0 border-t-0 border-[#262626] rounded-none px-1 text-2xl h-14 focus-visible:ring-0 focus-visible:border-[#dfff4f] transition-colors"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-muted-foreground text-sm uppercase tracking-widest ml-1">Last name</label>
-                            <Input
-                                value={lastName}
-                                onChange={(e) => setLastName(e.target.value)}
-                                className="bg-transparent border-b-2 border-x-0 border-t-0 border-[#262626] rounded-none px-1 text-2xl h-14 focus-visible:ring-0 focus-visible:border-[#dfff4f] transition-colors"
-                            />
-                        </div>
-                    </div>
-                    <div className="mt-auto pt-12">
                         <PillButton
-                            onClick={handleContinue}
-                            disabled={!firstName || !lastName}
-                            className="w-full py-6 text-xl disabled:opacity-50"
+                            onClick={() => {
+                                if (!name.trim()) {
+                                    toast.error('Enter your name.');
+                                    return;
+                                }
+                                setStep(1);
+                            }}
+                            className="mt-8 h-13 w-full text-sm font-black uppercase"
+                            style={ctaStyle}
+                        >
+                            BEGIN
+                        </PillButton>
+                    </section>
+                )}
+
+                {step === 1 && (
+                    <section className="flex flex-1 flex-col">
+                        <div className="flex-1">
+                            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#C8FF00]">Activate Programs</p>
+                            <h1 className="mt-4 text-3xl font-black uppercase leading-tight">Pick your first systems.</h1>
+                            <div className="mt-8 grid grid-cols-2 gap-3">
+                                {PROGRAM_OPTIONS.map((program) => {
+                                    const active = selectedPrograms.includes(program.id);
+                                    return (
+                                        <button
+                                            key={program.id}
+                                            type="button"
+                                            onClick={() => toggleProgram(program.id)}
+                                            className={cn(
+                                                'min-h-28 rounded-xl border border-zinc-800 bg-[#141414] p-4 text-left',
+                                                active && 'border-[#C8FF00] bg-[#1C1C1C]',
+                                            )}
+                                        >
+                                            <span className="text-2xl">{program.icon}</span>
+                                            <span className="mt-3 block text-sm font-black uppercase leading-tight">{program.label}</span>
+                                            {active && <Check className="mt-3 h-4 w-4 text-[#C8FF00]" />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        <PillButton
+                            onClick={() => setStep(2)}
+                            className="mt-8 h-13 w-full text-sm font-black uppercase"
                             style={ctaStyle}
                         >
                             CONTINUE
                         </PillButton>
-                    </div>
-                </div>
-            )}
+                    </section>
+                )}
+
+                {step === 2 && (
+                    <section className="flex flex-1 flex-col">
+                        <div className="flex-1">
+                            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#C8FF00]">Daily Ops</p>
+                            <h1 className="mt-4 text-3xl font-black uppercase leading-tight">When do you start your day?</h1>
+                            <div className="mt-10 space-y-3">
+                                <label className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Wake up time</label>
+                                <Input
+                                    type="time"
+                                    value={wakeTime}
+                                    onChange={(event) => setWakeTime(event.target.value)}
+                                    className="h-13 border-zinc-800 bg-[#141414] text-lg font-bold text-white focus-visible:ring-[#C8FF00]"
+                                />
+                            </div>
+                            <div className="mt-8 space-y-3">
+                                <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">When do you study/code?</p>
+                                {STUDY_WINDOWS.map((item) => (
+                                    <button
+                                        key={item.id}
+                                        type="button"
+                                        onClick={() => setStudyWindow(item.id)}
+                                        className={cn(
+                                            'flex h-14 w-full items-center justify-between rounded-lg border border-zinc-800 bg-[#141414] px-4 text-left',
+                                            studyWindow === item.id && 'border-[#C8FF00]',
+                                        )}
+                                    >
+                                        <span>
+                                            <span className="block text-sm font-black">{item.label}</span>
+                                            <span className="text-xs font-bold text-zinc-500">{item.detail}</span>
+                                        </span>
+                                        {studyWindow === item.id && <Check className="h-4 w-4 text-[#C8FF00]" />}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <PillButton
+                            onClick={() => { void deploySchedule(); }}
+                            disabled={isDeploying}
+                            className="mt-8 h-13 w-full text-sm font-black uppercase disabled:opacity-50"
+                            style={ctaStyle}
+                        >
+                            {isDeploying ? 'DEPLOYING' : 'DEPLOY MY SCHEDULE'}
+                        </PillButton>
+                    </section>
+                )}
+            </div>
         </div>
     );
 };

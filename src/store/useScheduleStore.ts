@@ -5,6 +5,7 @@ import { scheduleRepository } from '../repositories/schedule.repository';
 import { habitRepository } from '../repositories/habit.repository';
 import { taskRepository } from '../repositories/task.repository';
 import { v4 as uuidv4 } from 'uuid';
+import { getCurrentStoreUserId, getUserScopedStoreName } from './useAppStore';
 
 export interface ScheduleWithDetails extends Schedule {
     title?: string;
@@ -20,6 +21,7 @@ interface ScheduleState {
     setSelectedDate: (date: Date) => void;
     fetchSchedules: (date: Date) => Promise<void>;
     addSchedule: (schedule: Omit<Schedule, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+    clearAll: () => void;
 }
 
 export const useScheduleStore = create<ScheduleState>()(
@@ -131,10 +133,17 @@ export const useScheduleStore = create<ScheduleState>()(
                 } catch (error) {
                     set({ error: (error as Error).message });
                 }
-            }
+            },
+
+            clearAll: () => set({
+                schedules: [],
+                selectedDate: new Date(),
+                isLoading: false,
+                error: null,
+            })
         }),
         {
-            name: 'schedule-store',
+            name: getUserScopedStoreName('schedule-store', getCurrentStoreUserId()),
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
                 schedules: state.schedules

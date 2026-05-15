@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { Task, Subtask } from '../types/schema';
 import { taskRepository } from '../repositories/task.repository';
 import { v4 as uuidv4 } from 'uuid';
+import { getCurrentStoreUserId, getUserScopedStoreName } from './useAppStore';
 
 interface TaskState {
     tasks: Task[];
@@ -14,6 +15,7 @@ interface TaskState {
     addTask: (task: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
     updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
     deleteTask: (id: string) => Promise<void>;
+    clearAll: () => void;
 
     // Subtask Actions
     addSubtask: (taskId: string, title: string) => Promise<void>;
@@ -120,10 +122,16 @@ export const useTaskStore = create<TaskState>()(
 
             getTasksByStatus: (status) => {
                 return get().tasks.filter(t => t.status === status);
-            }
+            },
+
+            clearAll: () => set({
+                tasks: [],
+                isLoading: false,
+                error: null,
+            })
         }),
         {
-            name: 'task-store',
+            name: getUserScopedStoreName('task-store', getCurrentStoreUserId()),
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
                 tasks: state.tasks

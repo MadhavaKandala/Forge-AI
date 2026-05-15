@@ -153,17 +153,79 @@ interface AppState {
     supabaseUserId: string | null;
     supabaseProfile: unknown | null;
     authError: string | null;
+    onboardingComplete: boolean;
 
     login: (user: AppUser) => void;
     logout: () => Promise<void>;
     signInWithGoogle: () => Promise<boolean>;
     signOut: () => Promise<void>;
     checkSession: () => Promise<boolean>;
+    setOnboardingComplete: () => void;
     syncHabitsToSupabase: () => Promise<boolean>;
     syncMissionsToSupabase: () => Promise<boolean>;
     fetchUserData: () => Promise<boolean>;
     clearAuthError: () => void;
 }
+
+export const getCurrentStoreUserId = () => useAppStore.getState().user?.id ?? 'guest';
+export const getUserScopedStoreName = (baseName: string, userId = getCurrentStoreUserId()) => `${baseName}-${userId}`;
+
+const hasExistingUserData = (userId: string) => [
+    'app-store',
+    'habit-store',
+    'task-store',
+    'program-store',
+    'schedule-store',
+    'voice-store',
+].some((baseName) => localStorage.getItem(getUserScopedStoreName(baseName, userId)) !== null);
+
+const reinitializeUserStores = async (userId: string) => {
+    const [
+        { useHabitStore },
+        { useTaskStore },
+        { useProgramStore },
+        { useScheduleStore },
+        { useVoiceStore },
+    ] = await Promise.all([
+        import('./useHabitStore'),
+        import('./useTaskStore'),
+        import('./useProgramStore'),
+        import('./useScheduleStore'),
+        import('./useVoiceStore'),
+    ]);
+
+    const stores = [
+        { store: useHabitStore, baseName: 'habit-store' },
+        { store: useTaskStore, baseName: 'task-store' },
+        { store: useProgramStore, baseName: 'program-store' },
+        { store: useScheduleStore, baseName: 'schedule-store' },
+        { store: useVoiceStore, baseName: 'voice-store' },
+    ];
+
+    await Promise.all(stores.map(async ({ store, baseName }) => {
+        store.persist.setOptions({ name: getUserScopedStoreName(baseName, userId) });
+        store.getState().clearAll?.();
+        await store.persist.rehydrate();
+    }));
+};
+
+const activateAppPersistence = async (userId: string) => {
+    useAppStore.persist.setOptions({ name: getUserScopedStoreName('app-store', userId) });
+    await useAppStore.persist.rehydrate();
+};
+
+const syncHabitProfile = async (profile: AppUser) => {
+    const { useHabitStore } = await import('./useHabitStore');
+    useHabitStore.setState((state) => ({
+        user: state.user ?? {
+            name: profile.name,
+            level: 1,
+            xp: profile.totalXP,
+            avatarUrl: profile.avatar,
+            notificationsEnabled: true,
+        },
+    }));
+};
 
 export const useAppStore = create<AppState>()(
     persist(
@@ -173,6 +235,7 @@ export const useAppStore = create<AppState>()(
             supabaseUserId: null,
             supabaseProfile: null,
             authError: null,
+            onboardingComplete: false,
 
             login: (user: AppUser) => {
                 set({
@@ -208,18 +271,23 @@ export const useAppStore = create<AppState>()(
                     if (error || !data.user) throw error ?? new Error('Unable to sign in');
 
                     const supabaseProfile = await ensureSupabaseUserProfile(data.user);
+                    const existingUserData = hasExistingUserData(data.user.id);
+                    await activateAppPersistence(data.user.id);
+                    await reinitializeUserStores(data.user.id);
                     const googleProfile = googleUser as {
                         displayName?: string;
                         name?: string;
+                        email?: string;
                         imageUrl?: string;
                     };
                     const profile = {
                         id: data.user.id,
-                        email: data.user.email ?? '',
+                        email: googleProfile.email ?? data.user.email ?? '',
                         name: googleProfile.displayName ?? googleProfile.name ?? 'Operator',
                         avatar: googleProfile.imageUrl ?? '',
                         totalXP: typeof supabaseProfile?.total_xp === 'number' ? supabaseProfile.total_xp : 0,
                     };
+                    const onboardingComplete = existingUserData ? true : false;
 
                     set({
                         isAuthenticated: true,
@@ -227,7 +295,9 @@ export const useAppStore = create<AppState>()(
                         supabaseUserId: data.user.id,
                         supabaseProfile,
                         authError: null,
+                        onboardingComplete,
                     });
+                    await syncHabitProfile(profile);
                     toast.success(`Welcome, ${profile.name}`);
                     return true;
                 } catch (err) {
@@ -251,13 +321,26 @@ export const useAppStore = create<AppState>()(
                     }
                 }
 
+                const { useHabitStore } = await import('./useHabitStore');
+                const { useTaskStore } = await import('./useTaskStore');
+                const { useProgramStore } = await import('./useProgramStore');
+                const { useScheduleStore } = await import('./useScheduleStore');
+                const { useVoiceStore } = await import('./useVoiceStore');
+
+                useHabitStore.getState().clearAll();
+                useTaskStore.getState().clearAll();
+                useProgramStore.getState().clearAll();
+                useScheduleStore.getState().clearAll();
+                useVoiceStore.getState().clearAll();
                 set({
                     isAuthenticated: false,
                     user: null,
                     supabaseUserId: null,
                     supabaseProfile: null,
                     authError: null,
+                    onboardingComplete: false,
                 });
+                localStorage.clear();
                 toast.success('Signed out.');
             },
 
@@ -266,16 +349,25 @@ export const useAppStore = create<AppState>()(
                 if (data.session) {
                     const sessionUser = data.session.user;
                     const supabaseProfile = await ensureSupabaseUserProfile(sessionUser);
+                    const existingUserData = hasExistingUserData(sessionUser.id);
+                    const appStoreKey = getUserScopedStoreName('app-store', sessionUser.id);
+                    const hasAppStore = localStorage.getItem(appStoreKey) !== null;
+                    await activateAppPersistence(sessionUser.id);
+                    await reinitializeUserStores(sessionUser.id);
+                    const persistedOnboardingComplete = useAppStore.getState().onboardingComplete;
+                    const profile = toAppUser(
+                        sessionUser,
+                        typeof supabaseProfile?.total_xp === 'number' ? supabaseProfile.total_xp : 0,
+                    );
                     set({
                         isAuthenticated: true,
-                        user: toAppUser(
-                            sessionUser,
-                            typeof supabaseProfile?.total_xp === 'number' ? supabaseProfile.total_xp : 0,
-                        ),
+                        user: profile,
                         supabaseUserId: sessionUser.id,
                         supabaseProfile,
                         authError: null,
+                        onboardingComplete: hasAppStore ? persistedOnboardingComplete : existingUserData,
                     });
+                    await syncHabitProfile(profile);
                     return true;
                 }
 
@@ -284,9 +376,12 @@ export const useAppStore = create<AppState>()(
                     user: null,
                     supabaseUserId: null,
                     supabaseProfile: null,
+                    onboardingComplete: false,
                 });
                 return false;
             },
+
+            setOnboardingComplete: () => set({ onboardingComplete: true }),
 
             syncHabitsToSupabase: async () => {
                 const { supabaseUserId } = get();
@@ -433,13 +528,14 @@ export const useAppStore = create<AppState>()(
             clearAuthError: () => set({ authError: null }),
         }),
         {
-            name: 'app-auth-store',
+            name: getUserScopedStoreName('app-store', 'guest'),
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
                 isAuthenticated: state.isAuthenticated,
                 user: state.user,
                 supabaseUserId: state.supabaseUserId,
                 supabaseProfile: state.supabaseProfile,
+                onboardingComplete: state.onboardingComplete,
             }),
         },
     ),

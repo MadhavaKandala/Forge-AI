@@ -1,8 +1,9 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { toast } from 'sonner';
 import { Task, TaskCategory, TaskPriority, TaskStatus, EisenhowerQuadrant, CreateTaskDTO } from '@/types/task';
 import { MoodKey } from '@/lib/moodContent';
+import { getCurrentStoreUserId, getUserScopedStoreName } from './useAppStore';
 
 export type HabitType = 'checkbox' | 'numeric' | 'timer';
 export type Category = 'coding' | 'devotional' | 'diet' | 'gym' | 'personal' | 'academics' | 'breaks';
@@ -60,7 +61,7 @@ export interface MoodHistoryEntry {
 }
 
 interface HabitState {
-    user: User;
+    user: User | null;
     habits: Habit[];
     schedule: ScheduleItem[];
     tasks: Task[];
@@ -100,6 +101,7 @@ interface HabitState {
     updateUser: (updates: Partial<User>) => void;
     resetData: () => void;
     restoreBackup: () => void;
+    clearAll: () => void;
 
     // Deep Work logging
     logDeepWork: (minutes: number) => void;
@@ -129,82 +131,10 @@ const formatDate = (date: Date): string => {
     return date.toISOString().split('T')[0];
 };
 
-const INITIAL_TASKS: Task[] = [
-    { id: 't1', title: 'Two Sum Problem', completed: true, status: 'completed', size: 'medium', quadrant: 'q1', category: 'coding', priority: 'high', isRecurring: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), subtasks: [] },
-    { id: 't2', title: 'Study Ch5', completed: false, status: 'today', size: 'big', quadrant: 'q1', category: 'academics', priority: 'high', isRecurring: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), subtasks: [] },
-    { id: 't3', title: 'Chest Workout', completed: false, status: 'this_week', size: 'medium', quadrant: 'q2', category: 'gym', priority: 'medium', isRecurring: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), subtasks: [] },
-    { id: 't4', title: 'Reverse Linked List', completed: false, status: 'today', size: 'medium', quadrant: 'q1', category: 'coding', priority: 'high', isRecurring: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), subtasks: [] },
-    { id: 't5', title: 'Bhagavad Gita Reading', completed: false, status: 'this_week', size: 'small', quadrant: 'q2', category: 'devotional', priority: 'low', isRecurring: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), subtasks: [] },
-];
-
-const INITIAL_HABITS: Habit[] = [
-    // CODING
-    { id: 'h1', title: 'Morning Code Session', time: '6:00 AM', streak: 0, completedDates: [], type: 'timer', category: 'coding', goal: 120, unit: 'min', history: {} },
-    { id: 'h2', title: 'LeetCode Problem (Daily)', time: '9:00 PM', streak: 0, completedDates: [], type: 'checkbox', category: 'coding', history: {} },
-    { id: 'h3', title: 'Code Notes & Review', time: '10:00 PM', streak: 0, completedDates: [], type: 'checkbox', category: 'coding', history: {} },
-
-    // GYM
-    { id: 'h4', title: 'Morning Gym Session', time: '8:30 AM', streak: 0, completedDates: [], type: 'timer', category: 'gym', goal: 90, unit: 'min', history: {} },
-    { id: 'h5', title: 'Post-Workout Protein', time: '10:15 AM', streak: 0, completedDates: [], type: 'checkbox', category: 'gym', history: {} },
-    { id: 'h6', title: 'Evening Cardio', time: '6:00 PM', streak: 0, completedDates: [], type: 'checkbox', category: 'gym', history: {} },
-    { id: 'h7', title: 'Progress Photo (Weekly)', time: 'Sunday', streak: 0, completedDates: [], type: 'checkbox', category: 'gym', history: {} },
-
-    // DIET
-    { id: 'h8', title: 'Drink 8 Glasses Water', time: 'All Day', streak: 0, completedDates: [], type: 'numeric', category: 'diet', goal: 8, unit: 'glasses', history: {} },
-    { id: 'h9', title: 'Log All Meals', time: 'All Day', streak: 0, completedDates: [], type: 'checkbox', category: 'diet', history: {} },
-    { id: 'h10', title: 'Hit Calorie Goal (2200)', time: 'All Day', streak: 0, completedDates: [], type: 'numeric', category: 'diet', goal: 2200, unit: 'cal', history: {} },
-    { id: 'h11', title: 'Hit Macro Goals (P/C/F)', time: 'All Day', streak: 0, completedDates: [], type: 'checkbox', category: 'diet', history: {} },
-    { id: 'h12', title: 'Meal Prep (Sunday)', time: 'Sunday', streak: 0, completedDates: [], type: 'checkbox', category: 'diet', history: {} },
-
-    // DEVOTIONAL
-    { id: 'h13', title: 'Morning Meditation', time: '5:45 AM', streak: 0, completedDates: [], type: 'timer', category: 'devotional', goal: 15, unit: 'min', history: {} },
-    { id: 'h14', title: 'Bhagavad Gita Reading', time: '10:30 PM', streak: 0, completedDates: [], type: 'timer', category: 'devotional', goal: 30, unit: 'min', history: {} },
-    { id: 'h15', title: 'Evening Prayer', time: '8:30 PM', streak: 0, completedDates: [], type: 'checkbox', category: 'devotional', history: {} },
-
-    // ACADEMICS
-    { id: 'h16', title: 'Attend All Classes', time: '10:00 AM', streak: 0, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
-    { id: 'h17', title: 'Study Session (2-3h)', time: '3:00 PM', streak: 0, completedDates: [], type: 'timer', category: 'personal', goal: 180, unit: 'min', history: {} },
-    { id: 'h18', title: 'Review Lecture Notes', time: '7:00 PM', streak: 0, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
-    { id: 'h19', title: 'Practice Problems', time: '7:30 PM', streak: 0, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
-
-    // PERSONAL
-    { id: 'h20', title: 'Morning Journal Entry', time: '6:15 AM', streak: 0, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
-    { id: 'h21', title: 'Gratitude Practice', time: '11:00 PM', streak: 0, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
-    { id: 'h22', title: 'Sleep by 11:30 PM', time: '11:30 PM', streak: 0, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
-    { id: 'h23', title: 'Reading (30 min)', time: '9:00 PM', streak: 0, completedDates: [], type: 'timer', category: 'personal', goal: 30, unit: 'min', history: {} },
-    { id: 'h24', title: 'Weekly Planning', time: 'Sunday', streak: 0, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
-
-    // BREAKS
-    { id: 'h25', title: 'Creative Learning', time: 'Flexible', streak: 0, completedDates: [], type: 'timer', category: 'personal', goal: 60, unit: 'min', history: {} },
-    { id: 'h26', title: 'Hobby Time', time: 'Flexible', streak: 0, completedDates: [], type: 'timer', category: 'personal', goal: 60, unit: 'min', history: {} },
-    { id: 'h27', title: 'Social Time', time: 'Flexible', streak: 0, completedDates: [], type: 'timer', category: 'personal', goal: 30, unit: 'min', history: {} },
-];
-
-const INITIAL_SCHEDULE: ScheduleItem[] = [
-    { id: 's1', title: 'Morning Meditation', time: '5:45 AM', duration: '15m', color: '#8b5cf6', period: 'today', block: 'morning' },
-    { id: 's2', title: 'Morning Code Session', time: '6:00 AM', duration: '2h', color: '#10b981', period: 'today', block: 'morning' },
-    { id: 's3', title: 'Morning Journal', time: '6:15 AM', duration: '15m', color: '#3b82f6', period: 'today', block: 'morning' },
-    { id: 's4', title: 'Morning Gym Session', time: '8:30 AM', duration: '1h 30m', color: '#ef4444', period: 'today', block: 'morning' },
-    { id: 's5', title: 'Academic Block', time: '10:00 AM', duration: '7h', color: '#f59e0b', period: 'today', block: 'college', isFixed: true },
-    { id: 's6', title: 'Study Session', time: '3:00 PM', duration: '3h', color: '#8b5cf6', period: 'today', block: 'college' },
-    { id: 's7', title: 'Optional Cardio', time: '6:00 PM', duration: '30m', color: '#ef4444', period: 'today', block: 'evening' },
-    { id: 's8', title: 'Review Lecture Notes', time: '7:00 PM', duration: '30m', color: '#f59e0b', period: 'today', block: 'evening' },
-    { id: 's9', title: 'Practice Problems', time: '7:30 PM', duration: '1h', color: '#f59e0b', period: 'today', block: 'evening' },
-    { id: 's10', title: 'Evening Prayer', time: '8:30 PM', duration: '15m', color: '#8b5cf6', period: 'today', block: 'evening' },
-    { id: 's11', title: 'Reading (Atomic Habits)', time: '9:00 PM', duration: '30m', color: '#3b82f6', period: 'today', block: 'evening' },
-    { id: 's12', title: 'LeetCode Problem', time: '9:30 PM', duration: '1h', color: '#10b981', period: 'today', block: 'evening' },
-    { id: 's13', title: 'Code Notes & Review', time: '10:30 PM', duration: '15m', color: '#10b981', period: 'today', block: 'evening' },
-    { id: 's14', title: 'Bhagavad Gita Reading', time: '10:45 PM', duration: '30m', color: '#8b5cf6', period: 'today', block: 'evening' },
-    { id: 's15', title: 'Gratitude Practice', time: '11:15 PM', duration: '5m', color: '#3b82f6', period: 'today', block: 'evening' },
-];
-
-const INITIAL_USER: User = {
-    name: 'Madhava',
-    level: 1,
-    xp: 2840,
-    avatarUrl: 'https://github.com/shadcn.png',
-    notificationsEnabled: true
-};
+const INITIAL_TASKS: Task[] = [];
+const INITIAL_HABITS: Habit[] = [];
+const INITIAL_SCHEDULE: ScheduleItem[] = [];
+const INITIAL_USER: User | null = null;
 
 export const useHabitStore = create<HabitState>()(
     persist(
@@ -223,7 +153,7 @@ export const useHabitStore = create<HabitState>()(
             waterIntakeLiters: 0,
 
             addXP: (amount) => set((state) => ({
-                user: { ...state.user, xp: Math.max(0, state.user.xp + amount) }
+                user: state.user ? { ...state.user, xp: Math.max(0, state.user.xp + amount) } : state.user
             })),
 
             completeHabit: (habitId) => {
@@ -527,7 +457,7 @@ export const useHabitStore = create<HabitState>()(
                     }
                     return { ...h, history: newHistory, completedDates: newCompletedDates, streak: newStreak };
                 });
-                return { habits: newHabits, user: { ...state.user, xp: state.user.xp + xpGained } };
+                return { habits: newHabits, user: state.user ? { ...state.user, xp: state.user.xp + xpGained } : state.user };
             }),
 
             logDeepWork: (minutes) => {
@@ -542,7 +472,7 @@ export const useHabitStore = create<HabitState>()(
                 }
 
                 set((state) => ({
-                    user: { ...state.user, xp: state.user.xp + (minutes * 2) }
+                    user: state.user ? { ...state.user, xp: state.user.xp + (minutes * 2) } : state.user
                 }));
             },
 
@@ -582,16 +512,7 @@ export const useHabitStore = create<HabitState>()(
                 }));
 
                 console.log("Resetting Data - Emergency backup created");
-                set({
-                    user: INITIAL_USER,
-                    habits: INITIAL_HABITS,
-                    schedule: INITIAL_SCHEDULE,
-                    tasks: INITIAL_TASKS,
-                    todayMood: null,
-                    moodHistory: [],
-                    dismissedMotivationDate: null,
-                    selectedDate: new Date()
-                });
+                get().clearAll();
             },
 
             restoreBackup: () => {
@@ -613,10 +534,26 @@ export const useHabitStore = create<HabitState>()(
                 } else {
                     toast.error("No Emergency Backup Found");
                 }
-            }
+            },
+
+            clearAll: () => set({
+                user: INITIAL_USER,
+                habits: [],
+                schedule: [],
+                tasks: [],
+                onboardingDataChoice: 'unset',
+                todayMood: null,
+                moodHistory: [],
+                dismissedMotivationDate: null,
+                selectedDate: new Date(),
+                workoutLogs: [],
+                dietLogs: [],
+                waterIntakeLiters: 0,
+            })
         }),
         {
-            name: 'habit-tracker-storage',
+            name: getUserScopedStoreName('habit-store', getCurrentStoreUserId()),
+            storage: createJSONStorage(() => localStorage),
             version: 8,
             migrate: (persistedState: any, version: number) => {
                 let nextState = persistedState;

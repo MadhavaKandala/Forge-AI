@@ -25,7 +25,7 @@ const resetStores = () => {
         authError: null,
     });
     useHabitStore.setState({
-        user: { name: 'Madhava', level: 1, xp: 2840, notificationsEnabled: true },
+        user: { name: 'Operator', level: 1, xp: 0, notificationsEnabled: true },
         habits: [
             { id: 'h1', title: 'Small Habit', time: '6:00 AM', streak: 7, completedDates: [], type: 'checkbox', category: 'personal', history: {} },
             { id: 'h2', title: 'Second Habit', time: '7:00 AM', streak: 2, completedDates: [], type: 'checkbox', category: 'coding', history: {} },

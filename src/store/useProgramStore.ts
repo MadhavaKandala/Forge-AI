@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Program, ProgramDay } from '../services/programService';
 import { PROGRAM_TEMPLATES, type ProgramTemplate } from '../services/programService';
 import { useHabitStore } from './useHabitStore';
+import { getCurrentStoreUserId, getUserScopedStoreName } from './useAppStore';
 
 export interface ProgramEnrollment {
     id: string;
@@ -38,6 +39,7 @@ interface ProgramState {
     completeDailyRequirement: (programId: string, notes?: string) => Promise<void>;
     selectProgram: (programId: string) => Promise<void>;
     clearSelectedProgram: () => void;
+    clearAll: () => void;
 }
 
 const toProgram = (template: ProgramTemplate, enrollment: ProgramEnrollment): Program => {
@@ -243,9 +245,21 @@ export const useProgramStore = create<ProgramState>()(
                     error: null,
                 });
             },
+
+            clearAll: () => set({
+                activePrograms: [],
+                completedPrograms: [],
+                availablePrograms: PROGRAM_TEMPLATES,
+                selectedProgram: null,
+                selectedProgramDays: [],
+                selectedProgramMilestones: [],
+                enrollments: [],
+                isLoading: false,
+                error: null,
+            }),
         }),
         {
-            name: 'program-store',
+            name: getUserScopedStoreName('program-store', getCurrentStoreUserId()),
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
                 activePrograms: state.activePrograms,

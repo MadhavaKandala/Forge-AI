@@ -7,6 +7,7 @@ import { useShallow } from 'zustand/react/shallow';
 import MoodCheck from '@/components/MoodCheck';
 import MotivationCard from '@/components/MotivationCard';
 import { useHabitStore } from '@/store/useHabitStore';
+import { useAppStore } from '@/store/useAppStore';
 import { useProgramStore } from '@/store/useProgramStore';
 import { MOOD_CONTENT, MoodKey } from '@/lib/moodContent';
 import { getDailyMotivationCard } from '@/lib/motivationCards';
@@ -71,7 +72,7 @@ export default function HomePage() {
     const [isMoodOpen, setIsMoodOpen] = useState(false);
     const [isMoodPillHidden, setIsMoodPillHidden] = useState(false);
     const {
-        user,
+        habitUser,
         habits,
         tasks,
         todayMood,
@@ -84,7 +85,7 @@ export default function HomePage() {
         initializeDefaults,
     } = useHabitStore(
         useShallow((s) => ({
-            user: s.user,
+            habitUser: s.user,
             habits: s.habits,
             tasks: s.tasks,
             todayMood: s.todayMood,
@@ -97,6 +98,7 @@ export default function HomePage() {
             initializeDefaults: s.initializeDefaults,
         })),
     );
+    const appUser = useAppStore((s) => s.user);
     const { activePrograms, fetchAll } = useProgramStore(
         useShallow((s) => ({ activePrograms: s.activePrograms, fetchAll: s.fetchAll })),
     );
@@ -187,8 +189,8 @@ export default function HomePage() {
             <header className="flex items-start justify-between">
                 <div>
                     <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-500">DAILY COMMAND</p>
-                    <h1 className="mt-2 text-2xl font-black">{greeting()}, {user.name}</h1>
-                    <p className="mt-1 text-xs font-black uppercase tracking-[0.14em] text-[#C8FF00]">XP: {user.xp}</p>
+                    <h1 className="mt-2 text-2xl font-black">{greeting()}, {appUser?.name ?? habitUser?.name ?? 'Operator'}</h1>
+                    <p className="mt-1 text-xs font-black uppercase tracking-[0.14em] text-[#C8FF00]">XP: {habitUser?.xp ?? appUser?.totalXP ?? 0}</p>
                 </div>
                 <button type="button" className="grid h-11 w-11 place-items-center rounded-xl border border-zinc-800 bg-[#141414] text-[#C8FF00]">
                     <Bell className="h-5 w-5" />
