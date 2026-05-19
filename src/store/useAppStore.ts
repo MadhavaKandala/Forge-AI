@@ -173,13 +173,17 @@ interface AppState {
 export const getCurrentStoreUserId = () => useAppStore.getState().user?.id ?? 'guest';
 export const getUserScopedStoreName = (baseName: string, userId = getCurrentStoreUserId()) => `${baseName}-${userId}`;
 
-const hasExistingUserData = (userId: string) => [
+const scopedStoreBaseNames = [
     'app-store',
     'habit-store',
     'task-store',
     'program-store',
     'schedule-store',
     'voice-store',
+] as const;
+
+const hasExistingUserData = (userId: string) => [
+    ...scopedStoreBaseNames,
 ].some((baseName) => localStorage.getItem(getUserScopedStoreName(baseName, userId)) !== null);
 
 const reinitializeUserStores = async (userId: string) => {
@@ -206,21 +210,38 @@ const reinitializeUserStores = async (userId: string) => {
     ];
 
     await Promise.all(stores.map(async ({ store, baseName }) => {
-        store.persist.setOptions({ name: getUserScopedStoreName(baseName, userId) });
+        const scopedName = getUserScopedStoreName(baseName, userId);
+        const hasPersistedState = localStorage.getItem(scopedName) !== null;
+        const transientName = getUserScopedStoreName(baseName, 'transient');
+
+        store.persist.setOptions({ name: transientName });
         store.getState().clearAll?.();
-        await store.persist.rehydrate();
+        localStorage.removeItem(transientName);
+        store.persist.setOptions({ name: scopedName });
+        if (hasPersistedState) {
+            await store.persist.rehydrate();
+        }
     }));
 };
 
 const activateAppPersistence = async (userId: string) => {
-    useAppStore.persist.setOptions({ name: getUserScopedStoreName('app-store', userId) });
-    await useAppStore.persist.rehydrate();
+    const scopedName = getUserScopedStoreName('app-store', userId);
+    useAppStore.persist.setOptions({ name: scopedName });
+    if (localStorage.getItem(scopedName) !== null) {
+        await useAppStore.persist.rehydrate();
+    }
 };
 
 const syncHabitProfile = async (profile: AppUser) => {
     const { useHabitStore } = await import('./useHabitStore');
     useHabitStore.setState((state) => ({
-        user: state.user ?? {
+        user: state.user
+            ? {
+                ...state.user,
+                name: state.user.name || profile.name,
+                avatarUrl: state.user.avatarUrl || profile.avatar,
+            }
+            : {
             name: profile.name,
             level: 1,
             xp: profile.totalXP,
@@ -228,6 +249,25 @@ const syncHabitProfile = async (profile: AppUser) => {
             notificationsEnabled: true,
         },
     }));
+};
+
+const syncProfileXpToSupabase = async (userId: string) => {
+    const { useHabitStore } = await import('./useHabitStore');
+    const habitUser = useHabitStore.getState().user;
+    const totalXP = habitUser?.xp ?? useAppStore.getState().user?.totalXP ?? 0;
+
+    const { error } = await supabase
+        .from('users')
+        .update({ total_xp: totalXP })
+        .eq('id', userId);
+
+    if (!error) {
+        useAppStore.setState((state) => ({
+            user: state.user ? { ...state.user, totalXP } : state.user,
+        }));
+    }
+
+    return error;
 };
 
 const getAuthErrorMessage = (err: unknown) => {
@@ -333,6 +373,14 @@ export const useAppStore = create<AppState>()(
             },
 
             signOut: async () => {
+                const currentUserId = get().supabaseUserId;
+                if (currentUserId) {
+                    await Promise.allSettled([
+                        get().syncHabitsToSupabase(),
+                        get().syncMissionsToSupabase(),
+                    ]);
+                }
+
                 try {
                     const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
                     await GoogleAuth.signOut();
@@ -351,6 +399,13 @@ export const useAppStore = create<AppState>()(
                 const { useScheduleStore } = await import('./useScheduleStore');
                 const { useVoiceStore } = await import('./useVoiceStore');
 
+                useHabitStore.persist.setOptions({ name: getUserScopedStoreName('habit-store', 'guest') });
+                useTaskStore.persist.setOptions({ name: getUserScopedStoreName('task-store', 'guest') });
+                useProgramStore.persist.setOptions({ name: getUserScopedStoreName('program-store', 'guest') });
+                useScheduleStore.persist.setOptions({ name: getUserScopedStoreName('schedule-store', 'guest') });
+                useVoiceStore.persist.setOptions({ name: getUserScopedStoreName('voice-store', 'guest') });
+                useAppStore.persist.setOptions({ name: getUserScopedStoreName('app-store', 'guest') });
+
                 useHabitStore.getState().clearAll();
                 useTaskStore.getState().clearAll();
                 useProgramStore.getState().clearAll();
@@ -364,7 +419,6 @@ export const useAppStore = create<AppState>()(
                     authError: null,
                     onboardingComplete: false,
                 });
-                localStorage.clear();
                 toast.success('Signed out.');
             },
 
@@ -442,6 +496,12 @@ export const useAppStore = create<AppState>()(
                     }
                 }
 
+                const profileError = await syncProfileXpToSupabase(supabaseUserId);
+                if (profileError) {
+                    set({ authError: profileError.message });
+                    return false;
+                }
+
                 set({ authError: null });
                 return true;
             },
@@ -470,6 +530,12 @@ export const useAppStore = create<AppState>()(
 
                 if (error) {
                     set({ authError: error.message });
+                    return false;
+                }
+
+                const profileError = await syncProfileXpToSupabase(supabaseUserId);
+                if (profileError) {
+                    set({ authError: profileError.message });
                     return false;
                 }
 

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 import MoodCheck from '@/components/MoodCheck';
 import MotivationCard from '@/components/MotivationCard';
+import OpsWidget, { type OpsWidgetItem } from '@/components/OpsWidget';
 import { useHabitStore } from '@/store/useHabitStore';
 import { useAppStore } from '@/store/useAppStore';
 import { useProgramStore } from '@/store/useProgramStore';
@@ -45,25 +46,7 @@ const categoryColor = (category?: string): string => {
     return colors[category ?? 'personal'] ?? '#666666';
 };
 
-type DailyOp =
-    | {
-          id: string;
-          type: 'habit';
-          title: string;
-          time: string;
-          category: string;
-          completed: boolean;
-          sortTime: number;
-      }
-    | {
-          id: string;
-          type: 'task';
-          title: string;
-          time: string;
-          category: string;
-          completed: boolean;
-          sortTime: number;
-      };
+type DailyOp = OpsWidgetItem;
 
 const isActiveTask = (task: Task): boolean => task.status !== 'completed' && task.status !== 'cancelled' && !task.completed;
 
@@ -238,6 +221,12 @@ export default function HomePage() {
                     )
                 )}
             </section>
+
+            <OpsWidget
+                items={dailyOps}
+                onComplete={handleOpComplete}
+                onOpenOps={() => navigate(dailyOps.length > 0 ? '/schedule' : '/programs')}
+            />
 
             <section className="mt-6 grid grid-cols-2 gap-3">
                 <div className="flex items-center justify-between rounded-xl border border-zinc-800 bg-[#1C1C1C] p-4">

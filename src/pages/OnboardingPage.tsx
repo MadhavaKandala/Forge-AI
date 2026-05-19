@@ -138,7 +138,8 @@ export const OnboardingPage: React.FC = () => {
                     <section className="flex flex-1 flex-col">
                         <div className="flex-1">
                             <p className="text-xs font-black uppercase tracking-[0.22em] text-[#C8FF00]">Activate Programs</p>
-                            <h1 className="mt-4 text-3xl font-black uppercase leading-tight">Pick your first systems.</h1>
+                            <h1 className="mt-4 text-3xl font-black uppercase leading-tight">Choose curated routines.</h1>
+                            <p className="mt-3 text-sm font-bold leading-6 text-zinc-500">Structure your life in seconds. Pick a stack and Forge deploys the daily ops.</p>
                             <div className="mt-8 grid grid-cols-2 gap-3">
                                 {PROGRAM_OPTIONS.map((program) => {
                                     const active = selectedPrograms.includes(program.id);

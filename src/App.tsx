@@ -55,6 +55,8 @@ const App = () => {
     const isAuthenticated = useAppStore((s) => s.isAuthenticated);
     const checkSession = useAppStore((s) => s.checkSession);
     const fetchUserData = useAppStore((s) => s.fetchUserData);
+    const syncHabitsToSupabase = useAppStore((s) => s.syncHabitsToSupabase);
+    const syncMissionsToSupabase = useAppStore((s) => s.syncMissionsToSupabase);
     const onboardingComplete = useAppStore((s) => s.onboardingComplete);
     const { setSelectedDate: setHabitDate, fetchHabits, fetchTasks } = useHabitStore();
     const { setSelectedDate: setScheduleDate } = useScheduleStore();
@@ -141,6 +143,17 @@ const App = () => {
             if (isActive) {
                 syncDate();
                 void fetchHabits();
+                if (isAuthenticated) {
+                    void fetchUserData();
+                }
+                return;
+            }
+
+            if (isAuthenticated) {
+                void Promise.allSettled([
+                    syncHabitsToSupabase(),
+                    syncMissionsToSupabase(),
+                ]);
             }
         });
 
@@ -155,7 +168,7 @@ const App = () => {
             authListener.subscription.unsubscribe();
             clearInterval(interval);
         };
-    }, [checkSession, fetchHabits, fetchTasks, fetchUserData, setHabitDate, setScheduleDate]);
+    }, [checkSession, fetchHabits, fetchTasks, fetchUserData, isAuthenticated, setHabitDate, setScheduleDate, syncHabitsToSupabase, syncMissionsToSupabase]);
 
     if (isCheckingSession) {
         return <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center text-[#C8FF00] font-black uppercase tracking-[0.2em]">LOADING</div>;
