@@ -231,7 +231,18 @@ const syncHabitProfile = async (profile: AppUser) => {
 };
 
 const getAuthErrorMessage = (err: unknown) => {
-    if (err instanceof Error && err.message.trim()) return err.message;
+    if (err instanceof Error && err.message.trim()) {
+        const code = 'code' in err && typeof err.code === 'string' ? ` (${err.code})` : '';
+        return `${err.message}${code}`;
+    }
+    if (err && typeof err === 'object') {
+        const errorLike = err as { message?: unknown; code?: unknown };
+        const message = typeof errorLike.message === 'string' ? errorLike.message : '';
+        const code = typeof errorLike.code === 'string' ? errorLike.code : '';
+        if (message && code) return `${message} (${code})`;
+        if (message) return message;
+        if (code) return `Google sign-in failed: status ${code}`;
+    }
     if (typeof err === 'string' && err.trim()) return err;
     return 'Google sign-in failed. Try again.';
 };
