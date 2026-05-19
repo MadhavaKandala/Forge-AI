@@ -7,6 +7,10 @@ import { useShallow } from 'zustand/react/shallow';
 import MoodCheck from '@/components/MoodCheck';
 import MotivationCard from '@/components/MotivationCard';
 import OpsWidget, { type OpsWidgetItem } from '@/components/OpsWidget';
+import MotivationStories from '@/components/MotivationStories';
+import CuratedRoutineRail from '@/components/CuratedRoutineRail';
+import HabitMagicDeck from '@/components/HabitMagicDeck';
+import ProgressJournalPanel from '@/components/ProgressJournalPanel';
 import { useHabitStore } from '@/store/useHabitStore';
 import { useAppStore } from '@/store/useAppStore';
 import { useProgramStore } from '@/store/useProgramStore';
@@ -222,11 +226,19 @@ export default function HomePage() {
                 )}
             </section>
 
+            <MotivationStories
+                streak={activeStreak}
+                mood={currentMood}
+                onMoodTap={() => setIsMoodOpen(true)}
+            />
+
             <OpsWidget
                 items={dailyOps}
                 onComplete={handleOpComplete}
                 onOpenOps={() => navigate(dailyOps.length > 0 ? '/schedule' : '/programs')}
             />
+
+            <CuratedRoutineRail />
 
             <section className="mt-6 grid grid-cols-2 gap-3">
                 <div className="flex items-center justify-between rounded-xl border border-zinc-800 bg-[#1C1C1C] p-4">
@@ -290,6 +302,16 @@ export default function HomePage() {
                     </div>
                 )}
             </AnimatePresence>
+
+            <ProgressJournalPanel
+                streak={activeStreak}
+                completedToday={completedHabits + dailyOps.filter((item) => item.type === 'task' && item.completed).length}
+                totalToday={dailyOps.length}
+                mood={currentMood}
+                onMoodTap={() => setIsMoodOpen(true)}
+            />
+
+            <HabitMagicDeck />
 
             <section className="mt-6">
                 <div className="mb-4 flex items-center justify-between">
