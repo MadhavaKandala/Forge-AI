@@ -2,13 +2,17 @@ import { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 
 export default function AuthPage() {
-    const { signInWithGoogle } = useAppStore();
+    const { authError, clearAuthError, signInWithGoogle } = useAppStore();
     const [loading, setLoading] = useState(false);
 
     const handleGoogleSignIn = async () => {
+        clearAuthError();
         setLoading(true);
-        await signInWithGoogle();
-        setLoading(false);
+        try {
+            await signInWithGoogle();
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -58,8 +62,24 @@ export default function AuthPage() {
                     height={20}
                     alt="Google"
                 />
-                {loading ? 'Signing in...' : 'Continue with Google'}
+                {loading ? 'SIGNING IN...' : 'CONTINUE WITH GOOGLE'}
             </button>
+
+            {authError ? (
+                <p
+                    role="alert"
+                    style={{
+                        color: '#FF4444',
+                        fontSize: '12px',
+                        lineHeight: 1.5,
+                        marginTop: '16px',
+                        maxWidth: '320px',
+                        textAlign: 'center',
+                    }}
+                >
+                    {authError}
+                </p>
+            ) : null}
 
             <p style={{ color: '#444444', fontSize: '12px', marginTop: '24px', textAlign: 'center', whiteSpace: 'pre-line' }}>
                 {'Your data stays private and secure.\nNo passwords required.'}

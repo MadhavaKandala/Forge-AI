@@ -1,10 +1,13 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { toast } from 'sonner';
+import { Capacitor } from '@capacitor/core';
 
 import { supabase } from '@/lib/supabase';
 import type { Task, TaskPriority, TaskStatus } from '@/types/task';
 import type { Habit } from './useHabitStore';
+
+const GOOGLE_WEB_CLIENT_ID = '275760652639-4flj5gar1op7tfsr5gkkcd13t8t4t2im.apps.googleusercontent.com';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -227,6 +230,12 @@ const syncHabitProfile = async (profile: AppUser) => {
     }));
 };
 
+const getAuthErrorMessage = (err: unknown) => {
+    if (err instanceof Error && err.message.trim()) return err.message;
+    if (typeof err === 'string' && err.trim()) return err;
+    return 'Google sign-in failed. Try again.';
+};
+
 export const useAppStore = create<AppState>()(
     persist(
         (set, get) => ({
@@ -253,11 +262,15 @@ export const useAppStore = create<AppState>()(
             signInWithGoogle: async () => {
                 try {
                     const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
-                    await GoogleAuth.initialize({
-                        clientId: '275760652639-4flj5gar1op7tfsr5gkkcd13t8t4t2im.apps.googleusercontent.com',
-                        scopes: ['profile', 'email'],
-                        grantOfflineAccess: true,
-                    });
+                    const googleAuthConfig = Capacitor.isNativePlatform()
+                        ? { scopes: ['profile', 'email'], grantOfflineAccess: false }
+                        : {
+                            clientId: GOOGLE_WEB_CLIENT_ID,
+                            scopes: ['profile', 'email'],
+                            grantOfflineAccess: false,
+                        };
+
+                    await GoogleAuth.initialize(googleAuthConfig);
 
                     const googleUser = await GoogleAuth.signIn();
                     const idToken = googleUser.authentication?.idToken;
@@ -301,9 +314,9 @@ export const useAppStore = create<AppState>()(
                     toast.success(`Welcome, ${profile.name}`);
                     return true;
                 } catch (err) {
-                    const message = err instanceof Error ? err.message : 'Google sign-in failed. Try again.';
+                    const message = getAuthErrorMessage(err);
                     set({ authError: message });
-                    toast.error('Google sign-in failed. Try again.');
+                    toast.error(message);
                     return false;
                 }
             },
