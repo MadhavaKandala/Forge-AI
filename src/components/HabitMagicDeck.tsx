@@ -30,6 +30,20 @@ const cards = [
         bg: '#FFE8E2',
         accent: '#FB7185',
     },
+    {
+        title: 'Tiny Reset',
+        body: 'When the day gets messy, clean one surface and restart.',
+        icon: PenLine,
+        bg: '#E8F4FF',
+        accent: '#38BDF8',
+    },
+    {
+        title: 'Win Chain',
+        body: 'Finish one easy task first. Momentum is a real resource.',
+        icon: ChartNoAxesColumnIncreasing,
+        bg: '#E8FBEF',
+        accent: '#22C55E',
+    },
 ];
 
 export default function HabitMagicDeck() {
@@ -37,7 +51,7 @@ export default function HabitMagicDeck() {
         <section className="mt-7">
             <div className="mb-4">
                 <h2 className="text-xl font-black uppercase leading-tight text-white">Habit Magic</h2>
-                <p className="mt-1 text-xs font-bold text-zinc-500">Hooks that make users come back.</p>
+                <p className="mt-1 text-xs font-bold text-zinc-500">Small methods that make discipline easier.</p>
             </div>
             <div className="-mx-5 flex gap-4 overflow-x-auto px-5 pb-2">
                 {cards.map((card, index) => {

@@ -60,6 +60,16 @@ export interface MoodHistoryEntry {
     selectedAt: string;
 }
 
+export interface JournalEntry {
+    id: string;
+    date: string;
+    mood: MoodKey | 'unknown';
+    feelings: string[];
+    reasons: string[];
+    note: string;
+    createdAt: string;
+}
+
 interface HabitState {
     user: User | null;
     habits: Habit[];
@@ -68,6 +78,7 @@ interface HabitState {
     onboardingDataChoice: 'unset' | 'demo' | 'fresh';
     todayMood: MoodHistoryEntry | null;
     moodHistory: MoodHistoryEntry[];
+    journalEntries: JournalEntry[];
     dismissedMotivationDate: string | null;
     selectedDate: Date;
     workoutLogs: WorkoutLog[];
@@ -118,6 +129,7 @@ interface HabitState {
     // Mood Actions
     setTodayMood: (mood: MoodKey, date?: Date) => void;
     getMoodForDate: (date: Date) => MoodHistoryEntry | null;
+    addJournalEntry: (entry: Omit<JournalEntry, 'id' | 'createdAt'>) => void;
 
     // Motivation Actions
     dismissMotivationForToday: (date?: Date) => void;
@@ -145,6 +157,7 @@ export const useHabitStore = create<HabitState>()(
             tasks: [],
             todayMood: null,
             moodHistory: [],
+            journalEntries: [],
             dismissedMotivationDate: null,
             habits: [],
             schedule: [],
@@ -222,6 +235,21 @@ export const useHabitStore = create<HabitState>()(
             getMoodForDate: (date) => {
                 const dateStr = formatDate(date);
                 return get().moodHistory.find((item) => item.date === dateStr) ?? null;
+            },
+
+            addJournalEntry: (entry) => {
+                const nextEntry: JournalEntry = {
+                    ...entry,
+                    id: Math.random().toString(36).substr(2, 9),
+                    createdAt: new Date().toISOString(),
+                };
+                set((state) => ({
+                    journalEntries: [
+                        nextEntry,
+                        ...state.journalEntries.filter((item) => item.date !== entry.date),
+                    ],
+                }));
+                toast.success('Journal Intel Saved');
             },
 
             dismissMotivationForToday: (date = new Date()) => {
@@ -544,6 +572,7 @@ export const useHabitStore = create<HabitState>()(
                 onboardingDataChoice: 'unset',
                 todayMood: null,
                 moodHistory: [],
+                journalEntries: [],
                 dismissedMotivationDate: null,
                 selectedDate: new Date(),
                 workoutLogs: [],
@@ -577,6 +606,10 @@ export const useHabitStore = create<HabitState>()(
                         dismissedMotivationDate: nextState.dismissedMotivationDate || null
                     };
                 }
+                nextState = {
+                    ...nextState,
+                    journalEntries: nextState.journalEntries || []
+                };
                 return nextState;
             },
             partialize: (state) => ({
@@ -588,6 +621,7 @@ export const useHabitStore = create<HabitState>()(
                 workoutLogs: state.workoutLogs,
                 todayMood: state.todayMood,
                 moodHistory: state.moodHistory,
+                journalEntries: state.journalEntries,
                 dismissedMotivationDate: state.dismissedMotivationDate
             }),
         }
