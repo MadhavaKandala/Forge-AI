@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# AI tool skill files (local only, not needed in repo)
+.agents/
+.windsurf/
+.cursor/
+.gemini/
+.claude/
+.kiro/

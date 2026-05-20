@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/forge_widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/forge_widget_bg"
+    android:orientation="vertical"
+    android:padding="10dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-black"
+                android:letterSpacing="0.12"
+                android:text="FORGE OPS"
+                android:textColor="#C8FF00"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/forge_widget_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-bold"
+                android:text="0/6"
+                android:textColor="#A1A1AA"
+                android:textSize="10sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="54dp"
+            android:layout_height="44dp"
+            android:background="@drawable/forge_widget_pet_bg"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/forge_widget_pet_face"
+                android:layout_width="match_parent"
+                android:layout_height="22dp"
+                android:fontFamily="monospace"
+                android:gravity="center"
+                android:text="o_o"
+                android:textColor="#C8FF00"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/forge_widget_pet_line"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-bold"
+                android:gravity="center"
+                android:text="Ready"
+                android:textColor="#A1A1AA"
+                android:textSize="7sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="7dp"
+        android:layout_weight="1"
+        android:columnCount="2"
+        android:rowCount="3">
+
+        <TextView
+            android:id="@+id/forge_widget_chip_1"
+            style="@style/ForgeWidgetChip" />
+
+        <TextView
+            android:id="@+id/forge_widget_chip_2"
+            style="@style/ForgeWidgetChip" />
+
+        <TextView
+            android:id="@+id/forge_widget_chip_3"
+            style="@style/ForgeWidgetChip" />
+
+        <TextView
+            android:id="@+id/forge_widget_chip_4"
+            style="@style/ForgeWidgetChip" />
+
+        <TextView
+            android:id="@+id/forge_widget_chip_5"
+            style="@style/ForgeWidgetChip" />
+
+        <TextView
+            android:id="@+id/forge_widget_chip_6"
+            style="@style/ForgeWidgetChip" />
+    </GridLayout>
+
+    <TextView
+        android:id="@+id/forge_widget_button"
+        android:layout_width="match_parent"
+        android:layout_height="28dp"
+        android:layout_marginTop="7dp"
+        android:background="@drawable/forge_widget_button"
+        android:fontFamily="sans-serif-black"
+        android:gravity="center"
+        android:letterSpacing="0.12"
+        android:text="OPEN FORGE"
+        android:textColor="#000000"
+        android:textSize="10sp" />
+
+</LinearLayout>
