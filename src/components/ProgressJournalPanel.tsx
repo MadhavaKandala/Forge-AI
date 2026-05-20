@@ -1,6 +1,7 @@
 import { Flame, PenLine } from 'lucide-react';
 import { MoodHistoryEntry } from '@/store/useHabitStore';
 import { MOOD_CONTENT } from '@/lib/moodContent';
+import ForgePet from './ForgePet';
 
 interface ProgressJournalPanelProps {
     streak: number;
@@ -10,6 +11,7 @@ interface ProgressJournalPanelProps {
     onMoodTap: () => void;
     onJournalOpen: () => void;
     onProgressOpen: () => void;
+    status: 'strong' | 'steady' | 'low';
 }
 
 const lastSevenDays = Array.from({ length: 7 }, (_, index) => {
@@ -18,10 +20,9 @@ const lastSevenDays = Array.from({ length: 7 }, (_, index) => {
     return date;
 });
 
-export default function ProgressJournalPanel({ streak, completedToday, totalToday, mood, onMoodTap, onJournalOpen, onProgressOpen }: ProgressJournalPanelProps) {
+export default function ProgressJournalPanel({ streak, completedToday, totalToday, mood, onMoodTap, onJournalOpen, onProgressOpen, status }: ProgressJournalPanelProps) {
     const moodContent = mood ? MOOD_CONTENT[mood.mood] : null;
-    const ratio = totalToday > 0 ? completedToday / totalToday : 0;
-    const statusColor = ratio >= 1 ? '#22C55E' : ratio > 0 ? '#FACC15' : '#FF4444';
+    const statusColor = status === 'strong' ? '#22C55E' : status === 'steady' ? '#FACC15' : '#FF4444';
 
     return (
         <section className="mt-7 grid grid-cols-1 gap-4">
@@ -46,6 +47,9 @@ export default function ProgressJournalPanel({ streak, completedToday, totalToda
                         <p className="text-sm font-black text-white">{moodContent?.label ?? 'How are you showing up today?'}</p>
                         <p className="mt-1 text-xs font-bold text-zinc-500">{moodContent?.message ?? 'Open your journal, choose a mood, name the reason, and leave one honest note.'}</p>
                     </div>
+                </div>
+                <div className="mt-4 rounded-2xl bg-[#0A0A0A] p-3">
+                    <ForgePet status={status} size="sm" />
                 </div>
                 <span
                     role="button"

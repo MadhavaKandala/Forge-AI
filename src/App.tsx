@@ -12,9 +12,11 @@ import BottomNav from '@/components/BottomNav';
 import AuthPage from '@/pages/AuthPage';
 import BlitzFocusPage from '@/pages/BlitzFocusPage';
 import HomePage from '@/pages/HomePage';
+import JournalPage from '@/pages/JournalPage';
 import NotFound from '@/pages/NotFound';
 import { OnboardingPage } from '@/pages/OnboardingPage';
 import ProfilePage from '@/pages/ProfilePage';
+import ProgressPage from '@/pages/ProgressPage';
 import ProgramDetailPage from '@/pages/ProgramDetailPage';
 import ProgramsPage from '@/pages/ProgramsPage';
 import PomodoroPage from '@/pages/PomodoroPage';
@@ -189,6 +191,8 @@ const App = () => {
                             <Route path="/blitz" element={<ProtectedRoute><BlitzFocusPage /></ProtectedRoute>} />
                             <Route path="/pomodoro" element={<ProtectedRoute><PomodoroPage /></ProtectedRoute>} />
                             <Route path="/schedule" element={<ProtectedRoute><SchedulePage /></ProtectedRoute>} />
+                            <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />
+                            <Route path="/progress" element={<ProtectedRoute><ProgressPage /></ProtectedRoute>} />
                             <Route path="/programs" element={<ProtectedRoute><ProgramsPage /></ProtectedRoute>} />
                             <Route path="/programs/:id" element={<ProtectedRoute><ProgramDetailPage /></ProtectedRoute>} />
                             <Route path="/what-next" element={<ProtectedRoute><WhatNextPage /></ProtectedRoute>} />

@@ -16,8 +16,10 @@ import { useAppStore } from '@/store/useAppStore';
 import { useProgramStore } from '@/store/useProgramStore';
 import { MOOD_CONTENT, MoodKey } from '@/lib/moodContent';
 import { getDailyMotivationCard } from '@/lib/motivationCards';
+import { getProgressStats } from '@/lib/progress';
 import { cn } from '@/lib/utils';
 import { Task } from '@/types/task';
+import { widgetBridge } from '@/services/widgetBridge';
 
 const formatToday = (): string => new Date().toISOString().split('T')[0];
 
@@ -114,6 +116,7 @@ export default function HomePage() {
     const missionProgress = tasks.length ? Math.round((completedMissions / tasks.length) * 100) : 0;
 
     const activeStreak = useMemo(() => habits.reduce((max, habit) => Math.max(max, habit.streak), 0), [habits]);
+    const progressStats = useMemo(() => getProgressStats(habits, tasks), [habits, tasks]);
     const motivationCard = useMemo(() => getDailyMotivationCard(new Date(), activeStreak), [activeStreak]);
     const isMotivationDismissed = dismissedMotivationDate === today;
 
@@ -160,6 +163,21 @@ export default function HomePage() {
         completeTask(item.id);
         toast.success('+25 XP');
     }, [completeHabit, completeTask]);
+
+    useEffect(() => {
+        void widgetBridge.saveOps(dailyOps, progressStats.status).catch(() => undefined);
+    }, [dailyOps, progressStats.status]);
+
+    useEffect(() => {
+        void widgetBridge.consumeCompletedIds()
+            .then((ids) => {
+                if (ids.length === 0) return;
+                dailyOps
+                    .filter((item) => ids.includes(item.id) && !item.completed)
+                    .forEach((item) => handleOpComplete(item));
+            })
+            .catch(() => undefined);
+    }, [dailyOps, handleOpComplete]);
 
     const ProgressRing = ({ value }: { value: number }) => (
         <div className="relative grid h-12 w-12 place-items-center rounded-full" style={{ background: `conic-gradient(#C8FF00 ${value * 3.6}deg, #2A2A2A 0deg)` }}>
@@ -305,10 +323,13 @@ export default function HomePage() {
 
             <ProgressJournalPanel
                 streak={activeStreak}
-                completedToday={completedHabits + dailyOps.filter((item) => item.type === 'task' && item.completed).length}
-                totalToday={dailyOps.length}
+                completedToday={progressStats.completedToday}
+                totalToday={progressStats.totalToday}
                 mood={currentMood}
                 onMoodTap={() => setIsMoodOpen(true)}
+                onJournalOpen={() => navigate('/journal')}
+                onProgressOpen={() => navigate('/progress')}
+                status={progressStats.status}
             />
 
             <HabitMagicDeck />
