@@ -13,3 +13,6 @@ Object.defineProperty(window, "matchMedia", {
     dispatchEvent: () => {},
   }),
 });
+process.env.VITE_SUPABASE_URL = "http://localhost:54321"; process.env.VITE_SUPABASE_ANON_KEY = "anon_key";
+global.IntersectionObserver = class IntersectionObserver { constructor() {} observe() {} unobserve() {} disconnect() {} };
+global.ResizeObserver = class ResizeObserver { constructor() {} observe() {} unobserve() {} disconnect() {} };
