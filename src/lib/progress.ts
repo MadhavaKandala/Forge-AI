@@ -4,7 +4,8 @@ import type { Task } from '@/types/task';
 export const formatDateKey = (date: Date): string => date.toISOString().split('T')[0];
 
 export const getCompletionStatus = (completed: number, total: number): 'strong' | 'steady' | 'low' => {
-    if (total > 0 && completed >= total) return 'strong';
+    if (total <= 0) return 'low';
+    if (completed >= total) return 'strong';
     if (completed > 0) return 'steady';
     return 'low';
 };
