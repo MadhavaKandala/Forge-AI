@@ -141,6 +141,10 @@ describe('week 1 sanity', () => {
         if (mood === 'overwhelmed' || mood === 'numb') {
             expect(screen.queryByText('Fourth Schedule')).not.toBeInTheDocument();
         }
+
+        if (mood === 'locked_in' || mood === 'frustrated') {
+            expect(screen.getByText('Hard Mission')).toBeInTheDocument();
+        }
     });
 
     it('shows MotivationCard on HomePage', () => {
