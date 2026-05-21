@@ -13,3 +13,6 @@ Object.defineProperty(window, "matchMedia", {
     dispatchEvent: () => {},
   }),
 });
+process.env.VITE_SUPABASE_URL = 'http://localhost';
+process.env.VITE_SUPABASE_ANON_KEY = 'test';
+class MockIntersectionObserver { observe() {} unobserve() {} disconnect() {} } window.IntersectionObserver = MockIntersectionObserver as any;
