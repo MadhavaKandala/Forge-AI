@@ -1,8 +1,10 @@
 import React from 'react';
+import { useState } from 'react';
 import { useVoiceStore } from '@/store/useVoiceStore';
 import { useTaskStore } from '@/store/useTaskStore';
 import { useScheduleStore } from '@/store/useScheduleStore';
 import { ExtractedItemCard } from './ExtractedItemCard';
+import { EditExtractedItemModal } from './EditExtractedItemModal';
 import { Button } from '@/components/ui/button';
 import { Sparkles, ArrowLeft, Check, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -12,6 +14,9 @@ export const VoiceResultsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
     const { pendingItems, currentNote, confirmItem, removeItem, updateItem, clearState } = useVoiceStore();
     const { addTask } = useTaskStore();
     const { addSchedule } = useScheduleStore();
+    const [editingItemId, setEditingItemId] = useState<string | null>(null);
+
+    const editingItem = editingItemId ? pendingItems.find(i => i.id === editingItemId) || null : null;
 
     const handleConfirmItem = async (itemId: string) => {
         const item = pendingItems.find(i => i.id === itemId);
@@ -156,7 +161,7 @@ export const VoiceResultsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
                                     item={item}
                                     onConfirm={handleConfirmItem}
                                     onRemove={removeItem}
-                                    onEdit={(id) => {/* TODO: Implement Edit Modal */ }}
+                                    onEdit={(id) => setEditingItemId(id)}
                                 />
                             </motion.div>
                         ))}
@@ -185,6 +190,13 @@ export const VoiceResultsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
                     Finish
                 </Button>
             </div>
+
+            <EditExtractedItemModal
+                item={editingItem}
+                isOpen={!!editingItemId}
+                onClose={() => setEditingItemId(null)}
+                onSave={(id, updates) => updateItem(id, updates)}
+            />
         </div>
     );
 };
