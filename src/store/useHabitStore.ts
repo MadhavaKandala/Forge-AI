@@ -459,15 +459,19 @@ export const useHabitStore = create<HabitState>()(
                         // DB is empty - we need to populate it
                         if (get().tasks.length > 0) {
                             console.log("Syncing existing store tasks to DB...");
-                            for (const task of get().tasks) {
-                                await taskService.createTask(task).catch(e => console.error("Sync error:", e));
-                            }
+                            await Promise.all(
+                                get().tasks.map(task =>
+                                    taskService.createTask(task).catch(e => console.error("Sync error:", e))
+                                )
+                            );
                         } else {
                             console.log("Seeding INITIAL_TASKS to DB...");
                             set({ tasks: INITIAL_TASKS });
-                            for (const task of INITIAL_TASKS) {
-                                await taskService.createTask(task).catch(e => console.error("Seed error:", e));
-                            }
+                            await Promise.all(
+                                INITIAL_TASKS.map(task =>
+                                    taskService.createTask(task).catch(e => console.error("Seed error:", e))
+                                )
+                            );
                         }
                     }
 
