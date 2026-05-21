@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BadgeCheck, Flame } from 'lucide-react';
+import { BadgeCheck, Flame, Plus } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import CreateProgramModal from '@/components/CreateProgramModal';
 import { useProgramStore } from '@/store/useProgramStore';
 import { type ProgramTemplate } from '@/services/programService';
 
@@ -34,6 +35,7 @@ const ProgramsPage: React.FC = () => {
 
     const [selectedProgram, setSelectedProgram] = useState<ProgramTemplate | null>(null);
     const [selectedTime, setSelectedTime] = useState('09:00');
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
     const timeSlots = useMemo(buildTimeSlots, []);
 
     useEffect(() => {
@@ -65,28 +67,40 @@ const ProgramsPage: React.FC = () => {
                 <div className="flex gap-3 overflow-x-auto pb-2">
                     {activePrograms.map((program) => {
                         const enrollmentId = getEnrollmentId(program.programType);
+                        const template = availablePrograms.find((item) => item.type === program.programType);
+                        const totalLabel = template?.isOngoing ? 'ONGOING' : program.totalDays;
                         return (
                             <div
                                 key={program.id}
-                                className="min-w-[280px] rounded-2xl border border-zinc-800 bg-[#141414] p-4"
+                                className="min-w-[280px] rounded-2xl border border-l-[3px] border-zinc-800 border-l-[#C8FF00] bg-[#141414] p-4"
                             >
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-center gap-3">
                                         <span className="text-2xl">{program.icon ?? '🎯'}</span>
                                         <div>
                                             <p className="font-black">{program.name}</p>
-                                            <p className="text-xs text-zinc-400">
-                                                Day {program.currentDay}/{program.totalDays}
-                                            </p>
+                                            <p className="text-xs text-zinc-400">Active protocol</p>
                                         </div>
                                     </div>
-                                    <div className="rounded-full bg-zinc-900 px-2 py-1 text-xs text-[#C8FF00] flex items-center gap-1">
-                                        <Flame className="w-3 h-3" />
-                                        {(enrollments.find((e) => e.programId === program.programType)?.streak ?? 0).toString()}
+                                    <div className="flex flex-col items-end gap-2">
+                                        <div className="rounded-full border border-[#C8FF00]/30 bg-[#C8FF00]/10 px-2 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-[#C8FF00]">
+                                            DAY {program.currentDay} OF {totalLabel}
+                                        </div>
+                                        <div className="rounded-full bg-zinc-900 px-2 py-1 text-xs text-[#C8FF00] flex items-center gap-1">
+                                            <Flame className="w-3 h-3" />
+                                            {(enrollments.find((e) => e.programId === program.programType)?.streak ?? 0).toString()}
+                                        </div>
                                     </div>
                                 </div>
 
-                                <Progress value={program.completionPercentage ?? 0} className="h-2 mt-4 bg-zinc-800" />
+                                <div className="mt-4 h-2 overflow-hidden rounded-full bg-zinc-800">
+                                    <motion.div
+                                        className="h-full rounded-full bg-[#C8FF00]"
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${Math.min(program.completionPercentage ?? 0, 100)}%` }}
+                                        transition={{ duration: 1, ease: 'easeOut' }}
+                                    />
+                                </div>
 
                                 <Button
                                     type="button"
@@ -115,18 +129,25 @@ const ProgramsPage: React.FC = () => {
                             <div key={program.type} className="rounded-2xl border border-zinc-800 bg-[#141414] overflow-hidden">
                                 <div className="h-1 bg-[#C8FF00]" />
                                 <div className="p-3">
-                                    <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center justify-between gap-2 mb-2">
                                         <span className="text-xl">{program.icon}</span>
-                                        {isActive && (
-                                            <span className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full bg-zinc-900 text-[#22C55E] font-black">
-                                                <BadgeCheck className="w-3 h-3" />
-                                                ACTIVE
-                                            </span>
-                                        )}
+                                        <div className="flex flex-wrap justify-end gap-1">
+                                            {program.isCustom && (
+                                                <span className="inline-flex items-center text-[10px] px-2 py-1 rounded-full border border-[#C8FF00]/30 bg-[#C8FF00]/10 text-[#C8FF00] font-black">
+                                                    CUSTOM
+                                                </span>
+                                            )}
+                                            {isActive && (
+                                                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full bg-zinc-900 text-[#22C55E] font-black">
+                                                    <BadgeCheck className="w-3 h-3" />
+                                                    ACTIVE
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     <p className="font-black text-sm">{program.name}</p>
                                     <p className="text-[11px] text-zinc-400 mt-1 line-clamp-3">{program.description}</p>
-                                    <p className="text-[10px] text-zinc-500 mt-2 uppercase tracking-[0.1em]">{program.days} days</p>
+                                    <p className="text-[10px] text-zinc-500 mt-2 uppercase tracking-[0.1em]">{program.isOngoing ? 'Ongoing' : `${program.days} days`}</p>
                                     {!isActive && (
                                         <Button
                                             type="button"
@@ -141,6 +162,14 @@ const ProgramsPage: React.FC = () => {
                         );
                     })}
                 </div>
+                <Button
+                    type="button"
+                    onClick={() => setIsCreateOpen(true)}
+                    className="mt-4 h-12 w-full border border-[#C8FF00]/30 bg-[#1C1C1C] text-[#C8FF00] hover:bg-[#C8FF00]/10 font-black uppercase tracking-[0.14em]"
+                >
+                    <Plus className="mr-2 h-4 w-4" />
+                    CREATE PROGRAM
+                </Button>
             </section>
 
             <Sheet open={!!selectedProgram} onOpenChange={(open) => !open && setSelectedProgram(null)}>
@@ -198,6 +227,7 @@ const ProgramsPage: React.FC = () => {
                     )}
                 </SheetContent>
             </Sheet>
+            <CreateProgramModal open={isCreateOpen} onOpenChange={setIsCreateOpen} />
         </div>
     );
 };

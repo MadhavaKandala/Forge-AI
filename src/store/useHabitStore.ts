@@ -80,6 +80,8 @@ interface HabitState {
     moodHistory: MoodHistoryEntry[];
     journalEntries: JournalEntry[];
     dismissedMotivationDate: string | null;
+    streakShields: number;
+    lastStreakDate: string | null;
     selectedDate: Date;
     workoutLogs: WorkoutLog[];
     dietLogs: import('@/types/challenge').DietLog[];
@@ -133,14 +135,22 @@ interface HabitState {
 
     // Motivation Actions
     dismissMotivationForToday: (date?: Date) => void;
+    checkStreakShield: (date?: Date) => void;
 
     // Selectors
     getDailyProgress: (date: Date) => number;
     syncDate: () => void;
 }
 
-const formatDate = (date: Date): string => {
-    return date.toISOString().split('T')[0];
+const formatDate = (date: Date | string): string => {
+    const value = date instanceof Date ? date : new Date(date);
+    return value.toISOString().split('T')[0];
+};
+
+const getDateGap = (from: string, to: string): number => {
+    const fromDate = new Date(`${from}T00:00:00`);
+    const toDate = new Date(`${to}T00:00:00`);
+    return Math.round((toDate.getTime() - fromDate.getTime()) / 86400000);
 };
 
 const INITIAL_TASKS: Task[] = [];
@@ -159,6 +169,8 @@ export const useHabitStore = create<HabitState>()(
             moodHistory: [],
             journalEntries: [],
             dismissedMotivationDate: null,
+            streakShields: 0,
+            lastStreakDate: null,
             habits: [],
             schedule: [],
             workoutLogs: [],
@@ -178,6 +190,19 @@ export const useHabitStore = create<HabitState>()(
                 get().toggleHabit(habitId, selectedDate);
                 if (!isAlreadyCompleted) {
                     get().addXP(10);
+                    const nextHabit = get().habits.find((h) => h.id === habitId);
+                    const nextStreak = nextHabit?.streak ?? 0;
+                    const previousStreakDate = get().lastStreakDate;
+                    if (previousStreakDate !== dateStr) {
+                        const earnedShield = nextStreak > 0 && nextStreak % 7 === 0 && get().streakShields < 3;
+                        set((state) => ({
+                            lastStreakDate: dateStr,
+                            streakShields: earnedShield ? Math.min(3, state.streakShields + 1) : state.streakShields,
+                        }));
+                        if (earnedShield) {
+                            toast.success(`Shield earned. ${Math.min(3, get().streakShields)} shields armed.`);
+                        }
+                    }
                 }
 
                 return !isAlreadyCompleted;
@@ -257,6 +282,31 @@ export const useHabitStore = create<HabitState>()(
                 toast.success('Daily Intel Dismissed');
             },
 
+            checkStreakShield: (date = new Date()) => {
+                const todayStr = formatDate(date);
+                const { lastStreakDate, streakShields } = get();
+                if (!lastStreakDate) return;
+
+                const gap = getDateGap(lastStreakDate, todayStr);
+                if (gap <= 1) return;
+
+                if (streakShields > 0) {
+                    const nextShields = Math.max(0, streakShields - 1);
+                    set({
+                        lastStreakDate: todayStr,
+                        streakShields: nextShields,
+                    });
+                    toast.success(`Shield used! Streak protected. ${nextShields} shields left.`);
+                    return;
+                }
+
+                set((state) => ({
+                    lastStreakDate: null,
+                    habits: state.habits.map((habit) => ({ ...habit, streak: 0 })),
+                }));
+                toast.error('Streak lost. Start again. You know what to do.');
+            },
+
             addScheduleItem: (item) => set((state) => ({
                 schedule: [...state.schedule, { ...item, id: Math.random().toString(36).substr(2, 9) }]
             })),
@@ -265,7 +315,13 @@ export const useHabitStore = create<HabitState>()(
                 schedule: state.schedule.filter((i) => i.id !== id)
             })),
 
-            setSelectedDate: (date: Date) => set({ selectedDate: date }),
+            setSelectedDate: (date: Date) => {
+                const todayStr = formatDate(new Date());
+                if (formatDate(date) === todayStr && formatDate(get().selectedDate) !== todayStr) {
+                    get().checkStreakShield(date);
+                }
+                set({ selectedDate: date });
+            },
 
             addHabit: (newHabit) => set((state) => ({
                 habits: [
@@ -517,6 +573,7 @@ export const useHabitStore = create<HabitState>()(
                 const today = new Date();
                 if (formatDate(selectedDate) !== formatDate(today)) {
                     const todayStr = formatDate(today);
+                    get().checkStreakShield(today);
                     set((state) => ({
                         selectedDate: today,
                         todayMood: state.moodHistory.find((item) => item.date === todayStr) ?? null
@@ -574,6 +631,8 @@ export const useHabitStore = create<HabitState>()(
                 moodHistory: [],
                 journalEntries: [],
                 dismissedMotivationDate: null,
+                streakShields: 0,
+                lastStreakDate: null,
                 selectedDate: new Date(),
                 workoutLogs: [],
                 dietLogs: [],
@@ -583,7 +642,7 @@ export const useHabitStore = create<HabitState>()(
         {
             name: getUserScopedStoreName('habit-store', getCurrentStoreUserId()),
             storage: createJSONStorage(() => localStorage),
-            version: 8,
+            version: 9,
             migrate: (persistedState: any, version: number) => {
                 let nextState = persistedState;
                 if (version < 6) {
@@ -608,7 +667,9 @@ export const useHabitStore = create<HabitState>()(
                 }
                 nextState = {
                     ...nextState,
-                    journalEntries: nextState.journalEntries || []
+                    journalEntries: nextState.journalEntries || [],
+                    streakShields: version < 9 ? 0 : nextState.streakShields || 0,
+                    lastStreakDate: version < 9 ? null : nextState.lastStreakDate || null
                 };
                 return nextState;
             },
@@ -622,7 +683,9 @@ export const useHabitStore = create<HabitState>()(
                 todayMood: state.todayMood,
                 moodHistory: state.moodHistory,
                 journalEntries: state.journalEntries,
-                dismissedMotivationDate: state.dismissedMotivationDate
+                dismissedMotivationDate: state.dismissedMotivationDate,
+                streakShields: state.streakShields,
+                lastStreakDate: state.lastStreakDate
             }),
         }
     )

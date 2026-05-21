@@ -157,6 +157,7 @@ interface AppState {
     supabaseProfile: unknown | null;
     authError: string | null;
     onboardingComplete: boolean;
+    dailyBriefShown: string | null;
 
     login: (user: AppUser) => void;
     logout: () => Promise<void>;
@@ -164,6 +165,7 @@ interface AppState {
     signOut: () => Promise<void>;
     checkSession: () => Promise<boolean>;
     setOnboardingComplete: () => void;
+    setDailyBriefShown: (date: string) => void;
     syncHabitsToSupabase: () => Promise<boolean>;
     syncMissionsToSupabase: () => Promise<boolean>;
     fetchUserData: () => Promise<boolean>;
@@ -296,6 +298,7 @@ export const useAppStore = create<AppState>()(
             supabaseProfile: null,
             authError: null,
             onboardingComplete: false,
+            dailyBriefShown: null,
 
             login: (user: AppUser) => {
                 set({
@@ -358,9 +361,10 @@ export const useAppStore = create<AppState>()(
                         user: profile,
                         supabaseUserId: data.user.id,
                         supabaseProfile,
-                        authError: null,
-                        onboardingComplete,
-                    });
+                    authError: null,
+                    onboardingComplete,
+                    dailyBriefShown: null,
+                });
                     await syncHabitProfile(profile);
                     toast.success(`Welcome, ${profile.name}`);
                     return true;
@@ -418,6 +422,7 @@ export const useAppStore = create<AppState>()(
                     supabaseProfile: null,
                     authError: null,
                     onboardingComplete: false,
+                    dailyBriefShown: null,
                 });
                 toast.success('Signed out.');
             },
@@ -442,9 +447,9 @@ export const useAppStore = create<AppState>()(
                         user: profile,
                         supabaseUserId: sessionUser.id,
                         supabaseProfile,
-                        authError: null,
-                        onboardingComplete: hasAppStore ? persistedOnboardingComplete : existingUserData,
-                    });
+                    authError: null,
+                    onboardingComplete: hasAppStore ? persistedOnboardingComplete : existingUserData,
+                });
                     await syncHabitProfile(profile);
                     return true;
                 }
@@ -455,11 +460,13 @@ export const useAppStore = create<AppState>()(
                     supabaseUserId: null,
                     supabaseProfile: null,
                     onboardingComplete: false,
+                    dailyBriefShown: null,
                 });
                 return false;
             },
 
             setOnboardingComplete: () => set({ onboardingComplete: true }),
+            setDailyBriefShown: (date: string) => set({ dailyBriefShown: date }),
 
             syncHabitsToSupabase: async () => {
                 const { supabaseUserId } = get();
@@ -626,6 +633,7 @@ export const useAppStore = create<AppState>()(
                 supabaseUserId: state.supabaseUserId,
                 supabaseProfile: state.supabaseProfile,
                 onboardingComplete: state.onboardingComplete,
+                dailyBriefShown: state.dailyBriefShown,
             }),
         },
     ),

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, Circle, X } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
+import { Bell, Check, Circle, Shield, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 import MoodCheck from '@/components/MoodCheck';
@@ -60,10 +60,12 @@ export default function HomePage() {
     const navigate = useNavigate();
     const [isMoodOpen, setIsMoodOpen] = useState(false);
     const [isMoodPillHidden, setIsMoodPillHidden] = useState(false);
+    const [completedHabitAnimationId, setCompletedHabitAnimationId] = useState<string | null>(null);
     const {
         habitUser,
         habits,
         tasks,
+        streakShields,
         todayMood,
         moodHistory,
         dismissedMotivationDate,
@@ -77,6 +79,7 @@ export default function HomePage() {
             habitUser: s.user,
             habits: s.habits,
             tasks: s.tasks,
+            streakShields: s.streakShields,
             todayMood: s.todayMood,
             moodHistory: s.moodHistory,
             dismissedMotivationDate: s.dismissedMotivationDate,
@@ -156,7 +159,11 @@ export default function HomePage() {
         if (item.completed) return;
         if (item.type === 'habit') {
             const completedNow = completeHabit(item.id);
-            if (completedNow) toast.success('+10 XP');
+            if (completedNow) {
+                setCompletedHabitAnimationId(item.id);
+                window.setTimeout(() => setCompletedHabitAnimationId(null), 900);
+                toast.success('+10 XP');
+            }
             return;
         }
 
@@ -195,7 +202,24 @@ export default function HomePage() {
                 <div>
                     <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-500">DAILY COMMAND</p>
                     <h1 className="mt-2 text-2xl font-black">{greeting()}, {appUser?.name ?? habitUser?.name ?? 'Operator'}</h1>
-                    <p className="mt-1 text-xs font-black uppercase tracking-[0.14em] text-[#C8FF00]">XP: {habitUser?.xp ?? appUser?.totalXP ?? 0}</p>
+                    <div className="relative mt-1 inline-flex flex-col gap-1 px-4 py-2">
+                        <div className="absolute inset-0 rounded-full" style={{ background: 'radial-gradient(circle, #C8FF0015 0%, transparent 70%)' }} />
+                        <p className="relative z-10 text-xs font-black uppercase tracking-[0.14em] text-[#C8FF00]">XP: {habitUser?.xp ?? appUser?.totalXP ?? 0}</p>
+                        <div className="relative z-10 flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-500">🔥 {activeStreak} DAY STREAK</span>
+                            <span className="flex items-center gap-0.5" aria-label={`${streakShields} streak shields available`}>
+                                {[0, 1, 2].map((index) => (
+                                    <Shield
+                                        key={index}
+                                        className={cn(
+                                            'h-3.5 w-3.5',
+                                            index < streakShields ? 'fill-[#C8FF00] text-[#C8FF00]' : 'text-zinc-700',
+                                        )}
+                                    />
+                                ))}
+                            </span>
+                        </div>
+                    </div>
                 </div>
                 <button type="button" className="grid h-11 w-11 place-items-center rounded-xl border border-zinc-800 bg-[#141414] text-[#C8FF00]">
                     <Bell className="h-5 w-5" />
@@ -343,23 +367,48 @@ export default function HomePage() {
                     {dailyOps.map((item, index) => (
                         <React.Fragment key={`${item.type}-${item.id}`}>
                             {index === currentLineIndex && <div className="h-px w-full bg-[#C8FF00]" />}
-                            <button
+                            <motion.button
                                 type="button"
                                 onClick={() => handleOpComplete(item)}
+                                animate={{ backgroundColor: completedHabitAnimationId === item.id ? 'rgba(200,255,0,0.20)' : '#1C1C1C' }}
+                                transition={{ duration: 0.25, ease: 'easeOut' }}
                                 className={cn(
-                                    'flex w-full items-center gap-3 rounded-xl border border-zinc-800 bg-[#1C1C1C] p-3 text-left transition-opacity',
+                                    'relative flex w-full items-center gap-3 rounded-xl border border-zinc-800 p-3 text-left transition-opacity',
                                     item.completed && 'opacity-50',
                                 )}
                             >
+                                <AnimatePresence>
+                                    {completedHabitAnimationId === item.id && (
+                                        <motion.span
+                                            initial={{ opacity: 0, y: 4, scale: 0.92 }}
+                                            animate={{ opacity: 1, y: -18, scale: 1 }}
+                                            exit={{ opacity: 0, y: -28 }}
+                                            transition={{ duration: 0.65, ease: 'easeOut' }}
+                                            className="pointer-events-none absolute right-11 -top-1 text-xs font-black text-[#C8FF00]"
+                                        >
+                                            +10 XP
+                                        </motion.span>
+                                    )}
+                                </AnimatePresence>
                                 <span className="w-16 shrink-0 text-xs font-bold text-zinc-500">{item.time}</span>
                                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: categoryColor(item.category) }} />
                                 <span className={cn('min-w-0 flex-1 text-sm font-semibold text-white', item.completed && 'line-through text-zinc-500')}>
                                     {item.title}
                                 </span>
                                 <span className={cn('grid h-6 w-6 shrink-0 place-items-center rounded-full border', item.completed ? 'border-[#C8FF00] bg-[#C8FF00] text-black' : 'border-white text-white')}>
-                                    {item.completed ? <Check className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                                    {item.completed ? (
+                                        <motion.span
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            transition={{ type: 'spring', stiffness: 520, damping: 18 }}
+                                        >
+                                            <Check className="h-4 w-4" />
+                                        </motion.span>
+                                    ) : (
+                                        <Circle className="h-4 w-4" />
+                                    )}
                                 </span>
-                            </button>
+                            </motion.button>
                         </React.Fragment>
                     ))}
                     {currentLineIndex === -1 && dailyOps.length > 0 && <div className="h-px w-full bg-[#C8FF00]" />}

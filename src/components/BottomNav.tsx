@@ -29,8 +29,12 @@ export default function BottomNav() {
                                 )
                             }
                         >
-                            <Icon className="h-5 w-5" />
-                            <span>{tab.label}</span>
+                            {({ isActive }) => (
+                                <>
+                                    <Icon className={cn('h-5 w-5', isActive && 'drop-shadow-[0_0_6px_#C8FF00]')} />
+                                    <span>{tab.label}</span>
+                                </>
+                            )}
                         </NavLink>
                     );
                 })}

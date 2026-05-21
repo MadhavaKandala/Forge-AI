@@ -9,6 +9,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import BottomNav from '@/components/BottomNav';
+import DailyBrief from '@/components/DailyBrief';
 import AuthPage from '@/pages/AuthPage';
 import BlitzFocusPage from '@/pages/BlitzFocusPage';
 import HomePage from '@/pages/HomePage';
@@ -55,6 +56,7 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
 const App = () => {
     const [isCheckingSession, setIsCheckingSession] = useState(true);
     const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+    const dailyBriefShown = useAppStore((s) => s.dailyBriefShown);
     const checkSession = useAppStore((s) => s.checkSession);
     const fetchUserData = useAppStore((s) => s.fetchUserData);
     const syncHabitsToSupabase = useAppStore((s) => s.syncHabitsToSupabase);
@@ -181,6 +183,7 @@ const App = () => {
             <TooltipProvider>
                 <Toaster />
                 <Sonner />
+                {isAuthenticated && onboardingComplete && dailyBriefShown !== new Date().toISOString().split('T')[0] && <DailyBrief />}
                 <HashRouter>
                     {!isAuthenticated ? (
                         <AuthPage />

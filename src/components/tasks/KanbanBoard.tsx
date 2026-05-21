@@ -13,8 +13,8 @@ interface KanbanBoardProps {
 }
 
 const COLUMNS: { id: TaskStatus; label: string; color: string }[] = [
-    { id: 'backlog', label: 'Backlog', color: 'bg-slate-500/10' },
-    { id: 'this_week', label: 'This Week', color: 'bg-blue-500/10' },
+    { id: 'backlog', label: 'Backlog', color: 'bg-zinc-500/10' },
+    { id: 'this_week', label: 'This Week', color: 'bg-zinc-500/10' },
     { id: 'today', label: 'Today', color: 'bg-yellow-500/10' },
     { id: 'in_progress', label: 'In Progress', color: 'bg-primary/10' },
     { id: 'completed', label: 'Done', color: 'bg-green-500/10' },
@@ -22,9 +22,9 @@ const COLUMNS: { id: TaskStatus; label: string; color: string }[] = [
 
 const STAGE_META: Record<TaskStatus, { label: string; className: string }> = {
     backlog: { label: 'BACKLOG', className: 'bg-zinc-700/40 text-zinc-300 border-zinc-600' },
-    this_week: { label: 'THIS WEEK', className: 'bg-sky-500/20 text-sky-300 border-sky-500/40' },
+    this_week: { label: 'THIS WEEK', className: 'bg-zinc-700/40 text-zinc-300 border-zinc-600' },
     today: { label: 'TODAY', className: 'bg-orange-500/20 text-orange-300 border-orange-500/40' },
-    in_progress: { label: 'IN PROGRESS', className: 'bg-violet-500/20 text-violet-300 border-violet-500/40' },
+    in_progress: { label: 'IN PROGRESS', className: 'bg-[#C8FF00]/20 text-[#C8FF00] border-[#C8FF00]/40' },
     completed: { label: 'DONE', className: 'bg-[#C8FF00]/20 text-[#C8FF00] border-[#C8FF00]/40' },
     cancelled: { label: 'BACKLOG', className: 'bg-zinc-700/40 text-zinc-300 border-zinc-600' },
 };
@@ -97,10 +97,13 @@ interface KanbanCardProps {
 const KanbanCard: React.FC<KanbanCardProps> = ({ task, onMove, onClick }) => {
     const [isStagePickerOpen, setIsStagePickerOpen] = useState(false);
     const priorityColors = {
-        low: 'bg-blue-500/20 text-blue-400',
-        medium: 'bg-yellow-500/20 text-yellow-400',
+        low: 'bg-zinc-700/50 text-zinc-300',
+        medium: 'bg-[#FF6B35]/20 text-[#FF6B35]',
         high: 'bg-red-500/20 text-red-400'
     };
+    const priorityBorderColor = task.status === 'completed'
+        ? '#C8FF00'
+        : ({ high: '#FF4444', medium: '#FF6B35', low: '#555555' }[task.priority] ?? '#555555');
     const currentStatus = (task.status || 'backlog') as TaskStatus;
     const stage = STAGE_META[currentStatus] ?? STAGE_META.backlog;
 
@@ -115,6 +118,7 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ task, onMove, onClick }) => {
                 "group relative flex flex-col p-3 rounded-xl border bg-card/80 hover:border-primary/50 transition-colors shadow-sm cursor-grab active:cursor-grabbing",
                 task.status === 'completed' && "opacity-60 grayscale-[0.5]"
             )}
+            style={{ borderLeftColor: priorityBorderColor, borderLeftWidth: 3 }}
             onClick={onClick}
         >
             <div className="flex gap-2 mb-2 items-start">

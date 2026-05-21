@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useHabitStore } from '@/store/useHabitStore';
-import { TrendingUp, Target, AlertCircle, Zap } from 'lucide-react';
+import { TrendingUp, Target, AlertCircle, Zap, Shield } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { MOOD_CONTENT, MOOD_SCORE } from '@/lib/moodContent';
 import { cn } from '@/lib/utils';
@@ -20,8 +21,8 @@ const getLevelInfo = (xp: number) => {
 };
 
 export default function StatsPage() {
-  const { user, tasks, habits, moodHistory } = useHabitStore(
-    useShallow((s) => ({ user: s.user, tasks: s.tasks, habits: s.habits, moodHistory: s.moodHistory }))
+  const { user, tasks, habits, moodHistory, streakShields } = useHabitStore(
+    useShallow((s) => ({ user: s.user, tasks: s.tasks, habits: s.habits, moodHistory: s.moodHistory, streakShields: s.streakShields }))
   );
   const [dateFilter, setDateFilter] = useState<'day' | 'week' | 'year'>('day');
 
@@ -187,14 +188,40 @@ export default function StatsPage() {
 
         {/* XP Progress Bar */}
         <div className="mt-4 w-full h-2 bg-zinc-900 rounded-full overflow-hidden">
-          <div
+          <motion.div
             className="h-full bg-gradient-to-r from-[#C8FF00] to-[#22C55E]"
-            style={{ width: `${(velocityXP % 5000) / 50}%` }}
+            initial={{ width: 0 }}
+            animate={{ width: `${(velocityXP % 5000) / 50}%` }}
+            transition={{ duration: 1, ease: 'easeOut' }}
           />
         </div>
         <p className="text-xs text-zinc-500 mt-2">
           {velocityXP % 5000} / 5000 XP to next level
         </p>
+      </div>
+
+      {/* Streak Shields */}
+      <div className="px-6 mb-8">
+        <div className="rounded-xl border border-zinc-800 bg-[#1C1C1C] p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase font-black text-zinc-500">SHIELDS</p>
+              <p className="mt-2 text-sm text-zinc-400">Earn a shield every 7 days of consistency</p>
+            </div>
+            <div className="flex gap-2">
+              {[0, 1, 2].map((index) => (
+                <Shield
+                  key={index}
+                  className={cn(
+                    'h-7 w-7',
+                    index < streakShields ? 'fill-[#C8FF00] text-[#C8FF00] drop-shadow-[0_0_8px_#C8FF00]' : 'text-zinc-700',
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+          <p className="mt-4 text-3xl font-black text-[#C8FF00]">{streakShields}/3</p>
+        </div>
       </div>
 
       {/* Stats Grid */}

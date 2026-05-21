@@ -15,7 +15,10 @@ export interface ProgramTemplate {
     difficulty: 'beginner' | 'intermediate' | 'advanced' | 'extreme';
     category: 'fitness' | 'mental' | 'learning' | 'health' | 'productivity';
     dailyRequirements: string[];
+    dailyRequirementTimes?: Record<string, string>;
     totalXpPotential: number;
+    isCustom?: boolean;
+    isOngoing?: boolean;
     taskList?: ProgramTask[];
     phases?: {
         name: string;

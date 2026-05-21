@@ -17,10 +17,21 @@ export interface ProgramEnrollment {
     completedDays: number;
 }
 
+export interface CustomProgramInput {
+    name: string;
+    description: string;
+    days: number;
+    icon: string;
+    dailyRequirements: string[];
+    dailyRequirementTimes?: Record<string, string>;
+    isOngoing?: boolean;
+}
+
 interface ProgramState {
     activePrograms: Program[];
     completedPrograms: Program[];
     availablePrograms: ProgramTemplate[];
+    customPrograms: ProgramTemplate[];
     selectedProgram: Program | null;
     selectedProgramDays: ProgramDay[];
     selectedProgramMilestones: any[];
@@ -31,6 +42,7 @@ interface ProgramState {
     fetchActivePrograms: () => Promise<void>;
     fetchAvailablePrograms: () => Promise<void>;
     fetchCompletedPrograms: () => Promise<void>;
+    addCustomProgram: (program: CustomProgramInput) => void;
     enrollInProgram: (programId: string, selectedTime: string) => Promise<void>;
     unenrollFromProgram: (enrollmentId: string) => Promise<void>;
     startProgram: (type: string) => Promise<Program | null>;
@@ -89,12 +101,18 @@ const toTimeLabel = (time24: string): string => {
     return `${h12}:${String(m).padStart(2, '0')} ${suffix}`;
 };
 
+const getAllTemplates = (customPrograms: ProgramTemplate[]): ProgramTemplate[] => [
+    ...PROGRAM_TEMPLATES,
+    ...customPrograms,
+];
+
 export const useProgramStore = create<ProgramState>()(
     persist(
         (set, get) => ({
             activePrograms: [],
             completedPrograms: [],
             availablePrograms: PROGRAM_TEMPLATES,
+            customPrograms: [],
             selectedProgram: null,
             selectedProgramDays: [],
             selectedProgramMilestones: [],
@@ -109,17 +127,18 @@ export const useProgramStore = create<ProgramState>()(
             },
 
             fetchAvailablePrograms: async () => {
-                set({ availablePrograms: PROGRAM_TEMPLATES });
+                set((state) => ({ availablePrograms: getAllTemplates(state.customPrograms) }));
             },
 
             fetchActivePrograms: async () => {
-                const { enrollments } = get();
+                const { enrollments, customPrograms } = get();
+                const templates = getAllTemplates(customPrograms);
                 const active = enrollments
                     .map((enrollment) => {
                         if (enrollment.programId === 'demo-morning-protocol') {
                             return toDemoMorningProtocol(enrollment);
                         }
-                        const template = PROGRAM_TEMPLATES.find((p) => p.type === enrollment.programId);
+                        const template = templates.find((p) => p.type === enrollment.programId);
                         return template ? toProgram(template, enrollment) : null;
                     })
                     .filter((p): p is Program => p !== null);
@@ -130,8 +149,34 @@ export const useProgramStore = create<ProgramState>()(
                 set({ completedPrograms: [] });
             },
 
+            addCustomProgram: (program) => {
+                const id = crypto.randomUUID();
+                const nextProgram: ProgramTemplate = {
+                    type: id,
+                    name: program.name.trim(),
+                    description: program.description.trim() || 'Custom tactical program.',
+                    days: program.isOngoing ? 3650 : Math.max(1, program.days),
+                    icon: program.icon,
+                    difficulty: 'beginner',
+                    category: 'productivity',
+                    dailyRequirements: program.dailyRequirements,
+                    dailyRequirementTimes: program.dailyRequirementTimes,
+                    totalXpPotential: Math.max(1, program.dailyRequirements.length) * (program.isOngoing ? 3650 : Math.max(1, program.days)) * 10,
+                    isCustom: true,
+                    isOngoing: program.isOngoing,
+                };
+
+                set((state) => {
+                    const customPrograms = [...state.customPrograms, nextProgram];
+                    return {
+                        customPrograms,
+                        availablePrograms: getAllTemplates(customPrograms),
+                    };
+                });
+            },
+
             enrollInProgram: async (programId: string, selectedTime: string) => {
-                const template = PROGRAM_TEMPLATES.find((p) => p.type === programId);
+                const template = getAllTemplates(get().customPrograms).find((p) => p.type === programId);
                 if (!template) {
                     set({ error: 'Program not found' });
                     toast.error('Program not found.');
@@ -162,9 +207,10 @@ export const useProgramStore = create<ProgramState>()(
 
                 const habitStore = useHabitStore.getState();
                 for (const requirement of template.dailyRequirements) {
+                    const requirementTime = template.dailyRequirementTimes?.[requirement] ?? selectedTime;
                     habitStore.addHabit({
                         title: requirement,
-                        time: toTimeLabel(selectedTime),
+                        time: toTimeLabel(requirementTime),
                         type: 'checkbox',
                         category: 'personal',
                         fromProgramId: enrollmentId,
@@ -189,7 +235,7 @@ export const useProgramStore = create<ProgramState>()(
                 await get().enrollInProgram(type, '09:00');
                 const enrollment = get().enrollments.find((e) => e.programId === type);
                 if (!enrollment) return null;
-                const template = PROGRAM_TEMPLATES.find((p) => p.type === type);
+                const template = getAllTemplates(get().customPrograms).find((p) => p.type === type);
                 if (!template) return null;
                 return toProgram(template, enrollment);
             },
@@ -225,7 +271,7 @@ export const useProgramStore = create<ProgramState>()(
                     set({ selectedProgram: null, selectedProgramDays: [], selectedProgramMilestones: [] });
                     return;
                 }
-                const template = PROGRAM_TEMPLATES.find((p) => p.type === enrollment.programId);
+                const template = getAllTemplates(get().customPrograms).find((p) => p.type === enrollment.programId);
                 if (!template) {
                     set({ selectedProgram: null, selectedProgramDays: [], selectedProgramMilestones: [] });
                     return;
@@ -250,6 +296,7 @@ export const useProgramStore = create<ProgramState>()(
                 activePrograms: [],
                 completedPrograms: [],
                 availablePrograms: PROGRAM_TEMPLATES,
+                customPrograms: [],
                 selectedProgram: null,
                 selectedProgramDays: [],
                 selectedProgramMilestones: [],
@@ -265,6 +312,7 @@ export const useProgramStore = create<ProgramState>()(
                 activePrograms: state.activePrograms,
                 completedPrograms: state.completedPrograms,
                 availablePrograms: state.availablePrograms,
+                customPrograms: state.customPrograms,
                 selectedProgram: state.selectedProgram,
                 selectedProgramDays: state.selectedProgramDays,
                 selectedProgramMilestones: state.selectedProgramMilestones,
