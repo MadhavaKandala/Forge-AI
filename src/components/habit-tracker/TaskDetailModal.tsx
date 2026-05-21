@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { v4 as uuidv4 } from 'uuid';
 
 interface TaskDetailModalProps {
     task: Task | null;
@@ -63,7 +64,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, isOpen, 
     const addSubtask = () => {
         if (newSubtask.trim()) {
             const newNode = {
-                id: Math.random().toString(36).substr(2, 9),
+                id: uuidv4(),
                 title: newSubtask,
                 completed: false
             };
