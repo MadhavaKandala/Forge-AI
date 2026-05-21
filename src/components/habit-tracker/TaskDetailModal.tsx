@@ -63,7 +63,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, isOpen, 
     const addSubtask = () => {
         if (newSubtask.trim()) {
             const newNode = {
-                id: Math.random().toString(36).substr(2, 9),
+                id: crypto.randomUUID(),
                 title: newSubtask,
                 completed: false
             };
