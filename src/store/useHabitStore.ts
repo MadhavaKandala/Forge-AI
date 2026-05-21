@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Task, TaskCategory, TaskPriority, TaskStatus, EisenhowerQuadrant, CreateTaskDTO } from '@/types/task';
 import { MoodKey } from '@/lib/moodContent';
 import { getCurrentStoreUserId, getUserScopedStoreName } from './useAppStore';
+import { encryptData, decryptData } from '@/lib/encryption';
 
 export type HabitType = 'checkbox' | 'numeric' | 'timer';
 export type Category = 'coding' | 'devotional' | 'diet' | 'gym' | 'personal' | 'academics' | 'breaks';
@@ -587,24 +588,49 @@ export const useHabitStore = create<HabitState>()(
 
             resetData: () => {
                 const currentState = get();
-                localStorage.setItem('habit-tracker-emergency-backup', JSON.stringify({
+                const backupData = JSON.stringify({
                     user: currentState.user,
                     habits: currentState.habits,
                     schedule: currentState.schedule,
                     tasks: currentState.tasks,
                     version: 8,
                     timestamp: new Date().toISOString()
-                }));
+                });
 
-                console.log("Resetting Data - Emergency backup created");
-                get().clearAll();
+                try {
+                    const encryptedData = encryptData(backupData);
+                    localStorage.setItem('habit-tracker-emergency-backup', encryptedData);
+                    console.log("Resetting Data - Secure emergency backup created");
+                    get().clearAll();
+                } catch (e) {
+                    console.error("Failed to create secure backup", e);
+                    toast.error("Failed to create secure backup, aborting reset.");
+                    throw e; // Stop execution if backup fails to prevent data loss
+                }
             },
 
             restoreBackup: () => {
                 const backup = localStorage.getItem('habit-tracker-emergency-backup');
                 if (backup) {
+                    let data;
                     try {
-                        const data = JSON.parse(backup);
+                        // Attempt to decrypt first
+                        const decryptedData = decryptData(backup);
+                        if (!decryptedData) throw new Error("Decryption returned empty");
+                        data = JSON.parse(decryptedData);
+                    } catch (e) {
+                        // Fallback: Check if it's legacy unencrypted JSON
+                        try {
+                            data = JSON.parse(backup);
+                            console.log("Restored from legacy unencrypted backup");
+                        } catch (legacyError) {
+                            console.error("Failed to restore backup (both encrypted and legacy)", e);
+                            toast.error("Backup Data Corrupted or Decryption Failed");
+                            return;
+                        }
+                    }
+
+                    if (data) {
                         set({
                             user: data.user,
                             habits: data.habits,
@@ -613,8 +639,6 @@ export const useHabitStore = create<HabitState>()(
                         });
                         toast.success("Intel Restored from Backup");
                         localStorage.removeItem('habit-tracker-emergency-backup');
-                    } catch (e) {
-                        toast.error("Backup Data Corrupted");
                     }
                 } else {
                     toast.error("No Emergency Backup Found");
