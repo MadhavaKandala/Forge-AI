@@ -13,3 +13,16 @@ Object.defineProperty(window, "matchMedia", {
     dispatchEvent: () => {},
   }),
 });
+
+
+class IntersectionObserver {
+  observe = () => null;
+  unobserve = () => null;
+  disconnect = () => null;
+}
+Object.defineProperty(window, "IntersectionObserver", {
+  writable: true,
+  configurable: true,
+  value: IntersectionObserver,
+});
+window.HTMLElement.prototype.scrollIntoView = function() {};
