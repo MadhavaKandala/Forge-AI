@@ -274,30 +274,49 @@ export default function HomePage() {
                 onMoodTap={() => setIsMoodOpen(true)}
             />
 
-            <OpsWidget
-                items={dailyOps}
-                onComplete={handleOpComplete}
-                onOpenOps={() => navigate(dailyOps.length > 0 ? '/schedule' : '/programs')}
-            />
-
-            <CuratedRoutineRail />
-
-            <section className="mt-6 grid grid-cols-2 gap-3">
-                <div className="flex items-center justify-between rounded-xl border border-zinc-800 bg-[#1C1C1C] p-4">
-                    <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">HABITS</p>
-                        <p className="mt-2 text-xl font-black">{completedHabits}/{checkboxHabits.length}</p>
+            {habits.length === 0 ? (
+                <section className="mt-6">
+                    <div className="rounded-xl border border-zinc-800 bg-[#1C1C1C] p-6 text-center">
+                        <p className="text-xs font-black uppercase tracking-[0.22em] text-[#C8FF00] mb-2">WHAT TO DO FIRST</p>
+                        <h2 className="text-xl font-black uppercase leading-tight mb-3">You have no active habits yet.</h2>
+                        <p className="text-sm font-bold text-zinc-500 mb-6">Activate a program to auto-fill your day.</p>
+                        <button
+                            type="button"
+                            onClick={() => navigate('/programs')}
+                            className="w-full h-12 rounded-lg bg-[#C8FF00] text-black text-xs font-black uppercase tracking-[0.16em]"
+                        >
+                            → ACTIVATE PROGRAM
+                        </button>
                     </div>
-                    <ProgressRing value={habitProgress} />
-                </div>
-                <div className="flex items-center justify-between rounded-xl border border-zinc-800 bg-[#1C1C1C] p-4">
-                    <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">MISSIONS</p>
-                        <p className="mt-2 text-xl font-black">{completedMissions}/{tasks.length}</p>
-                    </div>
-                    <ProgressRing value={missionProgress} />
-                </div>
-            </section>
+                </section>
+            ) : (
+                <>
+                    <OpsWidget
+                        items={dailyOps}
+                        onComplete={handleOpComplete}
+                        onOpenOps={() => navigate(dailyOps.length > 0 ? '/schedule' : '/programs')}
+                    />
+
+                    <CuratedRoutineRail />
+
+                    <section className="mt-6 grid grid-cols-2 gap-3">
+                        <div className="flex items-center justify-between rounded-xl border border-zinc-800 bg-[#1C1C1C] p-4">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">HABITS</p>
+                                <p className="mt-2 text-xl font-black">{completedHabits}/{checkboxHabits.length}</p>
+                            </div>
+                            <ProgressRing value={habitProgress} />
+                        </div>
+                        <div className="flex items-center justify-between rounded-xl border border-zinc-800 bg-[#1C1C1C] p-4">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">MISSIONS</p>
+                                <p className="mt-2 text-xl font-black">{completedMissions}/{tasks.length}</p>
+                            </div>
+                            <ProgressRing value={missionProgress} />
+                        </div>
+                    </section>
+                </>
+            )}
 
             <section className="mt-6 flex gap-3 overflow-x-auto pb-1">
                 {activePrograms.length > 0 ? (
@@ -358,67 +377,69 @@ export default function HomePage() {
 
             <HabitMagicDeck />
 
-            <section className="mt-6">
-                <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-xs font-black uppercase tracking-[0.22em] text-zinc-500">DAILY OPS</h2>
-                    <span className="text-xs font-bold text-zinc-500">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                </div>
-                <div className="relative space-y-2">
-                    {dailyOps.map((item, index) => (
-                        <React.Fragment key={`${item.type}-${item.id}`}>
-                            {index === currentLineIndex && <div className="h-px w-full bg-[#C8FF00]" />}
-                            <motion.button
-                                type="button"
-                                onClick={() => handleOpComplete(item)}
-                                animate={{ backgroundColor: completedHabitAnimationId === item.id ? 'rgba(200,255,0,0.20)' : '#1C1C1C' }}
-                                transition={{ duration: 0.25, ease: 'easeOut' }}
-                                className={cn(
-                                    'relative flex w-full items-center gap-3 rounded-xl border border-zinc-800 p-3 text-left transition-opacity',
-                                    item.completed && 'opacity-50',
-                                )}
-                            >
-                                <AnimatePresence>
-                                    {completedHabitAnimationId === item.id && (
-                                        <motion.span
-                                            initial={{ opacity: 0, y: 4, scale: 0.92 }}
-                                            animate={{ opacity: 1, y: -18, scale: 1 }}
-                                            exit={{ opacity: 0, y: -28 }}
-                                            transition={{ duration: 0.65, ease: 'easeOut' }}
-                                            className="pointer-events-none absolute right-11 -top-1 text-xs font-black text-[#C8FF00]"
-                                        >
-                                            +10 XP
-                                        </motion.span>
+            {habits.length > 0 && (
+                <section className="mt-6">
+                    <div className="mb-4 flex items-center justify-between">
+                        <h2 className="text-xs font-black uppercase tracking-[0.22em] text-zinc-500">DAILY OPS</h2>
+                        <span className="text-xs font-bold text-zinc-500">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    </div>
+                    <div className="relative space-y-2">
+                        {dailyOps.map((item, index) => (
+                            <React.Fragment key={`${item.type}-${item.id}`}>
+                                {index === currentLineIndex && <div className="h-px w-full bg-[#C8FF00]" />}
+                                <motion.button
+                                    type="button"
+                                    onClick={() => handleOpComplete(item)}
+                                    animate={{ backgroundColor: completedHabitAnimationId === item.id ? 'rgba(200,255,0,0.20)' : '#1C1C1C' }}
+                                    transition={{ duration: 0.25, ease: 'easeOut' }}
+                                    className={cn(
+                                        'relative flex w-full items-center gap-3 rounded-xl border border-zinc-800 p-3 text-left transition-opacity',
+                                        item.completed && 'opacity-50',
                                     )}
-                                </AnimatePresence>
-                                <span className="w-16 shrink-0 text-xs font-bold text-zinc-500">{item.time}</span>
-                                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: categoryColor(item.category) }} />
-                                <span className={cn('min-w-0 flex-1 text-sm font-semibold text-white', item.completed && 'line-through text-zinc-500')}>
-                                    {item.title}
-                                </span>
-                                <span className={cn('grid h-6 w-6 shrink-0 place-items-center rounded-full border', item.completed ? 'border-[#C8FF00] bg-[#C8FF00] text-black' : 'border-white text-white')}>
-                                    {item.completed ? (
-                                        <motion.span
-                                            initial={{ scale: 0 }}
-                                            animate={{ scale: 1 }}
-                                            transition={{ type: 'spring', stiffness: 520, damping: 18 }}
-                                        >
-                                            <Check className="h-4 w-4" />
-                                        </motion.span>
-                                    ) : (
-                                        <Circle className="h-4 w-4" />
-                                    )}
-                                </span>
-                            </motion.button>
-                        </React.Fragment>
-                    ))}
-                    {currentLineIndex === -1 && dailyOps.length > 0 && <div className="h-px w-full bg-[#C8FF00]" />}
-                    {dailyOps.length === 0 && (
-                        <div className="rounded-xl border border-zinc-800 bg-[#1C1C1C] p-4 text-sm text-zinc-500">
-                            No daily ops loaded. Activate a program to deploy structure.
-                        </div>
-                    )}
-                </div>
-            </section>
+                                >
+                                    <AnimatePresence>
+                                        {completedHabitAnimationId === item.id && (
+                                            <motion.span
+                                                initial={{ opacity: 0, y: 4, scale: 0.92 }}
+                                                animate={{ opacity: 1, y: -18, scale: 1 }}
+                                                exit={{ opacity: 0, y: -28 }}
+                                                transition={{ duration: 0.65, ease: 'easeOut' }}
+                                                className="pointer-events-none absolute right-11 -top-1 text-xs font-black text-[#C8FF00]"
+                                            >
+                                                +10 XP
+                                            </motion.span>
+                                        )}
+                                    </AnimatePresence>
+                                    <span className="w-16 shrink-0 text-xs font-bold text-zinc-500">{item.time}</span>
+                                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: categoryColor(item.category) }} />
+                                    <span className={cn('min-w-0 flex-1 text-sm font-semibold text-white', item.completed && 'line-through text-zinc-500')}>
+                                        {item.title}
+                                    </span>
+                                    <span className={cn('grid h-6 w-6 shrink-0 place-items-center rounded-full border', item.completed ? 'border-[#C8FF00] bg-[#C8FF00] text-black' : 'border-white text-white')}>
+                                        {item.completed ? (
+                                            <motion.span
+                                                initial={{ scale: 0 }}
+                                                animate={{ scale: 1 }}
+                                                transition={{ type: 'spring', stiffness: 520, damping: 18 }}
+                                            >
+                                                <Check className="h-4 w-4" />
+                                            </motion.span>
+                                        ) : (
+                                            <Circle className="h-4 w-4" />
+                                        )}
+                                    </span>
+                                </motion.button>
+                            </React.Fragment>
+                        ))}
+                        {currentLineIndex === -1 && dailyOps.length > 0 && <div className="h-px w-full bg-[#C8FF00]" />}
+                        {dailyOps.length === 0 && (
+                            <div className="rounded-xl border border-zinc-800 bg-[#1C1C1C] p-4 text-sm text-zinc-500">
+                                No daily ops loaded. Activate a program to deploy structure.
+                            </div>
+                        )}
+                    </div>
+                </section>
+            )}
         </div>
     );
 }

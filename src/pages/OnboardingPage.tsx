@@ -62,19 +62,23 @@ export const OnboardingPage: React.FC = () => {
             for (const programId of selectedPrograms) {
                 await enrollInProgram(programId, selectedStudyTime);
             }
-            setOnboardingComplete();
             toast.success('Schedule deployed.');
-            navigate('/');
+            setStep(3); // Move to the "HERE IS HOW FORGE AI WORKS" screen
         } finally {
             setIsDeploying(false);
         }
+    };
+
+    const handleCompleteOnboarding = () => {
+        setOnboardingComplete();
+        navigate('/');
     };
 
     return (
         <div className="min-h-screen bg-[#0A0A0A] px-6 py-8 text-white">
             <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col">
                 <div className="mb-8 flex gap-2">
-                    {[0, 1, 2].map((item) => (
+                    {[0, 1, 2, 3].map((item) => (
                         <div
                             key={item}
                             className={cn('h-1 flex-1 rounded-full bg-[#1C1C1C]', item <= step && 'bg-[#C8FF00]')}
@@ -213,6 +217,46 @@ export const OnboardingPage: React.FC = () => {
                             style={ctaStyle}
                         >
                             {isDeploying ? 'DEPLOYING' : 'DEPLOY MY SCHEDULE'}
+                        </PillButton>
+                    </section>
+                )}
+
+                {step === 3 && (
+                    <section className="flex flex-1 flex-col">
+                        <div className="flex-1 flex flex-col justify-center">
+                            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#C8FF00] text-center">Operation Brief</p>
+                            <h1 className="mt-4 text-3xl font-black uppercase leading-tight text-center">Here is how Forge AI works</h1>
+
+                            <div className="mt-10 space-y-6">
+                                <div className="flex items-start gap-4">
+                                    <span className="text-2xl mt-1">🎯</span>
+                                    <div>
+                                        <p className="text-sm font-black uppercase">Activate a Program</p>
+                                        <p className="text-xs font-bold text-zinc-500 mt-1 leading-relaxed">your day gets scheduled automatically</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-4">
+                                    <span className="text-2xl mt-1">✅</span>
+                                    <div>
+                                        <p className="text-sm font-black uppercase">Complete Daily Habits</p>
+                                        <p className="text-xs font-bold text-zinc-500 mt-1 leading-relaxed">earn XP and build streaks</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-4">
+                                    <span className="text-2xl mt-1">⚡</span>
+                                    <div>
+                                        <p className="text-sm font-black uppercase">Deploy Missions</p>
+                                        <p className="text-xs font-bold text-zinc-500 mt-1 leading-relaxed">track your goals on the Kanban board</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <PillButton
+                            onClick={handleCompleteOnboarding}
+                            className="mt-8 h-13 w-full text-sm font-black uppercase shadow-[0_0_15px_rgba(200,255,0,0.5)]"
+                            style={ctaStyle}
+                        >
+                            GOT IT. LET'S GO.
                         </PillButton>
                     </section>
                 )}

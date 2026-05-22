@@ -120,11 +120,23 @@ const TasksPage = () => {
             )}
 
             <div className="flex-1 overflow-hidden">
-                <KanbanBoard
-                    tasks={filteredTasks}
-                    onTaskMove={handleTaskMove}
-                    onTaskClick={handleTaskClick}
-                />
+                {tasks.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center p-6 text-center">
+                        <h2 className="text-3xl font-black uppercase tracking-tight text-zinc-300 mb-4">NO MISSIONS DEPLOYED</h2>
+                        <p className="text-zinc-500 font-bold mb-8 max-w-sm">
+                            A mission is any goal you want to accomplish. Tap + to deploy your first one.
+                        </p>
+                        <div className="animate-bounce">
+                            <span className="text-[#dfff4f] text-4xl">↓</span>
+                        </div>
+                    </div>
+                ) : (
+                    <KanbanBoard
+                        tasks={filteredTasks}
+                        onTaskMove={handleTaskMove}
+                        onTaskClick={handleTaskClick}
+                    />
+                )}
             </div>
 
             <div className="fixed bottom-24 right-4 z-50">

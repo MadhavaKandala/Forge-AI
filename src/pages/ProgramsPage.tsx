@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BadgeCheck, Flame, Plus } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { BadgeCheck, Flame, Plus, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import CreateProgramModal from '@/components/CreateProgramModal';
@@ -36,6 +36,7 @@ const ProgramsPage: React.FC = () => {
     const [selectedProgram, setSelectedProgram] = useState<ProgramTemplate | null>(null);
     const [selectedTime, setSelectedTime] = useState('09:00');
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [isBannerDismissed, setIsBannerDismissed] = useState(false);
     const timeSlots = useMemo(buildTimeSlots, []);
 
     useEffect(() => {
@@ -61,6 +62,28 @@ const ProgramsPage: React.FC = () => {
     return (
         <div className="min-h-screen bg-[#0A0A0A] text-white px-4 pt-6 pb-28">
             <h1 className="text-xl font-black tracking-[0.16em] uppercase text-[#C8FF00]">Programs</h1>
+
+            <AnimatePresence>
+                {activePrograms.length === 0 && !isBannerDismissed && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="mt-6 relative rounded-xl border border-[#C8FF00]/30 bg-[#C8FF00]/10 p-4"
+                    >
+                        <button
+                            type="button"
+                            onClick={() => setIsBannerDismissed(true)}
+                            className="absolute top-2 right-2 text-[#C8FF00] hover:text-[#C8FF00]/80"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                        <p className="text-sm font-bold text-[#C8FF00] pr-6">
+                            Activating a program automatically adds daily habits to your schedule. Try Morning Protocol to start.
+                        </p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <section className="mt-6">
                 <h2 className="text-xs font-black tracking-[0.18em] uppercase text-zinc-400 mb-3">ACTIVE PROGRAMS</h2>
