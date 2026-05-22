@@ -1,119 +1,157 @@
-import React, { useEffect, useMemo, useState, useCallback, memo } from 'react';
-import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useHabitStore } from '@/store/useHabitStore';
 import { Task, TaskStatus } from '@/types/task';
 import { cn } from '@/lib/utils';
-import { Plus, Filter } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Plus, ChevronDown, ChevronRight, Check, ArrowRight } from 'lucide-react';
+import { AddTaskModal } from '@/components/habit-tracker/AddTaskModal';
 
 const MissionControlPage = () => {
   const tasks = useHabitStore((s) => s.tasks);
   const updateTask = useHabitStore((s) => s.updateTask);
   const addXP = useHabitStore((s) => s.addXP);
   const fetchTasks = useHabitStore((s) => s.fetchTasks);
+  const addTask = useHabitStore((s) => s.addTask);
+
   const [filter, setFilter] = useState<string | null>(null);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+  // Quick Add State
+  const [quickAddTitle, setQuickAddTitle] = useState('');
+
+  // Collapsible Sections State
+  const [isTodoOpen, setIsTodoOpen] = useState(true);
+  const [isInProgressOpen, setIsInProgressOpen] = useState(true);
+  const [isDoneOpen, setIsDoneOpen] = useState(false);
 
   useEffect(() => {
     void fetchTasks();
   }, [fetchTasks]);
-
-  const columns: { id: TaskStatus; label: string; color: string }[] = [
-    { id: 'backlog', label: 'BACKLOG', color: 'bg-slate-900/40' },
-    { id: 'this_week', label: 'THIS WEEK', color: 'bg-blue-900/40' },
-    { id: 'today', label: 'TODAY', color: 'bg-yellow-900/40' },
-    { id: 'in_progress', label: 'IN PROGRESS', color: 'bg-orange-900/40' },
-    { id: 'completed', label: 'DEPLOYED', color: 'bg-green-900/40' },
-  ];
 
   const filteredTasks = useMemo(() => {
     if (!filter) return tasks;
     return tasks.filter((t) => t.category === filter);
   }, [tasks, filter]);
 
-  const tasksByStatus = useMemo(
-    () =>
-      columns.reduce(
-        (acc, col) => {
-          acc[col.id] = filteredTasks.filter((t) => t.status === col.id);
-          return acc;
-        },
-        {} as Record<TaskStatus, Task[]>
-      ),
-    [filteredTasks]
-  );
+  // Group tasks
+  const todoTasks = useMemo(() => {
+    return filteredTasks
+      .filter((t) => ['today', 'this_week', 'backlog'].includes(t.status))
+      .sort((a, b) => {
+        const order = { today: 1, this_week: 2, backlog: 3 };
+        return (order[a.status as keyof typeof order] || 4) - (order[b.status as keyof typeof order] || 4);
+      });
+  }, [filteredTasks]);
 
-  const handleDragEnd = useCallback((result: DropResult) => {
-    const { source, destination, draggableId } = result;
+  const inProgressTasks = useMemo(() => {
+    return filteredTasks.filter((t) => t.status === 'in_progress');
+  }, [filteredTasks]);
 
-    if (!destination) return;
-    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+  const doneTasks = useMemo(() => {
+    return filteredTasks.filter((t) => ['completed', 'done'].includes(t.status));
+  }, [filteredTasks]);
 
-    const newStatus = destination.droppableId as TaskStatus;
-    const task = tasks.find((t) => t.id === draggableId);
+  const handleQuickAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickAddTitle.trim()) return;
 
-    if (task && newStatus !== task.status) {
-      updateTask(task.id, { status: newStatus });
+    await addTask({
+      title: quickAddTitle.trim(),
+      category: 'personal', // Default category
+      status: 'today',
+      quadrant: 'q2', // Provide defaults
+    });
+    setQuickAddTitle('');
+    toast.success('Task added');
+  };
 
-      if (newStatus === 'completed') {
-        const xpReward = task.priority === 'high' ? 50 : 25;
-        addXP(xpReward);
-        toast.success(`+${xpReward} XP`);
-      }
-    }
-  }, [tasks, updateTask, addXP]);
+  const handleMoveToProgress = (taskId: string) => {
+    updateTask(taskId, { status: 'in_progress' });
+  };
+
+  const handleMoveToDone = (task: Task) => {
+    updateTask(task.id, { status: 'completed' });
+    const xpReward = task.priority === 'high' ? 50 : 25;
+    addXP(xpReward);
+    toast.success(`+${xpReward} XP`);
+  };
 
   const categories = Array.from(new Set(tasks.map((t) => t.category))).sort();
 
-  // Memoized task card to prevent re-renders
-  const TaskCard = memo(({ task, index }: { task: Task; index: number }) => (
-    <Draggable key={task.id} draggableId={task.id} index={index}>
-      {(provided, snapshot) => (
-        <div
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          {...provided.dragHandleProps}
-          onClick={() => setSelectedTask(task)}
-          className={cn(
-            'rounded-lg border border-zinc-700 bg-zinc-900 p-3 cursor-grab active:cursor-grabbing transition-all',
-            snapshot.isDragging && 'shadow-lg ring-2 ring-[#C8FF00]',
-            task.status === 'completed' && 'opacity-60 line-through'
-          )}
-        >
-          <p className="text-sm font-semibold">{task.title}</p>
-          <div className="flex items-center gap-2 mt-2 text-xs">
-            <span
-              className={cn(
-                'px-2 py-1 rounded-full font-bold',
-                task.priority === 'high' && 'bg-red-500/20 text-red-400',
-                task.priority === 'medium' && 'bg-yellow-500/20 text-yellow-400',
-                task.priority === 'low' && 'bg-blue-500/20 text-blue-400'
-              )}
-            >
-              {task.priority}
-            </span>
-            <span className="text-zinc-500">{task.category}</span>
-          </div>
-          {task.estimatedMinutes && (
-            <p className="text-xs text-zinc-500 mt-2">~{task.estimatedMinutes}min</p>
-          )}
-        </div>
-      )}
-    </Draggable>
-  ));
-  TaskCard.displayName = 'TaskCard';
+  const TaskCard = ({ task, isDoneSection }: { task: Task; isDoneSection?: boolean }) => (
+    <div className={cn(
+      "flex items-center w-full h-[60px] rounded-lg border border-zinc-800 bg-[#141414] px-4 transition-all mb-2",
+      isDoneSection && "opacity-60"
+    )}>
+      {/* Priority Dot */}
+      <div className={cn(
+        "w-3 h-3 rounded-full mr-4 flex-shrink-0",
+        task.priority === 'high' && "bg-red-500",
+        task.priority === 'medium' && "bg-orange-500",
+        task.priority === 'low' && "bg-zinc-500"
+      )} />
+
+      {/* Title */}
+      <div className="flex-1 min-w-0 pr-4">
+        <p className={cn(
+          "text-sm font-semibold truncate text-white",
+          isDoneSection && "line-through text-zinc-400"
+        )}>
+          {task.title}
+        </p>
+      </div>
+
+      {/* Right Actions */}
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <span className="text-xs text-zinc-500 uppercase tracking-wider hidden sm:block">
+          {task.category}
+        </span>
+
+        {!isDoneSection && (
+          <button
+            onClick={() => task.status === 'in_progress' ? handleMoveToDone(task) : handleMoveToProgress(task.id)}
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 hover:bg-[#C8FF00] hover:text-black transition-colors"
+          >
+            {task.status === 'in_progress' ? (
+              <Check className="w-4 h-4" />
+            ) : (
+              <ArrowRight className="w-4 h-4" />
+            )}
+          </button>
+        )}
+      </div>
+    </div>
+  );
 
   return (
-    <div className="w-full h-screen bg-[#0A0A0A] text-white overflow-hidden flex flex-col">
+    <div className="w-full min-h-screen bg-[#0A0A0A] text-white pb-24 flex flex-col">
       {/* Header */}
       <div className="px-6 py-6 border-b border-zinc-800">
         <h1 className="text-3xl font-black">MISSION CONTROL</h1>
-        <p className="text-xs text-zinc-500 mt-1 uppercase tracking-[0.15em]">Kanban Deployment Board</p>
+        <p className="text-xs text-zinc-500 mt-1 uppercase tracking-[0.15em]">Task Deployment Log</p>
+      </div>
+
+      {/* Quick Add Bar */}
+      <div className="px-6 py-4 border-b border-zinc-800 bg-[#0A0A0A] sticky top-0 z-10">
+        <form onSubmit={handleQuickAdd} className="flex items-center gap-2">
+          <input
+            type="text"
+            value={quickAddTitle}
+            onChange={(e) => setQuickAddTitle(e.target.value)}
+            placeholder="Add a task..."
+            className="flex-1 bg-[#141414] border border-zinc-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#C8FF00]"
+          />
+          <button
+            type="submit"
+            disabled={!quickAddTitle.trim()}
+            className="flex items-center justify-center bg-[#C8FF00] text-black w-11 h-11 rounded-lg disabled:opacity-50 transition-opacity"
+          >
+            <Plus className="w-5 h-5 font-bold" />
+          </button>
+        </form>
       </div>
 
       {/* Filter Pills */}
-      <div className="px-6 py-4 border-b border-zinc-800 flex items-center gap-2 overflow-x-auto">
+      <div className="px-6 py-4 border-b border-zinc-800 flex items-center gap-2 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setFilter(null)}
           className={cn(
@@ -139,134 +177,91 @@ const MissionControlPage = () => {
         ))}
       </div>
 
-      {/* Kanban Board */}
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex-1 overflow-x-auto p-6 gap-4 flex">
-          {columns.map((col) => (
-            <Droppable key={col.id} droppableId={col.id}>
-              {(provided, snapshot) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className={cn(
-                    'flex-shrink-0 w-80 rounded-xl border border-zinc-800 bg-[#141414] flex flex-col',
-                    snapshot.isDraggingOver && 'ring-2 ring-[#C8FF00]'
-                  )}
-                >
-                  {/* Column Header */}
-                  <div className={cn('p-4 border-b border-zinc-800', col.color)}>
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-black text-xs uppercase tracking-wider">{col.label}</h3>
-                      <span className="text-sm font-bold text-[#C8FF00]">{tasksByStatus[col.id].length}</span>
-                    </div>
-                  </div>
+      {/* Main Content */}
+      <div className="flex-1 px-4 py-6 space-y-6">
+        {/* TODO Section */}
+        <div className="flex flex-col">
+          <button
+            onClick={() => setIsTodoOpen(!isTodoOpen)}
+            className="flex items-center justify-between py-2 mb-2"
+          >
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-black uppercase tracking-wider text-zinc-300">TODO</h2>
+              <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full">{todoTasks.length}</span>
+            </div>
+            {isTodoOpen ? <ChevronDown className="w-4 h-4 text-zinc-500" /> : <ChevronRight className="w-4 h-4 text-zinc-500" />}
+          </button>
 
-                  {/* Tasks */}
-                  <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                    {tasksByStatus[col.id].map((task, index) => (
-                      <Draggable key={task.id} draggableId={task.id} index={index}>
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            onClick={() => setSelectedTask(task)}
-                            className={cn(
-                              'rounded-lg border border-zinc-700 bg-zinc-900 p-3 cursor-grab active:cursor-grabbing transition-all',
-                              snapshot.isDragging && 'shadow-lg ring-2 ring-[#C8FF00]',
-                              task.status === 'completed' && 'opacity-60 line-through'
-                            )}
-                          >
-                            <p className="text-sm font-semibold">{task.title}</p>
-                            <div className="flex items-center gap-2 mt-2 text-xs">
-                              <span
-                                className={cn(
-                                  'px-2 py-1 rounded-full font-bold',
-                                  task.priority === 'high' && 'bg-red-500/20 text-red-400',
-                                  task.priority === 'medium' && 'bg-yellow-500/20 text-yellow-400',
-                                  task.priority === 'low' && 'bg-blue-500/20 text-blue-400'
-                                )}
-                              >
-                                {task.priority}
-                              </span>
-                              <span className="text-zinc-500">{task.category}</span>
-                            </div>
-                            {task.estimatedMinutes && (
-                              <p className="text-xs text-zinc-500 mt-2">~{task.estimatedMinutes}min</p>
-                            )}
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                </div>
+          {isTodoOpen && (
+            <div className="flex flex-col">
+              {todoTasks.length > 0 ? (
+                todoTasks.map(task => <TaskCard key={task.id} task={task} />)
+              ) : (
+                <p className="text-sm text-zinc-600 italic py-2">No pending tasks.</p>
               )}
-            </Droppable>
-          ))}
-        </div>
-      </DragDropContext>
-
-      {/* Task Detail Modal - simplified inline view */}
-      {selectedTask && (
-        <div className="fixed inset-0 bg-black/50 flex items-end z-50">
-          <div className="w-full bg-[#1C1C1C] rounded-t-2xl border-t border-zinc-800 p-6 max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-black">MISSION DETAILS</h2>
-              <button
-                onClick={() => setSelectedTask(null)}
-                className="text-zinc-400 hover:text-white"
-              >
-                ✕
-              </button>
             </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs uppercase text-zinc-500 font-bold">TITLE</label>
-                <p className="text-lg font-semibold mt-1">{selectedTask.title}</p>
-              </div>
-
-              <div>
-                <label className="text-xs uppercase text-zinc-500 font-bold">DESCRIPTION</label>
-                <p className="text-sm text-zinc-300 mt-1">{selectedTask.description || 'N/A'}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs uppercase text-zinc-500 font-bold">PRIORITY</label>
-                  <p className="text-sm mt-1 font-bold">{selectedTask.priority}</p>
-                </div>
-                <div>
-                  <label className="text-xs uppercase text-zinc-500 font-bold">STATUS</label>
-                  <p className="text-sm mt-1 font-bold">{selectedTask.status}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs uppercase text-zinc-500 font-bold">CATEGORY</label>
-                  <p className="text-sm mt-1 capitalize">{selectedTask.category}</p>
-                </div>
-                <div>
-                  <label className="text-xs uppercase text-zinc-500 font-bold">EST TIME</label>
-                  <p className="text-sm mt-1">{selectedTask.estimatedMinutes || '?'}min</p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  toast.success('Mission synced');
-                  setSelectedTask(null);
-                }}
-                className="w-full bg-[#C8FF00] text-black font-black text-xs uppercase tracking-widest py-3 rounded-lg mt-6"
-              >
-                SYNC MISSION DATA
-              </button>
-            </div>
-          </div>
+          )}
         </div>
-      )}
+
+        {/* IN PROGRESS Section */}
+        <div className="flex flex-col">
+          <button
+            onClick={() => setIsInProgressOpen(!isInProgressOpen)}
+            className="flex items-center justify-between py-2 mb-2"
+          >
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-black uppercase tracking-wider text-[#C8FF00]">IN PROGRESS</h2>
+              <span className="text-xs bg-[#C8FF00]/20 text-[#C8FF00] px-2 py-0.5 rounded-full">{inProgressTasks.length}</span>
+            </div>
+            {isInProgressOpen ? <ChevronDown className="w-4 h-4 text-zinc-500" /> : <ChevronRight className="w-4 h-4 text-zinc-500" />}
+          </button>
+
+          {isInProgressOpen && (
+            <div className="flex flex-col">
+              {inProgressTasks.length > 0 ? (
+                inProgressTasks.map(task => <TaskCard key={task.id} task={task} />)
+              ) : (
+                <p className="text-sm text-zinc-600 italic py-2">Nothing in progress.</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* DONE Section */}
+        <div className="flex flex-col">
+          <button
+            onClick={() => setIsDoneOpen(!isDoneOpen)}
+            className="flex items-center justify-between py-2 mb-2"
+          >
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-black uppercase tracking-wider text-zinc-500">DONE</h2>
+              <span className="text-xs bg-zinc-800/50 text-zinc-500 px-2 py-0.5 rounded-full">{doneTasks.length}</span>
+            </div>
+            {isDoneOpen ? <ChevronDown className="w-4 h-4 text-zinc-500" /> : <ChevronRight className="w-4 h-4 text-zinc-500" />}
+          </button>
+
+          {isDoneOpen && (
+            <div className="flex flex-col">
+              {doneTasks.length > 0 ? (
+                doneTasks.map(task => <TaskCard key={task.id} task={task} isDoneSection />)
+              ) : (
+                <p className="text-sm text-zinc-600 italic py-2">No completed tasks yet.</p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* FAB for detailed task creation */}
+      <div className="fixed bottom-20 right-6 z-50">
+        <AddTaskModal
+          trigger={
+            <button className="flex items-center justify-center w-14 h-14 bg-[#C8FF00] text-black rounded-full shadow-lg shadow-[#C8FF00]/20 hover:scale-105 active:scale-95 transition-all">
+              <Plus className="w-6 h-6 font-black" />
+            </button>
+          }
+        />
+      </div>
     </div>
   );
 };
