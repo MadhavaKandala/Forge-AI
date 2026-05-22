@@ -12,13 +12,9 @@ interface HeatmapCalendarProps {
 }
 
 export function HeatmapCalendar({ challenge, weeks = 12, className }: HeatmapCalendarProps) {
-  const checkedInDates = useMemo(() => {
-    return new Set(challenge.checkIns.map(ci => ci.date));
+  const checkInsMap = useMemo(() => {
+    return new Map(challenge.checkIns.map(ci => [ci.date, ci]));
   }, [challenge.checkIns]);
-
-  const getCheckIn = (dateStr: string) => {
-    return challenge.checkIns.find(ci => ci.date === dateStr);
-  };
 
   const calendarData = useMemo(() => {
     const today = new Date();
@@ -34,11 +30,11 @@ export function HeatmapCalendar({ challenge, weeks = 12, className }: HeatmapCal
 
   const getIntensity = (date: Date): 0 | 1 | 2 | 3 | 4 => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    if (!checkedInDates.has(dateStr)) return 0;
+    const checkIn = checkInsMap.get(dateStr);
     
-    const checkIn = getCheckIn(dateStr);
-    if (checkIn?.notes && checkIn?.link) return 4;
-    if (checkIn?.notes || checkIn?.link) return 3;
+    if (!checkIn) return 0;
+    if (checkIn.notes && checkIn.link) return 4;
+    if (checkIn.notes || checkIn.link) return 3;
     return 2;
   };
 
@@ -74,7 +70,7 @@ export function HeatmapCalendar({ challenge, weeks = 12, className }: HeatmapCal
                 if (!date) return null;
                 
                 const intensity = getIntensity(date);
-                const checkIn = getCheckIn(format(date, 'yyyy-MM-dd'));
+                const checkIn = checkInsMap.get(format(date, 'yyyy-MM-dd'));
                 const isToday = isSameDay(date, new Date());
                 const isFuture = date > new Date();
 
