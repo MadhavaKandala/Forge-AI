@@ -30,33 +30,10 @@ interface ChallengeDetailEvidenceProps {
   challenge: Challenge;
 }
 
-// Mock evidence data for demonstration
-const MOCK_EVIDENCE = [
-  {
-    date: '2026-01-20',
-    type: 'photo',
-    url: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400',
-    caption: 'Working on the new React component',
-  },
-  {
-    date: '2026-01-18',
-    type: 'link',
-    url: 'https://github.com/user/repo/commit/abc123',
-    caption: 'Merged PR for authentication feature',
-  },
-  {
-    date: '2026-01-15',
-    type: 'photo',
-    url: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400',
-    caption: 'Late night coding session',
-  },
-];
-
 export function ChallengeDetailEvidence({ challenge }: ChallengeDetailEvidenceProps) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [filterType, setFilterType] = useState<'all' | 'photos' | 'links' | 'notes'>('all');
 
-  // Combine real check-ins with mock evidence for demo
   const allEvidence = useMemo(() => {
     const evidence: Array<{
       id: string;
@@ -85,17 +62,24 @@ export function ChallengeDetailEvidence({ challenge }: ChallengeDetailEvidencePr
           url: checkIn.link,
         });
       }
-    });
-
-    // Add mock evidence for demo
-    MOCK_EVIDENCE.forEach((item, index) => {
-      evidence.push({
-        id: `mock-${index}`,
-        date: item.date,
-        type: item.type as 'photo' | 'link',
-        url: item.url,
-        caption: item.caption,
-      });
+      if (checkIn.photos && checkIn.photos.length > 0) {
+        checkIn.photos.forEach((photoUrl, index) => {
+          evidence.push({
+            id: `${checkIn.id}-photo-${index}`,
+            date: checkIn.date,
+            type: 'photo',
+            url: photoUrl,
+          });
+        });
+      }
+      if (checkIn.voiceNote) {
+        evidence.push({
+          id: checkIn.id + '-voice',
+          date: checkIn.date,
+          type: 'voice',
+          url: checkIn.voiceNote,
+        });
+      }
     });
 
     // Sort by date descending
