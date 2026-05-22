@@ -40,11 +40,11 @@ export const useScheduleStore = create<ScheduleState>()(
             fetchSchedules: async (date) => {
                 set({ isLoading: true });
                 try {
-            // TODO: Get real user ID
+            const userId = getCurrentStoreUserId();
             const dateStr = date.toISOString().split('T')[0];
 
             // 1. Fetch from Schedules table
-            const explicitSchedules = (await scheduleRepository.findByDate('default-user', dateStr)) || [];
+            const explicitSchedules = (await scheduleRepository.findByDate(userId, dateStr)) || [];
 
             // 2. Fetch Tasks scheduled for this date
             const scheduledTasks = (await taskRepository.findByScheduledDate(dateStr)) || [];
