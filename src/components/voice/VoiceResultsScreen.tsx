@@ -65,9 +65,7 @@ export const VoiceResultsScreen: React.FC<{ onBack: () => void }> = ({ onBack })
 
     const handleConfirmAll = async () => {
         const unapproved = pendingItems.filter(i => !i.is_approved);
-        for (const item of unapproved) {
-            await handleConfirmItem(item.id);
-        }
+        await Promise.all(unapproved.map(item => handleConfirmItem(item.id)));
         toast.success('All items processed!');
     };
 
