@@ -219,7 +219,7 @@ export const useHabitStore = create<HabitState>()(
             },
 
             addWorkoutLog: (log) => set((state: HabitState) => ({
-                workoutLogs: [...state.workoutLogs, { ...log, id: Math.random().toString(36).substr(2, 9) }]
+                workoutLogs: [...state.workoutLogs, { ...log, id: crypto.randomUUID() }]
             }) as Partial<HabitState>),
 
             updateWorkoutLog: (logId, updates) => set((state: HabitState) => ({
@@ -227,7 +227,7 @@ export const useHabitStore = create<HabitState>()(
             }) as Partial<HabitState>),
 
             addDietLog: (log) => set((state: HabitState) => ({
-                dietLogs: [...state.dietLogs, { ...log, id: Math.random().toString(36).substr(2, 9) }]
+                dietLogs: [...state.dietLogs, { ...log, id: crypto.randomUUID() }]
             }) as Partial<HabitState>),
 
             addWater: (amount: number) => set((state: HabitState) => ({
@@ -265,7 +265,7 @@ export const useHabitStore = create<HabitState>()(
             addJournalEntry: (entry) => {
                 const nextEntry: JournalEntry = {
                     ...entry,
-                    id: Math.random().toString(36).substr(2, 9),
+                    id: crypto.randomUUID(),
                     createdAt: new Date().toISOString(),
                 };
                 set((state) => ({
@@ -308,7 +308,7 @@ export const useHabitStore = create<HabitState>()(
             },
 
             addScheduleItem: (item) => set((state) => ({
-                schedule: [...state.schedule, { ...item, id: Math.random().toString(36).substr(2, 9) }]
+                schedule: [...state.schedule, { ...item, id: crypto.randomUUID() }]
             })),
 
             removeScheduleItem: (id) => set((state) => ({
@@ -328,7 +328,7 @@ export const useHabitStore = create<HabitState>()(
                     ...state.habits,
                     {
                         ...newHabit,
-                        id: Math.random().toString(36).substr(2, 9),
+                        id: crypto.randomUUID(),
                         streak: 0,
                         completedDates: [],
                         history: {},
@@ -387,7 +387,7 @@ export const useHabitStore = create<HabitState>()(
                     // Fallback: add with local ID if DB fails
                     const localTask: Task = {
                         ...taskData,
-                        id: `local-${Math.random().toString(36).substr(2, 9)}`,
+                        id: `local-${crypto.randomUUID()}`,
                         size,
                         priority,
                         status,
