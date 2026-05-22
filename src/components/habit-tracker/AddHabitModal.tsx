@@ -96,6 +96,7 @@ export const AddHabitModal = ({ open, onOpenChange }: AddHabitModalProps) => {
                             {HABIT_TYPES.map((t) => (
                                 <button
                                     key={t.value}
+                                    aria-label={`Select ${t.label} habit type`}
                                     onClick={() => setHabitType(t.value)}
                                     className={`p-3 rounded-xl text-center border transition-all ${habitType === t.value
                                         ? 'bg-[#dfff4f]/10 border-[#dfff4f] text-white'
@@ -200,6 +201,7 @@ export const AddHabitModal = ({ open, onOpenChange }: AddHabitModalProps) => {
 
                     {/* Submit */}
                     <button
+                        aria-label="Submit habit"
                         onClick={handleSubmit}
                         disabled={!name.trim() || isSubmitting}
                         className="w-full py-3 bg-[#dfff4f] text-black font-bold rounded-xl text-sm hover:bg-[#d4f53f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
