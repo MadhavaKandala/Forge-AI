@@ -175,8 +175,9 @@ export function useChallenges() {
     if (!challenge.checkIns.length) return 0;
 
     // Unique dates sorted descending
+    // ⚡ Bolt: Fast string comparison for YYYY-MM-DD instead of Date instantiation
     const sortedDates = [...new Set(challenge.checkIns.map(ci => ci.date))]
-      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+      .sort((a, b) => a < b ? 1 : a > b ? -1 : 0);
 
     if (sortedDates.length === 0) return 0;
 
@@ -214,8 +215,9 @@ export function useChallenges() {
   const getBestStreak = useCallback((challenge: Challenge) => {
     if (challenge.checkIns.length === 0) return 0;
 
+    // ⚡ Bolt: Fast string comparison for YYYY-MM-DD instead of Date instantiation
     const sortedDates = [...new Set(challenge.checkIns.map(ci => ci.date))]
-      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+      .sort((a, b) => a > b ? 1 : a < b ? -1 : 0);
 
     if (sortedDates.length === 0) return 0;
 
