@@ -68,7 +68,7 @@ export function ChallengeDetailCommunity({ challenge }: ChallengeDetailCommunity
     if (challenge.checkIns.length === 0) return 0;
     const sortedDates = [...challenge.checkIns]
       .map(ci => ci.date)
-      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+      .sort((a, b) => b.localeCompare(a));
     
     const today = new Date().toISOString().split('T')[0];
     const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
