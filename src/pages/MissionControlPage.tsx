@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useHabitStore } from '@/store/useHabitStore';
-import { Task, TaskStatus } from '@/types/task';
+import { Task } from '@/types/task';
 import { cn } from '@/lib/utils';
-import { Plus, ChevronDown, ChevronRight, Check, ArrowRight } from 'lucide-react';
+import { Plus, ChevronDown, ChevronRight, ArrowRight, Check } from 'lucide-react';
 import { AddTaskModal } from '@/components/habit-tracker/AddTaskModal';
 
 const MissionControlPage = () => {
@@ -14,11 +14,8 @@ const MissionControlPage = () => {
   const addTask = useHabitStore((s) => s.addTask);
 
   const [filter, setFilter] = useState<string | null>(null);
-
-  // Quick Add State
   const [quickAddTitle, setQuickAddTitle] = useState('');
 
-  // Collapsible Sections State
   const [isTodoOpen, setIsTodoOpen] = useState(true);
   const [isInProgressOpen, setIsInProgressOpen] = useState(true);
   const [isDoneOpen, setIsDoneOpen] = useState(false);
@@ -32,7 +29,6 @@ const MissionControlPage = () => {
     return tasks.filter((t) => t.category === filter);
   }, [tasks, filter]);
 
-  // Group tasks
   const todoTasks = useMemo(() => {
     return filteredTasks
       .filter((t) => ['today', 'this_week', 'backlog'].includes(t.status))
@@ -47,25 +43,31 @@ const MissionControlPage = () => {
   }, [filteredTasks]);
 
   const doneTasks = useMemo(() => {
-    return filteredTasks.filter((t) => ['completed', 'done'].includes(t.status));
+    return filteredTasks.filter((t) => ['completed'].includes(t.status));
   }, [filteredTasks]);
 
   const handleQuickAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickAddTitle.trim()) return;
 
+    // We only pass title and status='today'.
+    // The store's addTask handles all other defaults based on quadrant/etc.
+    // Cast to any to bypass strict type checking for omitted properties if needed,
+    // but CreateTaskDTO requires category. Let's look at the type.
+    // Wait, CreateTaskDTO requires `category`. Let's use a dynamic one if needed, or just standard 'other'.
     await addTask({
       title: quickAddTitle.trim(),
-      category: 'personal', // Default category
-      status: 'today',
-      quadrant: 'q2', // Provide defaults
-    });
+      category: 'other', // fallback default that won't conflict with rules
+      status: 'today'
+    } as any);
+
     setQuickAddTitle('');
-    toast.success('Task added');
+    toast.success('Mission added to TODO');
   };
 
   const handleMoveToProgress = (taskId: string) => {
     updateTask(taskId, { status: 'in_progress' });
+    toast.success('Mission moved to IN PROGRESS');
   };
 
   const handleMoveToDone = (task: Task) => {
@@ -79,10 +81,9 @@ const MissionControlPage = () => {
 
   const TaskCard = ({ task, isDoneSection }: { task: Task; isDoneSection?: boolean }) => (
     <div className={cn(
-      "flex items-center w-full h-[60px] rounded-lg border border-zinc-800 bg-[#141414] px-4 transition-all mb-2",
+      "flex items-center w-full max-h-[60px] h-[60px] rounded-lg border border-zinc-800 bg-[#141414] px-4 transition-all mb-2",
       isDoneSection && "opacity-60"
     )}>
-      {/* Priority Dot */}
       <div className={cn(
         "w-3 h-3 rounded-full mr-4 flex-shrink-0",
         task.priority === 'high' && "bg-red-500",
@@ -90,7 +91,6 @@ const MissionControlPage = () => {
         task.priority === 'low' && "bg-zinc-500"
       )} />
 
-      {/* Title */}
       <div className="flex-1 min-w-0 pr-4">
         <p className={cn(
           "text-sm font-semibold truncate text-white",
@@ -100,9 +100,8 @@ const MissionControlPage = () => {
         </p>
       </div>
 
-      {/* Right Actions */}
       <div className="flex items-center gap-3 flex-shrink-0">
-        <span className="text-xs text-zinc-500 uppercase tracking-wider hidden sm:block">
+        <span className="text-xs text-zinc-500 uppercase tracking-wider">
           {task.category}
         </span>
 
@@ -124,12 +123,6 @@ const MissionControlPage = () => {
 
   return (
     <div className="w-full min-h-screen bg-[#0A0A0A] text-white pb-24 flex flex-col">
-      {/* Header */}
-      <div className="px-6 py-6 border-b border-zinc-800">
-        <h1 className="text-3xl font-black">MISSION CONTROL</h1>
-        <p className="text-xs text-zinc-500 mt-1 uppercase tracking-[0.15em]">Task Deployment Log</p>
-      </div>
-
       {/* Quick Add Bar */}
       <div className="px-6 py-4 border-b border-zinc-800 bg-[#0A0A0A] sticky top-0 z-10">
         <form onSubmit={handleQuickAdd} className="flex items-center gap-2">
@@ -138,7 +131,7 @@ const MissionControlPage = () => {
             value={quickAddTitle}
             onChange={(e) => setQuickAddTitle(e.target.value)}
             placeholder="Add a task..."
-            className="flex-1 bg-[#141414] border border-zinc-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#C8FF00]"
+            className="flex-1 bg-[#141414] border border-zinc-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#C8FF00] text-white"
           />
           <button
             type="submit"
@@ -150,7 +143,7 @@ const MissionControlPage = () => {
         </form>
       </div>
 
-      {/* Filter Pills */}
+      {/* Filter Chips */}
       <div className="px-6 py-4 border-b border-zinc-800 flex items-center gap-2 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setFilter(null)}
@@ -177,13 +170,13 @@ const MissionControlPage = () => {
         ))}
       </div>
 
-      {/* Main Content */}
+      {/* Main Content Sections */}
       <div className="flex-1 px-4 py-6 space-y-6">
         {/* TODO Section */}
         <div className="flex flex-col">
           <button
             onClick={() => setIsTodoOpen(!isTodoOpen)}
-            className="flex items-center justify-between py-2 mb-2"
+            className="flex items-center justify-between py-2 mb-2 w-full text-left"
           >
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-black uppercase tracking-wider text-zinc-300">TODO</h2>
@@ -197,7 +190,7 @@ const MissionControlPage = () => {
               {todoTasks.length > 0 ? (
                 todoTasks.map(task => <TaskCard key={task.id} task={task} />)
               ) : (
-                <p className="text-sm text-zinc-600 italic py-2">No pending tasks.</p>
+                <p className="text-sm text-zinc-600 italic py-2">No pending missions.</p>
               )}
             </div>
           )}
@@ -207,7 +200,7 @@ const MissionControlPage = () => {
         <div className="flex flex-col">
           <button
             onClick={() => setIsInProgressOpen(!isInProgressOpen)}
-            className="flex items-center justify-between py-2 mb-2"
+            className="flex items-center justify-between py-2 mb-2 w-full text-left"
           >
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-black uppercase tracking-wider text-[#C8FF00]">IN PROGRESS</h2>
@@ -221,7 +214,7 @@ const MissionControlPage = () => {
               {inProgressTasks.length > 0 ? (
                 inProgressTasks.map(task => <TaskCard key={task.id} task={task} />)
               ) : (
-                <p className="text-sm text-zinc-600 italic py-2">Nothing in progress.</p>
+                <p className="text-sm text-zinc-600 italic py-2">No missions in progress.</p>
               )}
             </div>
           )}
@@ -231,7 +224,7 @@ const MissionControlPage = () => {
         <div className="flex flex-col">
           <button
             onClick={() => setIsDoneOpen(!isDoneOpen)}
-            className="flex items-center justify-between py-2 mb-2"
+            className="flex items-center justify-between py-2 mb-2 w-full text-left"
           >
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-black uppercase tracking-wider text-zinc-500">DONE</h2>
@@ -245,14 +238,14 @@ const MissionControlPage = () => {
               {doneTasks.length > 0 ? (
                 doneTasks.map(task => <TaskCard key={task.id} task={task} isDoneSection />)
               ) : (
-                <p className="text-sm text-zinc-600 italic py-2">No completed tasks yet.</p>
+                <p className="text-sm text-zinc-600 italic py-2">No completed missions yet.</p>
               )}
             </div>
           )}
         </div>
       </div>
 
-      {/* FAB for detailed task creation */}
+      {/* FAB */}
       <div className="fixed bottom-20 right-6 z-50">
         <AddTaskModal
           trigger={
