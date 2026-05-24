@@ -84,6 +84,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
                     size="icon"
                     className="h-12 w-12 rounded-full border-2"
                     onClick={onToggle}
+                    aria-label={isActive ? "Pause timer" : "Start timer"}
                 >
                     {isActive ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-1" />}
                 </Button>
@@ -94,6 +95,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
                         size="icon"
                         className="h-10 w-10 rounded-full"
                         onClick={onReset}
+                        aria-label="Reset timer"
                     >
                         <Square className="h-4 w-4 fill-current" />
                     </Button>
@@ -105,6 +107,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
                         size="icon"
                         className="h-10 w-10 rounded-full"
                         onClick={onSkip}
+                        aria-label="Skip to next"
                     >
                         <SkipForward className="h-5 w-5" />
                     </Button>
