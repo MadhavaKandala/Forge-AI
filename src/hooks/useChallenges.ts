@@ -176,7 +176,7 @@ export function useChallenges() {
 
     // Unique dates sorted descending
     const sortedDates = [...new Set(challenge.checkIns.map(ci => ci.date))]
-      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+      .sort((a, b) => b.localeCompare(a));
 
     if (sortedDates.length === 0) return 0;
 
@@ -215,7 +215,7 @@ export function useChallenges() {
     if (challenge.checkIns.length === 0) return 0;
 
     const sortedDates = [...new Set(challenge.checkIns.map(ci => ci.date))]
-      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+      .sort((a, b) => a.localeCompare(b));
 
     if (sortedDates.length === 0) return 0;
 
