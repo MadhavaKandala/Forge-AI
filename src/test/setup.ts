@@ -1,12 +1,18 @@
-
-import { vi } from "vitest";
 import "@testing-library/jest-dom";
 
-const IntersectionObserverMock = vi.fn(() => ({
-  disconnect: vi.fn(),
-  observe: vi.fn(),
-  takeRecords: vi.fn(),
-  unobserve: vi.fn(),
-}));
-
-vi.stubGlobal("IntersectionObserver", IntersectionObserverMock);
+Object.defineProperty(window, "matchMedia", {
+  writable: true,
+  value: (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => {},
+  }),
+});
+process.env.VITE_SUPABASE_URL = "http://localhost:54321"; process.env.VITE_SUPABASE_ANON_KEY = "anon_key";
+global.IntersectionObserver = class IntersectionObserver { constructor() {} observe() {} unobserve() {} disconnect() {} };
+global.ResizeObserver = class ResizeObserver { constructor() {} observe() {} unobserve() {} disconnect() {} };

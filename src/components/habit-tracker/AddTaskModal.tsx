@@ -69,7 +69,7 @@ export const AddTaskModal = ({ isOpen: controlledIsOpen, onClose, onTaskAdded, t
 
     const addSubtask = () => {
         if (newSubtask.trim()) {
-            setSubtasks([...subtasks, { id: Math.random().toString(36).substr(2, 9), title: newSubtask, completed: false }]);
+            setSubtasks([...subtasks, { id: crypto.randomUUID(), title: newSubtask, completed: false }]);
             setNewSubtask('');
         }
     };

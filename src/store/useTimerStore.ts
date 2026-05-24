@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { PomodoroSession } from '../types/schema';
 import { timerRepository } from '../repositories/timer.repository';
 import { v4 as uuidv4 } from 'uuid';
+import { getCurrentStoreUserId } from './useAppStore';
 
 export type SessionType = 'work' | 'short_break' | 'long_break';
 
@@ -84,7 +85,7 @@ export const useTimerStore = create<TimerState>()(
                     const newId = uuidv4();
                     const session: PomodoroSession = {
                         id: newId,
-                        user_id: 'default-user', // TODO: use actual user
+                        user_id: getCurrentStoreUserId(),
                         category: 'general',
                         session_type: mode,
                         duration_minutes: settings[mode] / 60,

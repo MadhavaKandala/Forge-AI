@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Task, TaskCategory, TaskPriority, TaskStatus, EisenhowerQuadrant, CreateTaskDTO } from '@/types/task';
 import { MoodKey } from '@/lib/moodContent';
 import { getCurrentStoreUserId, getUserScopedStoreName } from './useAppStore';
+import { encryptData, decryptData } from '@/lib/encryption';
 
 export type HabitType = 'checkbox' | 'numeric' | 'timer';
 export type Category = 'coding' | 'devotional' | 'diet' | 'gym' | 'personal' | 'academics' | 'breaks';
@@ -219,7 +220,7 @@ export const useHabitStore = create<HabitState>()(
             },
 
             addWorkoutLog: (log) => set((state: HabitState) => ({
-                workoutLogs: [...state.workoutLogs, { ...log, id: Math.random().toString(36).substr(2, 9) }]
+                workoutLogs: [...state.workoutLogs, { ...log, id: crypto.randomUUID() }]
             }) as Partial<HabitState>),
 
             updateWorkoutLog: (logId, updates) => set((state: HabitState) => ({
@@ -227,7 +228,7 @@ export const useHabitStore = create<HabitState>()(
             }) as Partial<HabitState>),
 
             addDietLog: (log) => set((state: HabitState) => ({
-                dietLogs: [...state.dietLogs, { ...log, id: Math.random().toString(36).substr(2, 9) }]
+                dietLogs: [...state.dietLogs, { ...log, id: crypto.randomUUID() }]
             }) as Partial<HabitState>),
 
             addWater: (amount: number) => set((state: HabitState) => ({
@@ -265,7 +266,7 @@ export const useHabitStore = create<HabitState>()(
             addJournalEntry: (entry) => {
                 const nextEntry: JournalEntry = {
                     ...entry,
-                    id: Math.random().toString(36).substr(2, 9),
+                    id: crypto.randomUUID(),
                     createdAt: new Date().toISOString(),
                 };
                 set((state) => ({
@@ -308,7 +309,7 @@ export const useHabitStore = create<HabitState>()(
             },
 
             addScheduleItem: (item) => set((state) => ({
-                schedule: [...state.schedule, { ...item, id: Math.random().toString(36).substr(2, 9) }]
+                schedule: [...state.schedule, { ...item, id: crypto.randomUUID() }]
             })),
 
             removeScheduleItem: (id) => set((state) => ({
@@ -328,7 +329,7 @@ export const useHabitStore = create<HabitState>()(
                     ...state.habits,
                     {
                         ...newHabit,
-                        id: Math.random().toString(36).substr(2, 9),
+                        id: crypto.randomUUID(),
                         streak: 0,
                         completedDates: [],
                         history: {},
@@ -387,7 +388,7 @@ export const useHabitStore = create<HabitState>()(
                     // Fallback: add with local ID if DB fails
                     const localTask: Task = {
                         ...taskData,
-                        id: `local-${Math.random().toString(36).substr(2, 9)}`,
+                        id: `local-${crypto.randomUUID()}`,
                         size,
                         priority,
                         status,
@@ -459,15 +460,19 @@ export const useHabitStore = create<HabitState>()(
                         // DB is empty - we need to populate it
                         if (get().tasks.length > 0) {
                             console.log("Syncing existing store tasks to DB...");
-                            for (const task of get().tasks) {
-                                await taskService.createTask(task).catch(e => console.error("Sync error:", e));
-                            }
+                            await Promise.all(
+                                get().tasks.map(task =>
+                                    taskService.createTask(task).catch(e => console.error("Sync error:", e))
+                                )
+                            );
                         } else {
                             console.log("Seeding INITIAL_TASKS to DB...");
                             set({ tasks: INITIAL_TASKS });
-                            for (const task of INITIAL_TASKS) {
-                                await taskService.createTask(task).catch(e => console.error("Seed error:", e));
-                            }
+                            await Promise.all(
+                                INITIAL_TASKS.map(task =>
+                                    taskService.createTask(task).catch(e => console.error("Seed error:", e))
+                                )
+                            );
                         }
                     }
 
@@ -587,24 +592,49 @@ export const useHabitStore = create<HabitState>()(
 
             resetData: () => {
                 const currentState = get();
-                localStorage.setItem('habit-tracker-emergency-backup', JSON.stringify({
+                const backupData = JSON.stringify({
                     user: currentState.user,
                     habits: currentState.habits,
                     schedule: currentState.schedule,
                     tasks: currentState.tasks,
                     version: 8,
                     timestamp: new Date().toISOString()
-                }));
+                });
 
-                console.log("Resetting Data - Emergency backup created");
-                get().clearAll();
+                try {
+                    const encryptedData = encryptData(backupData);
+                    localStorage.setItem('habit-tracker-emergency-backup', encryptedData);
+                    console.log("Resetting Data - Secure emergency backup created");
+                    get().clearAll();
+                } catch (e) {
+                    console.error("Failed to create secure backup", e);
+                    toast.error("Failed to create secure backup, aborting reset.");
+                    throw e; // Stop execution if backup fails to prevent data loss
+                }
             },
 
             restoreBackup: () => {
                 const backup = localStorage.getItem('habit-tracker-emergency-backup');
                 if (backup) {
+                    let data;
                     try {
-                        const data = JSON.parse(backup);
+                        // Attempt to decrypt first
+                        const decryptedData = decryptData(backup);
+                        if (!decryptedData) throw new Error("Decryption returned empty");
+                        data = JSON.parse(decryptedData);
+                    } catch (e) {
+                        // Fallback: Check if it's legacy unencrypted JSON
+                        try {
+                            data = JSON.parse(backup);
+                            console.log("Restored from legacy unencrypted backup");
+                        } catch (legacyError) {
+                            console.error("Failed to restore backup (both encrypted and legacy)", e);
+                            toast.error("Backup Data Corrupted or Decryption Failed");
+                            return;
+                        }
+                    }
+
+                    if (data) {
                         set({
                             user: data.user,
                             habits: data.habits,
@@ -613,8 +643,6 @@ export const useHabitStore = create<HabitState>()(
                         });
                         toast.success("Intel Restored from Backup");
                         localStorage.removeItem('habit-tracker-emergency-backup');
-                    } catch (e) {
-                        toast.error("Backup Data Corrupted");
                     }
                 } else {
                     toast.error("No Emergency Backup Found");
