@@ -16,7 +16,7 @@ export const ProfileSection = () => {
         <div className="w-full px-6 mb-24 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex items-center justify-between mb-8">
                 <h2 className="text-xl font-bold text-white">Profile</h2>
-                <button className="p-2 rounded-full bg-[#18181B] border border-[#27272A] text-zinc-400 hover:text-white transition-colors">
+                <button aria-label="Settings" className="p-2 rounded-full bg-[#18181B] border border-[#27272A] text-zinc-400 hover:text-white transition-colors">
                     <Settings className="w-5 h-5" />
                 </button>
             </div>

@@ -84,7 +84,7 @@ export const AnalyticsSection = () => {
                 </div>
             </div>
 
-            <button className="absolute bottom-2 right-2 p-1 rounded-full bg-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button aria-label="Add specific data point" className="absolute bottom-2 right-2 p-1 rounded-full bg-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Plus className="w-3 h-3 text-zinc-400" />
             </button>
         </div>

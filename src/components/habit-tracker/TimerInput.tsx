@@ -68,6 +68,7 @@ export const TimerInput = ({ value, onChange }: TimerInputProps) => {
             </div>
 
             <button
+                aria-label={isRunning ? "Pause timer" : "Start timer"}
                 onClick={toggleTimer}
                 className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors ${isRunning ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' : 'bg-[#dfff4f]/10 text-[#dfff4f] hover:bg-[#dfff4f]/20'
                     }`}

@@ -51,7 +51,7 @@ export function MindfulnessHub({ onNavigateBack }: MindfulnessHubProps) {
         const entries = userProfile.mindfulness?.journalEntries || [];
         // Sort by date ascending
         return [...entries]
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .sort((a, b) => a.date.localeCompare(b.date))
             .slice(-14) // Last 14 entries
             .map(entry => ({
                 date: format(new Date(entry.date), 'MMM dd'),

@@ -39,10 +39,11 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onUpdate }) => {
         )}>
             <button
                 onClick={handleComplete}
+                aria-label={task.status === 'completed' ? "Task completed" : "Mark task as complete"}
                 className={cn(
-                    "h-6 w-6 rounded-full border-2 flex items-center justify-center transition-colors",
+                    "h-6 w-6 rounded-full border-2 flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                     task.status === 'completed'
-                        ? "bg-green-500 border-green-500"
+                        ? "bg-green-500 border-green-500 cursor-default"
                         : "border-muted-foreground hover:border-primary"
                 )}
             >
@@ -79,7 +80,8 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onUpdate }) => {
             <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                aria-label="Delete task"
+                className="h-8 w-8 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
                 onClick={handleDelete}
             >
                 <Trash2 className="h-4 w-4" />
