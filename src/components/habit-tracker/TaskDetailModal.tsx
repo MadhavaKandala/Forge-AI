@@ -116,7 +116,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, isOpen, 
                             className="text-2xl font-black italic uppercase tracking-tighter bg-transparent border-none focus:outline-none w-full text-white"
                         />
                     </div>
-                    <button onClick={onClose} className="p-2 rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 transition-colors">
+                    <button aria-label="Close modal" onClick={onClose} className="p-2 rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 transition-colors">
                         <X className="w-4 h-4 text-zinc-400" />
                     </button>
                 </div>
@@ -251,6 +251,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, isOpen, 
                 {/* Footer Actions */}
                 <div className="p-6 bg-zinc-900/50 border-t border-zinc-900 flex gap-3">
                     <button
+                        aria-label="Delete task"
                         onClick={handleDelete}
                         className="p-4 rounded-2xl border border-red-500/20 text-red-500 hover:bg-red-500/10 transition-colors"
                     >
