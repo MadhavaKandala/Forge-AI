@@ -176,5 +176,34 @@ export const getDailyMotivationCard = (date: Date, streak: number): MotivationCa
     return DAILY_CARDS[getDayOfYear(date) % DAILY_CARDS.length];
 };
 
+const GOAL_MOTIVATION_CARDS: Record<string, MotivationCard> = {
+    FITNESS: {
+        type: 'challenge',
+        title: 'FITNESS PROTOCOL',
+        content: 'Train first. Negotiate later. Your body needs proof before your mood catches up.',
+    },
+    CODING: {
+        type: 'coding_fact',
+        title: 'CODING DEPLOY',
+        content: 'One clean rep today: solve, explain, log the mistake. Placement confidence is built in reps.',
+    },
+    WORK: {
+        type: 'reminder',
+        title: 'WORK OPS',
+        content: 'Pick the highest-leverage task, clear the first blocker, and send the update before the day drifts.',
+    },
+};
+
+export const getGoalMotivationCard = (
+    date: Date,
+    streak: number,
+    userGoals: string[],
+): MotivationCard => {
+    const priorityGoal = ['FITNESS', 'CODING', 'WORK'].find((goal) => userGoals.includes(goal));
+    if (priorityGoal) return GOAL_MOTIVATION_CARDS[priorityGoal];
+
+    return getDailyMotivationCard(date, streak);
+};
+
 export const resolveMotivationContent = (card: MotivationCard, streak: number): string =>
     typeof card.content === 'function' ? card.content(streak) : card.content;

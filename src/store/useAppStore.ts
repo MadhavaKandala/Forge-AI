@@ -157,6 +157,9 @@ interface AppState {
     supabaseProfile: unknown | null;
     authError: string | null;
     onboardingComplete: boolean;
+    userGoals: string[];
+    userSubcategories: string[];
+    wakeTime: string;
     dailyBriefShown: string | null;
 
     login: (user: AppUser) => void;
@@ -165,6 +168,11 @@ interface AppState {
     signOut: () => Promise<void>;
     checkSession: () => Promise<boolean>;
     setOnboardingComplete: () => void;
+    completeOnboarding: (settings: {
+        userGoals: string[];
+        userSubcategories: string[];
+        wakeTime: string;
+    }) => void;
     setDailyBriefShown: (date: string) => void;
     syncHabitsToSupabase: () => Promise<boolean>;
     syncMissionsToSupabase: () => Promise<boolean>;
@@ -298,6 +306,9 @@ export const useAppStore = create<AppState>()(
             supabaseProfile: null,
             authError: null,
             onboardingComplete: false,
+            userGoals: [],
+            userSubcategories: [],
+            wakeTime: '06:00',
             dailyBriefShown: null,
 
             login: (user: AppUser) => {
@@ -361,10 +372,13 @@ export const useAppStore = create<AppState>()(
                         user: profile,
                         supabaseUserId: data.user.id,
                         supabaseProfile,
-                    authError: null,
-                    onboardingComplete,
-                    dailyBriefShown: null,
-                });
+                        authError: null,
+                        onboardingComplete,
+                        userGoals: useAppStore.getState().userGoals,
+                        userSubcategories: useAppStore.getState().userSubcategories,
+                        wakeTime: useAppStore.getState().wakeTime || '06:00',
+                        dailyBriefShown: null,
+                    });
                     await syncHabitProfile(profile);
                     toast.success(`Welcome, ${profile.name}`);
                     return true;
@@ -422,6 +436,9 @@ export const useAppStore = create<AppState>()(
                     supabaseProfile: null,
                     authError: null,
                     onboardingComplete: false,
+                    userGoals: [],
+                    userSubcategories: [],
+                    wakeTime: '06:00',
                     dailyBriefShown: null,
                 });
                 toast.success('Signed out.');
@@ -447,9 +464,12 @@ export const useAppStore = create<AppState>()(
                         user: profile,
                         supabaseUserId: sessionUser.id,
                         supabaseProfile,
-                    authError: null,
-                    onboardingComplete: hasAppStore ? persistedOnboardingComplete : existingUserData,
-                });
+                        authError: null,
+                        onboardingComplete: hasAppStore ? persistedOnboardingComplete : existingUserData,
+                        userGoals: useAppStore.getState().userGoals,
+                        userSubcategories: useAppStore.getState().userSubcategories,
+                        wakeTime: useAppStore.getState().wakeTime || '06:00',
+                    });
                     await syncHabitProfile(profile);
                     return true;
                 }
@@ -460,12 +480,21 @@ export const useAppStore = create<AppState>()(
                     supabaseUserId: null,
                     supabaseProfile: null,
                     onboardingComplete: false,
+                    userGoals: [],
+                    userSubcategories: [],
+                    wakeTime: '06:00',
                     dailyBriefShown: null,
                 });
                 return false;
             },
 
             setOnboardingComplete: () => set({ onboardingComplete: true }),
+            completeOnboarding: ({ userGoals, userSubcategories, wakeTime }) => set({
+                userGoals,
+                userSubcategories,
+                wakeTime,
+                onboardingComplete: true,
+            }),
             setDailyBriefShown: (date: string) => set({ dailyBriefShown: date }),
 
             syncHabitsToSupabase: async () => {
@@ -633,6 +662,9 @@ export const useAppStore = create<AppState>()(
                 supabaseUserId: state.supabaseUserId,
                 supabaseProfile: state.supabaseProfile,
                 onboardingComplete: state.onboardingComplete,
+                userGoals: state.userGoals,
+                userSubcategories: state.userSubcategories,
+                wakeTime: state.wakeTime,
                 dailyBriefShown: state.dailyBriefShown,
             }),
         },

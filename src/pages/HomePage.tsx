@@ -15,7 +15,7 @@ import { useHabitStore } from '@/store/useHabitStore';
 import { useAppStore } from '@/store/useAppStore';
 import { useProgramStore } from '@/store/useProgramStore';
 import { MOOD_CONTENT, MoodKey } from '@/lib/moodContent';
-import { getDailyMotivationCard } from '@/lib/motivationCards';
+import { getGoalMotivationCard } from '@/lib/motivationCards';
 import { getProgressStats } from '@/lib/progress';
 import { cn } from '@/lib/utils';
 import { Task } from '@/types/task';
@@ -91,6 +91,7 @@ export default function HomePage() {
         })),
     );
     const appUser = useAppStore((s) => s.user);
+    const userGoals = useAppStore((s) => s.userGoals);
     const { activePrograms, fetchAll } = useProgramStore(
         useShallow((s) => ({ activePrograms: s.activePrograms, fetchAll: s.fetchAll })),
     );
@@ -120,7 +121,7 @@ export default function HomePage() {
 
     const activeStreak = useMemo(() => habits.reduce((max, habit) => Math.max(max, habit.streak), 0), [habits]);
     const progressStats = useMemo(() => getProgressStats(habits, tasks), [habits, tasks]);
-    const motivationCard = useMemo(() => getDailyMotivationCard(new Date(), activeStreak), [activeStreak]);
+    const motivationCard = useMemo(() => getGoalMotivationCard(new Date(), activeStreak, userGoals), [activeStreak, userGoals]);
     const isMotivationDismissed = dismissedMotivationDate === today;
 
     const dailyOps = useMemo<DailyOp[]>(() => {
