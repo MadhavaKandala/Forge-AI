@@ -100,6 +100,7 @@ interface HabitState {
     addTask: (taskData: CreateTaskDTO) => Promise<void>;
     toggleTask: (taskId: string) => void;
     updateTask: (taskId: string, updates: Partial<Task>) => void;
+    updateTaskStage: (taskId: string, stage: TaskStatus) => void;
     deleteTask: (taskId: string) => void;
     fetchTasks: () => Promise<void>;
 
@@ -434,6 +435,16 @@ export const useHabitStore = create<HabitState>()(
                     tasks: state.tasks.map(t => t.id === taskId ? { ...t, ...updates } : t)
                 };
             }),
+
+            updateTaskStage: (taskId, stage) => {
+                const updates: Partial<Task> = {
+                    status: stage,
+                    completed: stage === 'completed',
+                    updatedAt: new Date().toISOString(),
+                    ...(stage === 'completed' ? { completedAt: new Date().toISOString() } : {}),
+                };
+                get().updateTask(taskId, updates);
+            },
 
             deleteTask: (taskId) => set((state) => {
                 import('@/services/taskService').then(({ taskService }) => {

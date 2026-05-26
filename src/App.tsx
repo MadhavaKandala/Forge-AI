@@ -23,7 +23,7 @@ import ProgramsPage from '@/pages/ProgramsPage';
 import PomodoroPage from '@/pages/PomodoroPage';
 import SchedulePage from '@/pages/SchedulePage';
 import StatsPage from '@/pages/StatsPage';
-import TasksPage from '@/pages/TasksPage';
+import MissionControlPage from '@/pages/MissionControlPage';
 import VoicePage from '@/pages/VoicePage';
 import WhatNextPage from '@/pages/WhatNextPage';
 import { useHabitStore } from '@/store/useHabitStore';
@@ -199,8 +199,8 @@ const App = () => {
                             <Route path="/programs" element={<ProtectedRoute><ProgramsPage /></ProtectedRoute>} />
                             <Route path="/programs/:id" element={<ProtectedRoute><ProgramDetailPage /></ProtectedRoute>} />
                             <Route path="/what-next" element={<ProtectedRoute><WhatNextPage /></ProtectedRoute>} />
-                            <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
-                            <Route path="/missions/new" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
+                            <Route path="/tasks" element={<ProtectedRoute><MissionControlPage /></ProtectedRoute>} />
+                            <Route path="/missions/new" element={<ProtectedRoute><MissionControlPage /></ProtectedRoute>} />
                             <Route path="/voice" element={<ProtectedRoute><VoicePage /></ProtectedRoute>} />
                             <Route path="/stats" element={<ProtectedRoute><StatsPage /></ProtectedRoute>} />
                             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
