@@ -1,4 +1,8 @@
-import { Bell, LogOut, Shield, User } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, LogOut, RotateCcw, Shield, User } from 'lucide-react';
+import { toast } from 'sonner';
+import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/store/useAppStore';
 import { useHabitStore } from '@/store/useHabitStore';
 import { useProgramStore } from '@/store/useProgramStore';
@@ -15,13 +19,28 @@ const LEVELS = [
 const getLevelInfo = (xp: number) => LEVELS.reduceRight((acc, level) => (xp >= level.threshold ? level : acc), LEVELS[0]);
 
 export default function ProfilePage() {
-    const habitUser = useHabitStore((s) => s.user);
-    const habits = useHabitStore((s) => s.habits);
+    const navigate = useNavigate();
+    const [isSigningOut, setIsSigningOut] = useState(false);
+    const { habitUser, habits } = useHabitStore(
+        useShallow((s) => ({
+            habitUser: s.user,
+            habits: s.habits,
+        })),
+    );
     const profileUser = useUserStore((s) => s.user);
-    const appUser = useAppStore((s) => s.user);
-    const activePrograms = useProgramStore((s) => s.activePrograms);
-    const enrollments = useProgramStore((s) => s.enrollments);
-    const signOut = useAppStore((s) => s.signOut);
+    const { appUser, signOut, resetOnboarding } = useAppStore(
+        useShallow((s) => ({
+            appUser: s.user,
+            signOut: s.signOut,
+            resetOnboarding: s.resetOnboarding,
+        })),
+    );
+    const { activePrograms, enrollments } = useProgramStore(
+        useShallow((s) => ({
+            activePrograms: s.activePrograms,
+            enrollments: s.enrollments,
+        })),
+    );
     const name = appUser?.name || profileUser?.display_name || profileUser?.name || habitUser?.name || 'Operator';
     const xp = habitUser?.xp ?? appUser?.totalXP ?? profileUser?.total_xp ?? 0;
     const levelInfo = getLevelInfo(xp);
@@ -29,10 +48,35 @@ export default function ProfilePage() {
     const levelStart = levelInfo.threshold;
     const levelTarget = nextLevel?.threshold ?? levelStart + 5000;
     const levelProgress = Math.min(100, Math.round(((xp - levelStart) / Math.max(levelTarget - levelStart, 1)) * 100));
-    const totalHabitsCompleted = habits.reduce((total, habit) => total + habit.completedDates.length, 0);
-    const currentStreak = habits.reduce((max, habit) => Math.max(max, habit.streak), 0);
+    const totalHabitsCompleted = useMemo(
+        () => habits.reduce((total, habit) => total + habit.completedDates.length, 0),
+        [habits],
+    );
+    const currentStreak = useMemo(
+        () => habits.reduce((max, habit) => Math.max(max, habit.streak), 0),
+        [habits],
+    );
     const longestStreak = currentStreak;
     const activeProgramCount = activePrograms.length || enrollments.length;
+
+    const handleRerunOnboarding = useCallback(() => {
+        resetOnboarding();
+        toast.success('Onboarding reset.');
+        navigate('/onboarding', { replace: true });
+    }, [navigate, resetOnboarding]);
+
+    const handleSignOut = useCallback(async () => {
+        if (isSigningOut) return;
+        setIsSigningOut(true);
+        try {
+            await signOut();
+            navigate('/', { replace: true });
+        } catch {
+            toast.error('Sign out failed. Try again.');
+        } finally {
+            setIsSigningOut(false);
+        }
+    }, [isSigningOut, navigate, signOut]);
 
     return (
         <div className="min-h-screen bg-[#0A0A0A] px-6 pb-28 pt-8 text-white">
@@ -103,13 +147,27 @@ export default function ProfilePage() {
                 </div>
             </section>
 
+            <section className="mt-6 rounded-xl border border-zinc-800 bg-[#1C1C1C] p-4">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Setup</p>
+                <p className="mt-2 text-sm font-semibold text-zinc-500">Change goals, focus lanes, and wake time.</p>
+                <button
+                    type="button"
+                    onClick={handleRerunOnboarding}
+                    className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-[#C8FF00]/40 bg-[#141414] text-xs font-black uppercase tracking-[0.16em] text-[#C8FF00]"
+                >
+                    <RotateCcw className="h-4 w-4" />
+                    RERUN ONBOARDING
+                </button>
+            </section>
+
             <button
                 type="button"
-                onClick={() => { void signOut(); }}
-                className="mt-8 flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-[#FF4444]/40 bg-[#141414] text-xs font-black uppercase tracking-[0.16em] text-[#FF4444]"
+                onClick={() => { void handleSignOut(); }}
+                disabled={isSigningOut}
+                className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-[#FF4444]/60 bg-[#141414] text-xs font-black uppercase tracking-[0.16em] text-[#FF4444] disabled:opacity-60"
             >
                 <LogOut className="h-4 w-4" />
-                LOG OUT
+                {isSigningOut ? 'SIGNING OUT' : 'LOG OUT'}
             </button>
         </div>
     );

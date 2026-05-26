@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useProgramStore } from '@/store/useProgramStore';
 import { cn } from '@/lib/utils';
+import { type ProgramTemplate } from '@/services/programService';
 
 interface CreateProgramModalProps {
     open: boolean;
@@ -18,7 +19,10 @@ interface RequirementDraft {
     time: string;
 }
 
-const ICON_OPTIONS = ['💪', '🧠', '📚', '🎯', '⚡', '🔥'];
+type CustomCategory = Extract<ProgramTemplate['category'], 'fitness' | 'coding' | 'work' | 'wellness'>;
+
+const ICON_OPTIONS = ['💪', '🧠', '📚', '🎯', '⚡', '🔥', '🏃', '✨'];
+const CATEGORY_OPTIONS: CustomCategory[] = ['fitness', 'coding', 'work', 'wellness'];
 
 const buildTimeSlots = (): string[] => {
     const slots: string[] = [];
@@ -27,6 +31,13 @@ const buildTimeSlots = (): string[] => {
         if (hour !== 23) slots.push(`${String(hour).padStart(2, '0')}:30`);
     }
     return slots;
+};
+
+const to12h = (time24: string): string => {
+    const [hRaw, min] = time24.split(':').map(Number);
+    const suffix = hRaw >= 12 ? 'PM' : 'AM';
+    const h12 = hRaw % 12 === 0 ? 12 : hRaw % 12;
+    return `${h12}:${String(min).padStart(2, '0')} ${suffix}`;
 };
 
 const createRequirement = (): RequirementDraft => ({
@@ -42,6 +53,7 @@ export default function CreateProgramModal({ open, onOpenChange }: CreateProgram
     const [days, setDays] = useState(30);
     const [isOngoing, setIsOngoing] = useState(false);
     const [icon, setIcon] = useState(ICON_OPTIONS[0]);
+    const [category, setCategory] = useState<CustomCategory>('wellness');
     const [requirements, setRequirements] = useState<RequirementDraft[]>([createRequirement()]);
     const timeSlots = useMemo(buildTimeSlots, []);
 
@@ -51,6 +63,7 @@ export default function CreateProgramModal({ open, onOpenChange }: CreateProgram
         setDays(30);
         setIsOngoing(false);
         setIcon(ICON_OPTIONS[0]);
+        setCategory('wellness');
         setRequirements([createRequirement()]);
     };
 
@@ -80,6 +93,7 @@ export default function CreateProgramModal({ open, onOpenChange }: CreateProgram
             description,
             days,
             icon,
+            category,
             dailyRequirements: validRequirements.map((requirement) => requirement.title),
             dailyRequirementTimes,
             isOngoing,
@@ -91,81 +105,138 @@ export default function CreateProgramModal({ open, onOpenChange }: CreateProgram
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-3xl border-zinc-800 bg-[#141414]">
+            <SheetContent
+                side="bottom"
+                className="max-h-[92vh] overflow-y-auto rounded-t-3xl border-zinc-800 bg-[#141414] px-5 pb-7 pt-6 data-[state=open]:duration-300"
+            >
                 <div className="space-y-5">
-                    <SheetHeader>
-                        <SheetTitle className="text-white font-black uppercase tracking-[0.14em]">CREATE PROGRAM</SheetTitle>
-                        <SheetDescription className="text-zinc-500">Build a custom protocol. Deploy it when ready.</SheetDescription>
+                    <SheetHeader className="pr-8 text-left">
+                        <SheetTitle className="text-xl font-black uppercase tracking-[0.14em] text-white">NEW PROGRAM</SheetTitle>
+                        <SheetDescription className="text-xs font-semibold text-zinc-500">
+                            Build a custom protocol. Deploy it when ready.
+                        </SheetDescription>
                     </SheetHeader>
 
                     <div className="space-y-3">
-                        <Input
-                            value={name}
-                            onChange={(event) => setName(event.target.value)}
-                            placeholder="Program Name"
-                            className="border-zinc-800 bg-[#1C1C1C] text-white placeholder:text-zinc-600"
-                        />
-                        <Input
-                            value={description}
-                            onChange={(event) => setDescription(event.target.value)}
-                            placeholder="Description"
-                            className="border-zinc-800 bg-[#1C1C1C] text-white placeholder:text-zinc-600"
-                        />
+                        <label className="block">
+                            <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Program Name</span>
+                            <Input
+                                value={name}
+                                onChange={(event) => setName(event.target.value)}
+                                placeholder="Program Name"
+                                className="h-12 rounded-xl border-zinc-800 bg-[#1C1C1C] text-sm font-semibold text-white placeholder:text-zinc-600 focus-visible:ring-[#C8FF00]/40"
+                            />
+                        </label>
+                        <label className="block">
+                            <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Description</span>
+                            <textarea
+                                value={description}
+                                onChange={(event) => setDescription(event.target.value)}
+                                placeholder="Describe the mission brief"
+                                rows={2}
+                                className="w-full resize-none rounded-xl border border-zinc-800 bg-[#1C1C1C] px-3 py-3 text-sm font-semibold leading-5 text-white outline-none placeholder:text-zinc-600 focus:border-[#C8FF00]/70"
+                            />
+                        </label>
                     </div>
 
-                    <div className="rounded-2xl border border-zinc-800 bg-[#1C1C1C] p-3">
-                        <div className="mb-3 flex items-center justify-between">
-                            <p className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Duration</p>
-                            <button
-                                type="button"
-                                onClick={() => setIsOngoing((value) => !value)}
-                                className={cn(
-                                    'rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em]',
-                                    isOngoing ? 'border-[#C8FF00] bg-[#C8FF00] text-black' : 'border-zinc-700 text-zinc-400',
-                                )}
-                            >
-                                ONGOING
-                            </button>
-                        </div>
-                        <Input
-                            type="number"
-                            min={1}
-                            value={days}
-                            disabled={isOngoing}
-                            onChange={(event) => setDays(Math.max(1, Number(event.target.value) || 1))}
-                            className="border-zinc-800 bg-zinc-950 text-white disabled:opacity-40"
-                        />
-                    </div>
-
-                    <div>
-                        <p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Icon</p>
-                        <div className="grid grid-cols-6 gap-2">
+                    <section>
+                        <p className="mb-3 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Icon</p>
+                        <div className="grid grid-cols-8 gap-2">
                             {ICON_OPTIONS.map((option) => (
                                 <button
                                     key={option}
                                     type="button"
-                                    onClick={() => setIcon(option)}
+                                    onClick={() => {
+                                        setIcon(option);
+                                        toast.info(`${option} icon selected.`);
+                                    }}
                                     className={cn(
-                                        'grid h-11 place-items-center rounded-xl border bg-[#1C1C1C] text-xl',
-                                        icon === option ? 'border-[#C8FF00] shadow-[0_0_18px_rgba(200,255,0,0.18)]' : 'border-zinc-800',
+                                        'grid h-10 place-items-center rounded-xl border bg-[#1C1C1C] text-lg transition-colors',
+                                        icon === option
+                                            ? 'border-[#C8FF00] shadow-[0_0_18px_rgba(200,255,0,0.18)]'
+                                            : 'border-zinc-800 text-zinc-400',
+                                    )}
+                                    aria-label={`Select ${option} icon`}
+                                >
+                                    {option}
+                                </button>
+                            ))}
+                        </div>
+                    </section>
+
+                    <section className="rounded-2xl border border-zinc-800 bg-[#1C1C1C] p-3">
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Duration</p>
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                            {[
+                                { value: false, label: 'FIXED DURATION' },
+                                { value: true, label: 'ONGOING' },
+                            ].map((option) => (
+                                <button
+                                    key={option.label}
+                                    type="button"
+                                    onClick={() => {
+                                        setIsOngoing(option.value);
+                                        toast.info(`${option.label} selected.`);
+                                    }}
+                                    className={cn(
+                                        'h-10 rounded-xl border px-3 text-[10px] font-black uppercase tracking-[0.12em]',
+                                        isOngoing === option.value
+                                            ? 'border-[#C8FF00] bg-[#C8FF00] text-black'
+                                            : 'border-zinc-700 bg-[#141414] text-zinc-500',
+                                    )}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
+                        {!isOngoing && (
+                            <Input
+                                type="number"
+                                min={1}
+                                value={days}
+                                onChange={(event) => setDays(Math.max(1, Number(event.target.value) || 1))}
+                                className="mt-3 h-11 rounded-xl border-zinc-800 bg-zinc-950 text-sm font-black text-white focus-visible:ring-[#C8FF00]/40"
+                            />
+                        )}
+                    </section>
+
+                    <section>
+                        <p className="mb-3 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Category</p>
+                        <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+                            {CATEGORY_OPTIONS.map((option) => (
+                                <button
+                                    key={option}
+                                    type="button"
+                                    onClick={() => {
+                                        setCategory(option);
+                                        toast.info(`${option.toUpperCase()} category selected.`);
+                                    }}
+                                    className={cn(
+                                        'h-10 shrink-0 rounded-full border px-4 text-[10px] font-black uppercase tracking-[0.14em]',
+                                        category === option
+                                            ? 'border-[#C8FF00] bg-[#C8FF00] text-black'
+                                            : 'border-zinc-800 bg-[#1C1C1C] text-zinc-500',
                                     )}
                                 >
                                     {option}
                                 </button>
                             ))}
                         </div>
-                    </div>
+                    </section>
 
-                    <div>
-                        <div className="mb-3 flex items-center justify-between">
-                            <p className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Daily Requirements</p>
+                    <section>
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Daily Requirements</p>
                             <button
                                 type="button"
-                                onClick={() => setRequirements((items) => [...items, createRequirement()])}
-                                className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.12em] text-[#C8FF00]"
+                                onClick={() => {
+                                    setRequirements((items) => [...items, createRequirement()]);
+                                    toast.info('Requirement row added.');
+                                }}
+                                className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.12em] text-zinc-400"
                             >
-                                <Plus className="h-3.5 w-3.5" />
                                 ADD REQUIREMENT
+                                <Plus className="h-3.5 w-3.5" />
                             </button>
                         </div>
                         <div className="space-y-3">
@@ -176,15 +247,26 @@ export default function CreateProgramModal({ open, onOpenChange }: CreateProgram
                                             value={requirement.title}
                                             onChange={(event) => {
                                                 const nextTitle = event.target.value;
-                                                setRequirements((items) => items.map((item) => item.id === requirement.id ? { ...item, title: nextTitle } : item));
+                                                setRequirements((items) => items.map((item) => (
+                                                    item.id === requirement.id ? { ...item, title: nextTitle } : item
+                                                )));
                                             }}
                                             placeholder="Requirement title"
-                                            className="border-zinc-800 bg-zinc-950 text-white placeholder:text-zinc-600"
+                                            className="h-11 rounded-xl border-zinc-800 bg-zinc-950 text-sm font-semibold text-white placeholder:text-zinc-600 focus-visible:ring-[#C8FF00]/40"
                                         />
                                         <button
                                             type="button"
-                                            onClick={() => setRequirements((items) => items.length === 1 ? items : items.filter((item) => item.id !== requirement.id))}
-                                            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-zinc-800 text-[#FF4444]"
+                                            onClick={() => {
+                                                setRequirements((items) => {
+                                                    if (items.length === 1) {
+                                                        toast.error('At least one requirement required.');
+                                                        return items;
+                                                    }
+                                                    toast.info('Requirement removed.');
+                                                    return items.filter((item) => item.id !== requirement.id);
+                                                });
+                                            }}
+                                            className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-zinc-800 text-[#FF4444]"
                                             aria-label="Remove requirement"
                                         >
                                             <X className="h-4 w-4" />
@@ -194,23 +276,26 @@ export default function CreateProgramModal({ open, onOpenChange }: CreateProgram
                                         value={requirement.time}
                                         onChange={(event) => {
                                             const nextTime = event.target.value;
-                                            setRequirements((items) => items.map((item) => item.id === requirement.id ? { ...item, time: nextTime } : item));
+                                            setRequirements((items) => items.map((item) => (
+                                                item.id === requirement.id ? { ...item, time: nextTime } : item
+                                            )));
+                                            toast.info(`${to12h(nextTime)} selected.`);
                                         }}
-                                        className="mt-3 h-10 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 text-xs font-black uppercase tracking-[0.12em] text-[#C8FF00]"
+                                        className="mt-3 h-10 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 text-xs font-black uppercase tracking-[0.12em] text-[#C8FF00] outline-none focus:border-[#C8FF00]/70"
                                     >
                                         {timeSlots.map((slot) => (
-                                            <option key={slot} value={slot}>{slot}</option>
+                                            <option key={slot} value={slot}>{to12h(slot)}</option>
                                         ))}
                                     </select>
                                 </div>
                             ))}
                         </div>
-                    </div>
+                    </section>
 
                     <Button
                         type="button"
                         onClick={handleSubmit}
-                        className="h-12 w-full bg-[#C8FF00] text-black hover:bg-[#b8ef00] font-black uppercase tracking-[0.16em]"
+                        className="h-12 w-full rounded-xl bg-[#C8FF00] text-[11px] font-black uppercase tracking-[0.16em] text-black hover:bg-[#b8ef00]"
                     >
                         CREATE PROGRAM
                     </Button>

@@ -13,7 +13,7 @@ export interface ProgramTemplate {
     days: number;
     icon: string;
     difficulty: 'beginner' | 'intermediate' | 'advanced' | 'extreme';
-    category: 'fitness' | 'mental' | 'learning' | 'health' | 'productivity';
+    category: 'fitness' | 'coding' | 'work' | 'wellness' | 'custom' | 'mental' | 'learning' | 'health' | 'productivity';
     dailyRequirements: string[];
     dailyRequirementTimes?: Record<string, string>;
     totalXpPotential: number;

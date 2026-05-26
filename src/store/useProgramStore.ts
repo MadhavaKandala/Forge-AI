@@ -22,10 +22,13 @@ export interface CustomProgramInput {
     description: string;
     days: number;
     icon: string;
+    category?: ProgramTemplate['category'];
     dailyRequirements: string[];
     dailyRequirementTimes?: Record<string, string>;
     isOngoing?: boolean;
 }
+
+export type RequirementCompletions = Record<string, Record<string, string[]>>;
 
 interface ProgramState {
     activePrograms: Program[];
@@ -36,6 +39,7 @@ interface ProgramState {
     selectedProgramDays: ProgramDay[];
     selectedProgramMilestones: any[];
     enrollments: ProgramEnrollment[];
+    requirementCompletions: RequirementCompletions;
     isLoading: boolean;
     error: string | null;
     fetchAll: () => Promise<void>;
@@ -45,6 +49,7 @@ interface ProgramState {
     addCustomProgram: (program: CustomProgramInput) => void;
     enrollInProgram: (programId: string, selectedTime: string) => Promise<void>;
     unenrollFromProgram: (enrollmentId: string) => Promise<void>;
+    toggleRequirementCompletion: (enrollmentId: string, requirementTitle: string, date: string) => void;
     startProgram: (type: string) => Promise<Program | null>;
     pauseProgram: (programId: string) => Promise<void>;
     resumeProgram: (programId: string) => Promise<void>;
@@ -117,6 +122,7 @@ export const useProgramStore = create<ProgramState>()(
             selectedProgramDays: [],
             selectedProgramMilestones: [],
             enrollments: [],
+            requirementCompletions: {},
             isLoading: false,
             error: null,
 
@@ -158,7 +164,7 @@ export const useProgramStore = create<ProgramState>()(
                     days: program.isOngoing ? 3650 : Math.max(1, program.days),
                     icon: program.icon,
                     difficulty: 'beginner',
-                    category: 'productivity',
+                    category: program.category ?? 'wellness',
                     dailyRequirements: program.dailyRequirements,
                     dailyRequirementTimes: program.dailyRequirementTimes,
                     totalXpPotential: Math.max(1, program.dailyRequirements.length) * (program.isOngoing ? 3650 : Math.max(1, program.days)) * 10,
@@ -218,17 +224,51 @@ export const useProgramStore = create<ProgramState>()(
                 }
 
                 await get().fetchActivePrograms();
-                toast.success('Program activated — requirements added to your daily schedule');
+                toast.success('Program deployed. Habits injected into Daily Ops.');
             },
 
             unenrollFromProgram: async (enrollmentId: string) => {
-                set((state) => ({
-                    enrollments: state.enrollments.filter((e) => e.id !== enrollmentId),
-                }));
+                set((state) => {
+                    const { [enrollmentId]: _removed, ...requirementCompletions } = state.requirementCompletions;
+                    return {
+                        enrollments: state.enrollments.filter((e) => e.id !== enrollmentId),
+                        requirementCompletions,
+                    };
+                });
 
                 useHabitStore.getState().removeHabitsByProgramId(enrollmentId);
                 await get().fetchActivePrograms();
-                toast.success('Program deactivated');
+                toast.success('Program deactivated.');
+            },
+
+            toggleRequirementCompletion: (enrollmentId, requirementTitle, date) => {
+                let completedNow = false;
+                set((state) => {
+                    const enrollmentCompletions = state.requirementCompletions[enrollmentId] ?? {};
+                    const dateCompletions = enrollmentCompletions[date] ?? [];
+                    const alreadyComplete = dateCompletions.includes(requirementTitle);
+                    const nextDateCompletions = alreadyComplete
+                        ? dateCompletions.filter((title) => title !== requirementTitle)
+                        : [...dateCompletions, requirementTitle];
+                    completedNow = !alreadyComplete;
+
+                    return {
+                        requirementCompletions: {
+                            ...state.requirementCompletions,
+                            [enrollmentId]: {
+                                ...enrollmentCompletions,
+                                [date]: nextDateCompletions,
+                            },
+                        },
+                    };
+                });
+
+                if (completedNow) {
+                    useHabitStore.getState().addXP(5);
+                    toast.success('+5 XP. Requirement complete.');
+                } else {
+                    toast.info('Requirement unchecked.');
+                }
             },
 
             startProgram: async (type: string) => {
@@ -301,6 +341,7 @@ export const useProgramStore = create<ProgramState>()(
                 selectedProgramDays: [],
                 selectedProgramMilestones: [],
                 enrollments: [],
+                requirementCompletions: {},
                 isLoading: false,
                 error: null,
             }),
@@ -317,6 +358,7 @@ export const useProgramStore = create<ProgramState>()(
                 selectedProgramDays: state.selectedProgramDays,
                 selectedProgramMilestones: state.selectedProgramMilestones,
                 enrollments: state.enrollments,
+                requirementCompletions: state.requirementCompletions,
             }),
         },
     ),

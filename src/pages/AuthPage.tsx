@@ -1,8 +1,15 @@
 import { useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '../store/useAppStore';
 
 export default function AuthPage() {
-    const { authError, clearAuthError, signInWithGoogle } = useAppStore();
+    const { authError, clearAuthError, signInWithGoogle } = useAppStore(
+        useShallow((s) => ({
+            authError: s.authError,
+            clearAuthError: s.clearAuthError,
+            signInWithGoogle: s.signInWithGoogle,
+        })),
+    );
     const [loading, setLoading] = useState(false);
 
     const handleGoogleSignIn = async () => {

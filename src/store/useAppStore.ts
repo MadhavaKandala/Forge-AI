@@ -173,6 +173,7 @@ interface AppState {
         userSubcategories: string[];
         wakeTime: string;
     }) => void;
+    resetOnboarding: () => void;
     setDailyBriefShown: (date: string) => void;
     syncHabitsToSupabase: () => Promise<boolean>;
     syncMissionsToSupabase: () => Promise<boolean>;
@@ -399,6 +400,21 @@ export const useAppStore = create<AppState>()(
                     ]);
                 }
 
+                const { useHabitStore } = await import('./useHabitStore');
+                const { useTaskStore } = await import('./useTaskStore');
+                const { useProgramStore } = await import('./useProgramStore');
+                const { useScheduleStore } = await import('./useScheduleStore');
+                const { useVoiceStore } = await import('./useVoiceStore');
+
+                // Move persistence to the guest scope before Supabase emits SIGNED_OUT.
+                // Otherwise the auth listener can overwrite the signed-in user's scoped app data.
+                useHabitStore.persist.setOptions({ name: getUserScopedStoreName('habit-store', 'guest') });
+                useTaskStore.persist.setOptions({ name: getUserScopedStoreName('task-store', 'guest') });
+                useProgramStore.persist.setOptions({ name: getUserScopedStoreName('program-store', 'guest') });
+                useScheduleStore.persist.setOptions({ name: getUserScopedStoreName('schedule-store', 'guest') });
+                useVoiceStore.persist.setOptions({ name: getUserScopedStoreName('voice-store', 'guest') });
+                useAppStore.persist.setOptions({ name: getUserScopedStoreName('app-store', 'guest') });
+
                 try {
                     const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
                     await GoogleAuth.signOut();
@@ -410,19 +426,6 @@ export const useAppStore = create<AppState>()(
                         // noop
                     }
                 }
-
-                const { useHabitStore } = await import('./useHabitStore');
-                const { useTaskStore } = await import('./useTaskStore');
-                const { useProgramStore } = await import('./useProgramStore');
-                const { useScheduleStore } = await import('./useScheduleStore');
-                const { useVoiceStore } = await import('./useVoiceStore');
-
-                useHabitStore.persist.setOptions({ name: getUserScopedStoreName('habit-store', 'guest') });
-                useTaskStore.persist.setOptions({ name: getUserScopedStoreName('task-store', 'guest') });
-                useProgramStore.persist.setOptions({ name: getUserScopedStoreName('program-store', 'guest') });
-                useScheduleStore.persist.setOptions({ name: getUserScopedStoreName('schedule-store', 'guest') });
-                useVoiceStore.persist.setOptions({ name: getUserScopedStoreName('voice-store', 'guest') });
-                useAppStore.persist.setOptions({ name: getUserScopedStoreName('app-store', 'guest') });
 
                 useHabitStore.getState().clearAll();
                 useTaskStore.getState().clearAll();
@@ -474,6 +477,7 @@ export const useAppStore = create<AppState>()(
                     return true;
                 }
 
+                useAppStore.persist.setOptions({ name: getUserScopedStoreName('app-store', 'guest') });
                 set({
                     isAuthenticated: false,
                     user: null,
@@ -494,6 +498,13 @@ export const useAppStore = create<AppState>()(
                 userSubcategories,
                 wakeTime,
                 onboardingComplete: true,
+            }),
+            resetOnboarding: () => set({
+                onboardingComplete: false,
+                userGoals: [],
+                userSubcategories: [],
+                wakeTime: '06:00',
+                dailyBriefShown: null,
             }),
             setDailyBriefShown: (date: string) => set({ dailyBriefShown: date }),
 

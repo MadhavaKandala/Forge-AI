@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { App as CapacitorApp } from '@capacitor/app';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { useShallow } from 'zustand/react/shallow';
 
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
@@ -33,9 +34,26 @@ import { supabase } from '@/lib/supabase';
 
 const queryClient = new QueryClient();
 
+const UnauthenticatedApp = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    useEffect(() => {
+        if (location.pathname !== '/') {
+            navigate('/', { replace: true });
+        }
+    }, [location.pathname, navigate]);
+
+    return <AuthPage />;
+};
+
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
-    const isAuthenticated = useAppStore((s) => s.isAuthenticated);
-    const onboardingComplete = useAppStore((s) => s.onboardingComplete);
+    const { isAuthenticated, onboardingComplete } = useAppStore(
+        useShallow((s) => ({
+            isAuthenticated: s.isAuthenticated,
+            onboardingComplete: s.onboardingComplete,
+        })),
+    );
 
     if (!isAuthenticated) {
         return <AuthPage />;
@@ -55,15 +73,33 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
 
 const App = () => {
     const [isCheckingSession, setIsCheckingSession] = useState(true);
-    const isAuthenticated = useAppStore((s) => s.isAuthenticated);
-    const dailyBriefShown = useAppStore((s) => s.dailyBriefShown);
-    const checkSession = useAppStore((s) => s.checkSession);
-    const fetchUserData = useAppStore((s) => s.fetchUserData);
-    const syncHabitsToSupabase = useAppStore((s) => s.syncHabitsToSupabase);
-    const syncMissionsToSupabase = useAppStore((s) => s.syncMissionsToSupabase);
-    const onboardingComplete = useAppStore((s) => s.onboardingComplete);
-    const { setSelectedDate: setHabitDate, fetchHabits, fetchTasks } = useHabitStore();
-    const { setSelectedDate: setScheduleDate } = useScheduleStore();
+    const {
+        isAuthenticated,
+        dailyBriefShown,
+        checkSession,
+        fetchUserData,
+        syncHabitsToSupabase,
+        syncMissionsToSupabase,
+        onboardingComplete,
+    } = useAppStore(
+        useShallow((s) => ({
+            isAuthenticated: s.isAuthenticated,
+            dailyBriefShown: s.dailyBriefShown,
+            checkSession: s.checkSession,
+            fetchUserData: s.fetchUserData,
+            syncHabitsToSupabase: s.syncHabitsToSupabase,
+            syncMissionsToSupabase: s.syncMissionsToSupabase,
+            onboardingComplete: s.onboardingComplete,
+        })),
+    );
+    const { setHabitDate, fetchHabits, fetchTasks } = useHabitStore(
+        useShallow((s) => ({
+            setHabitDate: s.setSelectedDate,
+            fetchHabits: s.fetchHabits,
+            fetchTasks: s.fetchTasks,
+        })),
+    );
+    const setScheduleDate = useScheduleStore((s) => s.setSelectedDate);
 
     const syncDate = () => {
         const today = new Date();
@@ -186,7 +222,7 @@ const App = () => {
                 {isAuthenticated && onboardingComplete && dailyBriefShown !== new Date().toISOString().split('T')[0] && <DailyBrief />}
                 <HashRouter>
                     {!isAuthenticated ? (
-                        <AuthPage />
+                        <UnauthenticatedApp />
                     ) : (
                         <Routes>
                             <Route path="/onboarding" element={onboardingComplete ? <Navigate to="/" replace /> : <OnboardingPage />} />
