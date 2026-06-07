@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { useShallow } from 'zustand/react/shallow';
@@ -140,6 +141,7 @@ const App = () => {
         void initData();
 
         const requestPermissions = async () => {
+            if (!Capacitor.isNativePlatform()) return;
             try {
                 const permStatus = await LocalNotifications.checkPermissions();
                 if (permStatus.display !== 'granted') {
@@ -153,6 +155,7 @@ const App = () => {
         void requestPermissions();
 
         const createChannel = async () => {
+            if (!Capacitor.isNativePlatform()) return;
             try {
                 await LocalNotifications.createChannel({
                     id: 'schedule-channel',

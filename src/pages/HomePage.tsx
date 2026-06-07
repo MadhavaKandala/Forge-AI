@@ -251,6 +251,7 @@ export default function HomePage() {
     );
     const appUser = useAppStore((s) => s.user);
     const userGoals = useAppStore((s) => s.userGoals);
+    const moodCheckEnabled = useAppStore((s) => s.moodCheckEnabled);
     const { activePrograms, fetchAll } = useProgramStore(
         useShallow((s) => ({ activePrograms: s.activePrograms, fetchAll: s.fetchAll })),
     );
@@ -267,6 +268,12 @@ export default function HomePage() {
     );
     const currentMoodKey = currentMood?.mood ?? null;
     const moodContent = currentMoodKey ? MOOD_CONTENT[currentMoodKey] : null;
+
+    useEffect(() => {
+        if (moodCheckEnabled && !currentMood) {
+            setIsMoodOpen(true);
+        }
+    }, [currentMood, moodCheckEnabled]);
 
     const checkboxHabits = useMemo(
         () => habits.filter((habit) => habit.type === 'checkbox').sort((a, b) => toMinutes(a.time) - toMinutes(b.time)),

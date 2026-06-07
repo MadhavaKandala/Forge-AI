@@ -160,6 +160,8 @@ interface AppState {
     userGoals: string[];
     userSubcategories: string[];
     wakeTime: string;
+    notificationsEnabled: boolean;
+    moodCheckEnabled: boolean;
     dailyBriefShown: string | null;
 
     login: (user: AppUser) => void;
@@ -174,6 +176,10 @@ interface AppState {
         wakeTime: string;
     }) => void;
     resetOnboarding: () => void;
+    startOnboardingEdit: () => void;
+    setWakeTime: (wakeTime: string) => void;
+    setNotificationsEnabled: (enabled: boolean) => void;
+    setMoodCheckEnabled: (enabled: boolean) => void;
     setDailyBriefShown: (date: string) => void;
     syncHabitsToSupabase: () => Promise<boolean>;
     syncMissionsToSupabase: () => Promise<boolean>;
@@ -310,6 +316,8 @@ export const useAppStore = create<AppState>()(
             userGoals: [],
             userSubcategories: [],
             wakeTime: '06:00',
+            notificationsEnabled: false,
+            moodCheckEnabled: true,
             dailyBriefShown: null,
 
             login: (user: AppUser) => {
@@ -378,6 +386,8 @@ export const useAppStore = create<AppState>()(
                         userGoals: useAppStore.getState().userGoals,
                         userSubcategories: useAppStore.getState().userSubcategories,
                         wakeTime: useAppStore.getState().wakeTime || '06:00',
+                        notificationsEnabled: useAppStore.getState().notificationsEnabled ?? false,
+                        moodCheckEnabled: useAppStore.getState().moodCheckEnabled ?? true,
                         dailyBriefShown: null,
                     });
                     await syncHabitProfile(profile);
@@ -442,9 +452,11 @@ export const useAppStore = create<AppState>()(
                     userGoals: [],
                     userSubcategories: [],
                     wakeTime: '06:00',
+                    notificationsEnabled: false,
+                    moodCheckEnabled: true,
                     dailyBriefShown: null,
                 });
-                toast.success('Signed out.');
+                toast.success('Logged out. See you tomorrow.');
             },
 
             checkSession: async () => {
@@ -472,6 +484,8 @@ export const useAppStore = create<AppState>()(
                         userGoals: useAppStore.getState().userGoals,
                         userSubcategories: useAppStore.getState().userSubcategories,
                         wakeTime: useAppStore.getState().wakeTime || '06:00',
+                        notificationsEnabled: useAppStore.getState().notificationsEnabled ?? false,
+                        moodCheckEnabled: useAppStore.getState().moodCheckEnabled ?? true,
                     });
                     await syncHabitProfile(profile);
                     return true;
@@ -487,6 +501,8 @@ export const useAppStore = create<AppState>()(
                     userGoals: [],
                     userSubcategories: [],
                     wakeTime: '06:00',
+                    notificationsEnabled: false,
+                    moodCheckEnabled: true,
                     dailyBriefShown: null,
                 });
                 return false;
@@ -506,6 +522,13 @@ export const useAppStore = create<AppState>()(
                 wakeTime: '06:00',
                 dailyBriefShown: null,
             }),
+            startOnboardingEdit: () => set({
+                onboardingComplete: false,
+                dailyBriefShown: null,
+            }),
+            setWakeTime: (wakeTime: string) => set({ wakeTime }),
+            setNotificationsEnabled: (enabled: boolean) => set({ notificationsEnabled: enabled }),
+            setMoodCheckEnabled: (enabled: boolean) => set({ moodCheckEnabled: enabled }),
             setDailyBriefShown: (date: string) => set({ dailyBriefShown: date }),
 
             syncHabitsToSupabase: async () => {
@@ -676,6 +699,8 @@ export const useAppStore = create<AppState>()(
                 userGoals: state.userGoals,
                 userSubcategories: state.userSubcategories,
                 wakeTime: state.wakeTime,
+                notificationsEnabled: state.notificationsEnabled,
+                moodCheckEnabled: state.moodCheckEnabled,
                 dailyBriefShown: state.dailyBriefShown,
             }),
         },
