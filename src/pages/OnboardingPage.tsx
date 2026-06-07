@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -23,6 +23,10 @@ const WAKE_TIMES = Array.from({ length: 7 }, (_, index) => {
     const hour = index + 4;
     return `${String(hour).padStart(2, '0')}:00`;
 });
+
+const isOnboardingGoalId = (value: string): value is OnboardingGoalId => (
+    GOAL_OPTIONS.some((goal) => goal.id === value)
+);
 
 const formatWakeTime = (time: string) => {
     const [rawHour, rawMinute] = time.split(':').map(Number);
@@ -235,14 +239,25 @@ WakeTimeOption.displayName = 'WakeTimeOption';
 
 export const OnboardingPage: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const completeOnboarding = useAppStore((s) => s.completeOnboarding);
+    const existingGoals = useAppStore((s) => s.userGoals);
+    const existingSubcategories = useAppStore((s) => s.userSubcategories);
+    const existingWakeTime = useAppStore((s) => s.wakeTime);
     const enrollInProgram = useProgramStore((s) => s.enrollInProgram);
     const [step, setStep] = useState(0);
-    const [selectedGoals, setSelectedGoals] = useState<OnboardingGoalId[]>([]);
-    const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
+    const [selectedGoals, setSelectedGoals] = useState<OnboardingGoalId[]>(
+        () => existingGoals.filter(isOnboardingGoalId),
+    );
+    const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>(() => existingSubcategories);
     const [activatedPrograms, setActivatedPrograms] = useState<string[]>([]);
-    const [wakeTime, setWakeTime] = useState('06:00');
+    const [wakeTime, setWakeTime] = useState(existingWakeTime || '06:00');
     const [isCompleting, setIsCompleting] = useState(false);
+
+    const returnTo = useMemo(() => {
+        const target = new URLSearchParams(location.search).get('returnTo');
+        return target?.startsWith('/') && !target.startsWith('//') ? target : '/';
+    }, [location.search]);
 
     const recommendedPrograms = useMemo(
         () => getRecommendedPrograms(selectedGoals, selectedSubcategories),
@@ -313,11 +328,11 @@ export const OnboardingPage: React.FC = () => {
                 wakeTime,
             });
             toast.success('Personal OS deployed.');
-            navigate('/', { replace: true });
+            navigate(returnTo, { replace: true });
         } finally {
             setIsCompleting(false);
         }
-    }, [activatedPrograms, completeOnboarding, enrollInProgram, navigate, selectedGoals, selectedSubcategories, wakeTime]);
+    }, [activatedPrograms, completeOnboarding, enrollInProgram, navigate, returnTo, selectedGoals, selectedSubcategories, wakeTime]);
 
     return (
         <div className="min-h-screen bg-[#0A0A0A] px-5 py-6 text-white">

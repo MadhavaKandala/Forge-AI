@@ -83,6 +83,8 @@ interface HabitState {
     dismissedMotivationDate: string | null;
     streakShields: number;
     lastStreakDate: string | null;
+    totalCompletions: number;
+    totalDone: number;
     selectedDate: Date;
     workoutLogs: WorkoutLog[];
     dietLogs: import('@/types/challenge').DietLog[];
@@ -173,6 +175,8 @@ export const useHabitStore = create<HabitState>()(
             dismissedMotivationDate: null,
             streakShields: 0,
             lastStreakDate: null,
+            totalCompletions: 0,
+            totalDone: 0,
             habits: [],
             schedule: [],
             workoutLogs: [],
@@ -192,6 +196,7 @@ export const useHabitStore = create<HabitState>()(
                 get().toggleHabit(habitId, selectedDate);
                 if (!isAlreadyCompleted) {
                     get().addXP(10);
+                    set((state) => ({ totalCompletions: state.totalCompletions + 1 }));
                     const nextHabit = get().habits.find((h) => h.id === habitId);
                     const nextStreak = nextHabit?.streak ?? 0;
                     const previousStreakDate = get().lastStreakDate;
@@ -218,6 +223,7 @@ export const useHabitStore = create<HabitState>()(
 
                 get().updateTask(taskId, { completed: true, status: 'completed' });
                 get().addXP(25);
+                set((state) => ({ totalDone: state.totalDone + 1 }));
             },
 
             addWorkoutLog: (log) => set((state: HabitState) => ({
@@ -437,6 +443,8 @@ export const useHabitStore = create<HabitState>()(
             }),
 
             updateTaskStage: (taskId, stage) => {
+                const targetTask = get().tasks.find((task) => task.id === taskId);
+                const completedNow = stage === 'completed' && targetTask && !targetTask.completed;
                 const updates: Partial<Task> = {
                     status: stage,
                     completed: stage === 'completed',
@@ -444,6 +452,10 @@ export const useHabitStore = create<HabitState>()(
                     ...(stage === 'completed' ? { completedAt: new Date().toISOString() } : {}),
                 };
                 get().updateTask(taskId, updates);
+                if (completedNow) {
+                    get().addXP(25);
+                    set((state) => ({ totalDone: state.totalDone + 1 }));
+                }
             },
 
             deleteTask: (taskId) => set((state) => {
@@ -672,6 +684,8 @@ export const useHabitStore = create<HabitState>()(
                 dismissedMotivationDate: null,
                 streakShields: 0,
                 lastStreakDate: null,
+                totalCompletions: 0,
+                totalDone: 0,
                 selectedDate: new Date(),
                 workoutLogs: [],
                 dietLogs: [],
@@ -708,7 +722,9 @@ export const useHabitStore = create<HabitState>()(
                     ...nextState,
                     journalEntries: nextState.journalEntries || [],
                     streakShields: version < 9 ? 0 : nextState.streakShields || 0,
-                    lastStreakDate: version < 9 ? null : nextState.lastStreakDate || null
+                    lastStreakDate: version < 9 ? null : nextState.lastStreakDate || null,
+                    totalCompletions: nextState.totalCompletions || 0,
+                    totalDone: nextState.totalDone || 0
                 };
                 return nextState;
             },
@@ -724,7 +740,9 @@ export const useHabitStore = create<HabitState>()(
                 journalEntries: state.journalEntries,
                 dismissedMotivationDate: state.dismissedMotivationDate,
                 streakShields: state.streakShields,
-                lastStreakDate: state.lastStreakDate
+                lastStreakDate: state.lastStreakDate,
+                totalCompletions: state.totalCompletions,
+                totalDone: state.totalDone
             }),
         }
     )
