@@ -5,6 +5,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { animate, AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
+import GuidedTour, { type TourStep } from '@/components/GuidedTour';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import {
     Dialog,
@@ -32,6 +33,29 @@ const LEVELS = [
 
 const QUICK_WAKE_TIMES = ['04:30', '05:00', '05:30', '06:00', '06:30', '07:00', '07:30'];
 const goalById = new Map(GOAL_OPTIONS.map((goal) => [goal.id, goal]));
+
+const PROFILE_TOUR_KEY = 'profile-tour';
+
+const PROFILE_TOUR_STEPS: TourStep[] = [
+    {
+        targetId: 'goals-section',
+        title: 'YOUR FOCUS AREAS',
+        description: 'The goals you selected during setup. Tap EDIT to change them anytime.',
+        position: 'top',
+    },
+    {
+        targetId: 'settings-section',
+        title: 'SETTINGS',
+        description: 'Configure reminders, wake time, and mood check preferences here.',
+        position: 'top',
+    },
+    {
+        targetId: 'reset-onboarding-row',
+        title: 'REDO SETUP',
+        description: 'Changed your goals? Reset onboarding to pick new programs and focus areas.',
+        position: 'top',
+    },
+];
 
 const isGoalId = (value: string): value is OnboardingGoalId => goalById.has(value as OnboardingGoalId);
 
@@ -91,10 +115,12 @@ interface SettingRowProps {
     onClick: () => void;
     index: number;
     danger?: boolean;
+    id?: string;
 }
 
-const SettingRow = memo(({ icon, label, right, onClick, index, danger = false }: SettingRowProps) => (
+const SettingRow = memo(({ icon, label, right, onClick, index, danger = false, id }: SettingRowProps) => (
     <motion.button
+        id={id}
         type="button"
         onClick={onClick}
         initial={{ opacity: 0, x: 24 }}
@@ -178,6 +204,7 @@ export default function ProfilePage() {
     const [expandedGoalIds, setExpandedGoalIds] = useState<string[]>([]);
     const [avatarFailed, setAvatarFailed] = useState(false);
     const [isSigningOut, setIsSigningOut] = useState(false);
+    const [showTour, setShowTour] = useState(false);
 
     const {
         appUser,
@@ -192,6 +219,8 @@ export default function ProfilePage() {
         setWakeTime,
         setNotificationsEnabled,
         setMoodCheckEnabled,
+        completedTours,
+        markTourComplete,
     } = useAppStore(
         useShallow((state) => ({
             appUser: state.user,
@@ -206,6 +235,8 @@ export default function ProfilePage() {
             setWakeTime: state.setWakeTime,
             setNotificationsEnabled: state.setNotificationsEnabled,
             setMoodCheckEnabled: state.setMoodCheckEnabled,
+            completedTours: state.completedTours,
+            markTourComplete: state.markTourComplete,
         })),
     );
     const {
@@ -234,6 +265,13 @@ export default function ProfilePage() {
     useEffect(() => {
         void fetchActivePrograms();
     }, [fetchActivePrograms]);
+
+    useEffect(() => {
+        if (completedTours.includes(PROFILE_TOUR_KEY)) return undefined;
+
+        const timer = window.setTimeout(() => setShowTour(true), 1000);
+        return () => window.clearTimeout(timer);
+    }, [completedTours]);
 
     useEffect(() => {
         setPendingWakeTime(wakeTime || '06:00');
@@ -361,8 +399,20 @@ export default function ProfilePage() {
         }
     }, [isSigningOut, navigate, signOut]);
 
+    const handleTourComplete = useCallback(() => {
+        markTourComplete(PROFILE_TOUR_KEY);
+        setShowTour(false);
+    }, [markTourComplete]);
+
     return (
         <div className="min-h-screen overflow-x-hidden bg-[#0A0A0A] px-5 pb-28 pt-8 text-white">
+            {showTour && (
+                <GuidedTour
+                    steps={PROFILE_TOUR_STEPS}
+                    storageKey={PROFILE_TOUR_KEY}
+                    onComplete={handleTourComplete}
+                />
+            )}
             <main className="mx-auto max-w-md">
                 <section className="flex flex-col items-center text-center">
                     <motion.div
@@ -503,7 +553,7 @@ export default function ProfilePage() {
                     </div>
                 </section>
 
-                <section className="mt-8">
+                <section id="goals-section" className="mt-8">
                     <div className="flex items-center justify-between gap-4">
                         <SectionLabel>YOUR FOCUS AREAS</SectionLabel>
                         <button
@@ -568,7 +618,7 @@ export default function ProfilePage() {
                     </div>
                 </section>
 
-                <section className="mt-8">
+                <section id="settings-section" className="mt-8">
                     <SectionLabel>SETTINGS</SectionLabel>
                     <div className="mt-3 border-y border-zinc-800">
                         <SettingRow
@@ -629,6 +679,7 @@ export default function ProfilePage() {
                     <SectionLabel>ACCOUNT</SectionLabel>
                     <div className="mt-3 border-y border-zinc-800">
                         <SettingRow
+                            id="reset-onboarding-row"
                             icon="🔄"
                             label="Redo Setup"
                             right={<ChevronRight className="h-4 w-4 text-zinc-600" />}

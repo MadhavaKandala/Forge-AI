@@ -3,92 +3,10 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { toast } from 'sonner';
 import { Capacitor } from '@capacitor/core';
 
+import { loadUserData, syncAllHabitsToSupabase, syncAllMissionsToSupabase } from '@/lib/syncFromSupabase';
 import { supabase } from '@/lib/supabase';
-import type { Task, TaskPriority, TaskStatus } from '@/types/task';
-import type { Habit } from './useHabitStore';
 
 const GOOGLE_WEB_CLIENT_ID = '275760652639-4flj5gar1op7tfsr5gkkcd13t8t4t2im.apps.googleusercontent.com';
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-const deterministicUuid = (source: string): string => {
-    let hash = 2166136261;
-    for (let i = 0; i < source.length; i += 1) {
-        hash ^= source.charCodeAt(i);
-        hash = Math.imul(hash, 16777619);
-    }
-
-    const hex = Array.from({ length: 32 }, (_, index) => {
-        hash ^= index + source.length;
-        hash = Math.imul(hash, 16777619);
-        return ((hash >>> ((index % 4) * 8)) & 0xff).toString(16).padStart(2, '0');
-    }).join('');
-
-    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-${((parseInt(hex.slice(16, 18), 16) & 0x3f) | 0x80).toString(16)}${hex.slice(18, 20)}-${hex.slice(20, 32)}`;
-};
-
-const toSupabaseUuid = (userId: string, kind: string, localId: string): string => (
-    UUID_REGEX.test(localId) ? localId : deterministicUuid(`${userId}:${kind}:${localId}`)
-);
-
-const toMissionStage = (status: TaskStatus): 'BACKLOG' | 'THIS_WEEK' | 'TODAY' | 'IN_PROGRESS' | 'DONE' => {
-    if (status === 'completed' || status === 'cancelled') return 'DONE';
-    if (status === 'this_week') return 'THIS_WEEK';
-    if (status === 'in_progress') return 'IN_PROGRESS';
-    if (status === 'today') return 'TODAY';
-    return 'BACKLOG';
-};
-
-const fromMissionStage = (stage: string): TaskStatus => {
-    if (stage === 'THIS_WEEK') return 'this_week';
-    if (stage === 'TODAY') return 'today';
-    if (stage === 'IN_PROGRESS') return 'in_progress';
-    if (stage === 'DONE') return 'completed';
-    return 'backlog';
-};
-
-const toMissionPriority = (priority: TaskPriority): 'HIGH' | 'MEDIUM' | 'LOW' => priority.toUpperCase() as 'HIGH' | 'MEDIUM' | 'LOW';
-
-const fromMissionPriority = (priority: string): TaskPriority => {
-    if (priority === 'HIGH') return 'high';
-    if (priority === 'LOW') return 'low';
-    return 'medium';
-};
-
-const toHabitRow = (habit: Habit, userId: string) => ({
-    id: toSupabaseUuid(userId, 'habit', habit.id),
-    user_id: userId,
-    title: habit.title,
-    category: habit.category,
-    scheduled_time: habit.time,
-    xp_reward: 10,
-    from_program_id: habit.fromProgramId && UUID_REGEX.test(habit.fromProgramId) ? habit.fromProgramId : null,
-    created_at: new Date().toISOString(),
-});
-
-const toHabitCompletionRows = (habit: Habit, userId: string) => {
-    const habitId = toSupabaseUuid(userId, 'habit', habit.id);
-    return habit.completedDates.map((date) => ({
-        id: deterministicUuid(`${userId}:habit_completion:${habit.id}:${date}`),
-        user_id: userId,
-        habit_id: habitId,
-        completed_date: date,
-        completed_at: `${date}T00:00:00.000Z`,
-    }));
-};
-
-const toMissionRow = (task: Task, userId: string) => ({
-    id: toSupabaseUuid(userId, 'mission', task.id),
-    user_id: userId,
-    title: task.title,
-    category: task.category,
-    priority: toMissionPriority(task.priority),
-    stage: toMissionStage(task.status),
-    quadrant: task.quadrant,
-    estimate: task.estimatedMinutes ?? null,
-    target_date: task.dueDate ?? task.scheduledDate ?? null,
-    created_at: task.createdAt,
-});
 
 interface AppUser {
     id: string;
@@ -100,7 +18,7 @@ interface AppUser {
 
 const fetchSupabaseUserProfile = async (userId: string) => {
     const { data, error } = await supabase
-        .from('users')
+        .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
@@ -109,45 +27,16 @@ const fetchSupabaseUserProfile = async (userId: string) => {
     return data;
 };
 
-const ensureSupabaseUserProfile = async (user: {
-    id: string;
-    email?: string | null;
-    user_metadata?: Record<string, unknown> | null;
-}) => {
-    const existingProfile = await fetchSupabaseUserProfile(user.id);
-    if (existingProfile) return existingProfile;
-
-    const now = new Date().toISOString();
-    const email = user.email?.trim().toLowerCase() ?? '';
-    const metadataName = typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null;
-    const fallbackName = metadataName ?? email.split('@')[0] ?? 'Operator';
-
-    const { data, error } = await supabase
-        .from('users')
-        .insert({
-            id: user.id,
-            email,
-            name: fallbackName || 'Operator',
-            total_xp: 0,
-            created_at: now,
-        })
-        .select('*')
-        .maybeSingle();
-
-    if (error) return fetchSupabaseUserProfile(user.id);
-    return data;
-};
-
 const toAppUser = (user: {
     id: string;
     email?: string | null;
     user_metadata?: Record<string, unknown> | null;
-}, profileTotalXp?: number): AppUser => ({
+}, profile?: { name?: string | null; avatar_url?: string | null; total_xp?: number | null } | null): AppUser => ({
     id: user.id,
     email: user.email ?? '',
-    name: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : 'Operator',
-    avatar: typeof user.user_metadata?.avatar_url === 'string' ? user.user_metadata.avatar_url : '',
-    totalXP: profileTotalXp ?? 0,
+    name: profile?.name ?? (typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : 'Operator'),
+    avatar: profile?.avatar_url ?? (typeof user.user_metadata?.avatar_url === 'string' ? user.user_metadata.avatar_url : ''),
+    totalXP: profile?.total_xp ?? 0,
 });
 
 interface AppState {
@@ -163,6 +52,7 @@ interface AppState {
     notificationsEnabled: boolean;
     moodCheckEnabled: boolean;
     dailyBriefShown: string | null;
+    completedTours: string[];
 
     login: (user: AppUser) => void;
     logout: () => Promise<void>;
@@ -181,6 +71,7 @@ interface AppState {
     setNotificationsEnabled: (enabled: boolean) => void;
     setMoodCheckEnabled: (enabled: boolean) => void;
     setDailyBriefShown: (date: string) => void;
+    markTourComplete: (key: string) => void;
     syncHabitsToSupabase: () => Promise<boolean>;
     syncMissionsToSupabase: () => Promise<boolean>;
     fetchUserData: () => Promise<boolean>;
@@ -189,19 +80,6 @@ interface AppState {
 
 export const getCurrentStoreUserId = () => useAppStore.getState().user?.id ?? 'guest';
 export const getUserScopedStoreName = (baseName: string, userId = getCurrentStoreUserId()) => `${baseName}-${userId}`;
-
-const scopedStoreBaseNames = [
-    'app-store',
-    'habit-store',
-    'task-store',
-    'program-store',
-    'schedule-store',
-    'voice-store',
-] as const;
-
-const hasExistingUserData = (userId: string) => [
-    ...scopedStoreBaseNames,
-].some((baseName) => localStorage.getItem(getUserScopedStoreName(baseName, userId)) !== null);
 
 const reinitializeUserStores = async (userId: string) => {
     const [
@@ -268,25 +146,6 @@ const syncHabitProfile = async (profile: AppUser) => {
     }));
 };
 
-const syncProfileXpToSupabase = async (userId: string) => {
-    const { useHabitStore } = await import('./useHabitStore');
-    const habitUser = useHabitStore.getState().user;
-    const totalXP = habitUser?.xp ?? useAppStore.getState().user?.totalXP ?? 0;
-
-    const { error } = await supabase
-        .from('users')
-        .update({ total_xp: totalXP })
-        .eq('id', userId);
-
-    if (!error) {
-        useAppStore.setState((state) => ({
-            user: state.user ? { ...state.user, totalXP } : state.user,
-        }));
-    }
-
-    return error;
-};
-
 const getAuthErrorMessage = (err: unknown) => {
     if (err instanceof Error && err.message.trim()) {
         const code = 'code' in err && typeof err.code === 'string' ? ` (${err.code})` : '';
@@ -319,6 +178,7 @@ export const useAppStore = create<AppState>()(
             notificationsEnabled: false,
             moodCheckEnabled: true,
             dailyBriefShown: null,
+            completedTours: [],
 
             login: (user: AppUser) => {
                 set({
@@ -357,10 +217,12 @@ export const useAppStore = create<AppState>()(
 
                     if (error || !data.user) throw error ?? new Error('Unable to sign in');
 
-                    const supabaseProfile = await ensureSupabaseUserProfile(data.user);
-                    const existingUserData = hasExistingUserData(data.user.id);
                     await activateAppPersistence(data.user.id);
                     await reinitializeUserStores(data.user.id);
+                    const supabaseProfile = await fetchSupabaseUserProfile(data.user.id);
+                    if (supabaseProfile) {
+                        await loadUserData(data.user.id);
+                    }
                     const googleProfile = googleUser as {
                         displayName?: string;
                         name?: string;
@@ -370,11 +232,11 @@ export const useAppStore = create<AppState>()(
                     const profile = {
                         id: data.user.id,
                         email: googleProfile.email ?? data.user.email ?? '',
-                        name: googleProfile.displayName ?? googleProfile.name ?? 'Operator',
-                        avatar: googleProfile.imageUrl ?? '',
+                        name: supabaseProfile?.name ?? googleProfile.displayName ?? googleProfile.name ?? 'Operator',
+                        avatar: supabaseProfile?.avatar_url ?? googleProfile.imageUrl ?? '',
                         totalXP: typeof supabaseProfile?.total_xp === 'number' ? supabaseProfile.total_xp : 0,
                     };
-                    const onboardingComplete = existingUserData ? true : false;
+                    const onboardingComplete = Boolean(supabaseProfile);
 
                     set({
                         isAuthenticated: true,
@@ -402,14 +264,6 @@ export const useAppStore = create<AppState>()(
             },
 
             signOut: async () => {
-                const currentUserId = get().supabaseUserId;
-                if (currentUserId) {
-                    await Promise.allSettled([
-                        get().syncHabitsToSupabase(),
-                        get().syncMissionsToSupabase(),
-                    ]);
-                }
-
                 const { useHabitStore } = await import('./useHabitStore');
                 const { useTaskStore } = await import('./useTaskStore');
                 const { useProgramStore } = await import('./useProgramStore');
@@ -428,13 +282,14 @@ export const useAppStore = create<AppState>()(
                 try {
                     const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
                     await GoogleAuth.signOut();
+                } catch (e) {
+                    console.log('Google signout error:', e);
+                }
+
+                try {
                     await supabase.auth.signOut();
-                } catch {
-                    try {
-                        await supabase.auth.signOut();
-                    } catch {
-                        // noop
-                    }
+                } catch (e) {
+                    console.log('Supabase signout error:', e);
                 }
 
                 useHabitStore.getState().clearAll();
@@ -442,6 +297,7 @@ export const useAppStore = create<AppState>()(
                 useProgramStore.getState().clearAll();
                 useScheduleStore.getState().clearAll();
                 useVoiceStore.getState().clearAll();
+                localStorage.clear();
                 set({
                     isAuthenticated: false,
                     user: null,
@@ -455,57 +311,76 @@ export const useAppStore = create<AppState>()(
                     notificationsEnabled: false,
                     moodCheckEnabled: true,
                     dailyBriefShown: null,
+                    completedTours: [],
                 });
                 toast.success('Logged out. See you tomorrow.');
+                window.location.href = '/';
             },
 
             checkSession: async () => {
-                const { data } = await supabase.auth.getSession();
-                if (data.session) {
-                    const sessionUser = data.session.user;
-                    const supabaseProfile = await ensureSupabaseUserProfile(sessionUser);
-                    const existingUserData = hasExistingUserData(sessionUser.id);
-                    const appStoreKey = getUserScopedStoreName('app-store', sessionUser.id);
-                    const hasAppStore = localStorage.getItem(appStoreKey) !== null;
-                    await activateAppPersistence(sessionUser.id);
-                    await reinitializeUserStores(sessionUser.id);
-                    const persistedOnboardingComplete = useAppStore.getState().onboardingComplete;
-                    const profile = toAppUser(
-                        sessionUser,
-                        typeof supabaseProfile?.total_xp === 'number' ? supabaseProfile.total_xp : 0,
-                    );
-                    set({
-                        isAuthenticated: true,
-                        user: profile,
-                        supabaseUserId: sessionUser.id,
-                        supabaseProfile,
-                        authError: null,
-                        onboardingComplete: hasAppStore ? persistedOnboardingComplete : existingUserData,
-                        userGoals: useAppStore.getState().userGoals,
-                        userSubcategories: useAppStore.getState().userSubcategories,
-                        wakeTime: useAppStore.getState().wakeTime || '06:00',
-                        notificationsEnabled: useAppStore.getState().notificationsEnabled ?? false,
-                        moodCheckEnabled: useAppStore.getState().moodCheckEnabled ?? true,
-                    });
-                    await syncHabitProfile(profile);
-                    return true;
-                }
+                try {
+                    const { data } = await supabase.auth.getSession();
+                    if (data.session) {
+                        const sessionUser = data.session.user;
+                        const supabaseProfile = await fetchSupabaseUserProfile(sessionUser.id);
+                        await activateAppPersistence(sessionUser.id);
+                        await reinitializeUserStores(sessionUser.id);
+                        if (supabaseProfile) {
+                            await loadUserData(sessionUser.id);
+                        }
+                        const profile = toAppUser(sessionUser, supabaseProfile);
+                        set({
+                            isAuthenticated: true,
+                            user: profile,
+                            supabaseUserId: sessionUser.id,
+                            supabaseProfile,
+                            authError: null,
+                            onboardingComplete: Boolean(supabaseProfile),
+                            userGoals: useAppStore.getState().userGoals,
+                            userSubcategories: useAppStore.getState().userSubcategories,
+                            wakeTime: useAppStore.getState().wakeTime || '06:00',
+                            notificationsEnabled: useAppStore.getState().notificationsEnabled ?? false,
+                            moodCheckEnabled: useAppStore.getState().moodCheckEnabled ?? true,
+                        });
+                        await syncHabitProfile(profile);
+                        return true;
+                    }
 
-                useAppStore.persist.setOptions({ name: getUserScopedStoreName('app-store', 'guest') });
-                set({
-                    isAuthenticated: false,
-                    user: null,
-                    supabaseUserId: null,
-                    supabaseProfile: null,
-                    onboardingComplete: false,
-                    userGoals: [],
-                    userSubcategories: [],
-                    wakeTime: '06:00',
-                    notificationsEnabled: false,
-                    moodCheckEnabled: true,
-                    dailyBriefShown: null,
-                });
-                return false;
+                    useAppStore.persist.setOptions({ name: getUserScopedStoreName('app-store', 'guest') });
+                    set({
+                        isAuthenticated: false,
+                        user: null,
+                        supabaseUserId: null,
+                        supabaseProfile: null,
+                        authError: null,
+                        onboardingComplete: false,
+                        userGoals: [],
+                        userSubcategories: [],
+                        wakeTime: '06:00',
+                        notificationsEnabled: false,
+                        moodCheckEnabled: true,
+                        dailyBriefShown: null,
+                    });
+                    return false;
+                } catch (error) {
+                    console.error('checkSession failed:', error);
+                    useAppStore.persist.setOptions({ name: getUserScopedStoreName('app-store', 'guest') });
+                    set({
+                        isAuthenticated: false,
+                        user: null,
+                        supabaseUserId: null,
+                        supabaseProfile: null,
+                        authError: null,
+                        onboardingComplete: false,
+                        userGoals: [],
+                        userSubcategories: [],
+                        wakeTime: '06:00',
+                        notificationsEnabled: false,
+                        moodCheckEnabled: true,
+                        dailyBriefShown: null,
+                    });
+                    return false;
+                }
             },
 
             setOnboardingComplete: () => set({ onboardingComplete: true }),
@@ -530,6 +405,11 @@ export const useAppStore = create<AppState>()(
             setNotificationsEnabled: (enabled: boolean) => set({ notificationsEnabled: enabled }),
             setMoodCheckEnabled: (enabled: boolean) => set({ moodCheckEnabled: enabled }),
             setDailyBriefShown: (date: string) => set({ dailyBriefShown: date }),
+            markTourComplete: (key: string) => set((state) => ({
+                completedTours: state.completedTours.includes(key)
+                    ? state.completedTours
+                    : [...state.completedTours, key],
+            })),
 
             syncHabitsToSupabase: async () => {
                 const { supabaseUserId } = get();
@@ -540,38 +420,7 @@ export const useAppStore = create<AppState>()(
 
                 const { useHabitStore } = await import('./useHabitStore');
                 const { habits } = useHabitStore.getState();
-                const userHabits = habits.filter((habit) => !habit.id.startsWith('demo-'));
-                const habitRows = userHabits.map((habit) => toHabitRow(habit, supabaseUserId));
-                const completionRows = userHabits.flatMap((habit) => toHabitCompletionRows(habit, supabaseUserId));
-
-                if (habitRows.length > 0) {
-                    const { error } = await supabase
-                        .from('habits')
-                        .upsert(habitRows, { onConflict: 'id' });
-
-                    if (error) {
-                        set({ authError: error.message });
-                        return false;
-                    }
-                }
-
-                if (completionRows.length > 0) {
-                    const { error } = await supabase
-                        .from('habit_completions')
-                        .upsert(completionRows, { onConflict: 'id' });
-
-                    if (error) {
-                        set({ authError: error.message });
-                        return false;
-                    }
-                }
-
-                const profileError = await syncProfileXpToSupabase(supabaseUserId);
-                if (profileError) {
-                    set({ authError: profileError.message });
-                    return false;
-                }
-
+                syncAllHabitsToSupabase(supabaseUserId, habits.filter((habit) => !habit.id.startsWith('demo-')));
                 set({ authError: null });
                 return true;
             },
@@ -585,30 +434,7 @@ export const useAppStore = create<AppState>()(
 
                 const { useHabitStore } = await import('./useHabitStore');
                 const { tasks } = useHabitStore.getState();
-                const missionRows = tasks
-                    .filter((task) => !task.id.startsWith('demo-'))
-                    .map((task) => toMissionRow(task, supabaseUserId));
-
-                if (missionRows.length === 0) {
-                    set({ authError: null });
-                    return true;
-                }
-
-                const { error } = await supabase
-                    .from('missions')
-                    .upsert(missionRows, { onConflict: 'id' });
-
-                if (error) {
-                    set({ authError: error.message });
-                    return false;
-                }
-
-                const profileError = await syncProfileXpToSupabase(supabaseUserId);
-                if (profileError) {
-                    set({ authError: profileError.message });
-                    return false;
-                }
-
+                syncAllMissionsToSupabase(supabaseUserId, tasks.filter((task) => !task.id.startsWith('demo-')));
                 set({ authError: null });
                 return true;
             },
@@ -617,68 +443,23 @@ export const useAppStore = create<AppState>()(
                 const { supabaseUserId, user } = get();
                 if (!supabaseUserId) return false;
 
-                const [profileResult, habitsResult, completionsResult, missionsResult] = await Promise.all([
-                    supabase.from('users').select('*').eq('id', supabaseUserId).maybeSingle(),
-                    supabase.from('habits').select('*').eq('user_id', supabaseUserId),
-                    supabase.from('habit_completions').select('*').eq('user_id', supabaseUserId),
-                    supabase.from('missions').select('*').eq('user_id', supabaseUserId),
-                ]);
-
-                const firstError = profileResult.error || habitsResult.error || completionsResult.error || missionsResult.error;
-                if (firstError) {
-                    set({ authError: firstError.message });
+                const profileResult = await supabase.from('profiles').select('*').eq('id', supabaseUserId).maybeSingle();
+                if (profileResult.error) {
+                    set({ authError: profileResult.error.message });
                     return false;
                 }
 
-                const { useHabitStore } = await import('./useHabitStore');
-                const remoteHabits = habitsResult.data ?? [];
-                const remoteCompletions = completionsResult.data ?? [];
-                const remoteMissions = missionsResult.data ?? [];
-
-                if (remoteHabits.length > 0) {
-                    const habits: Habit[] = remoteHabits.map((row) => ({
-                        id: row.id,
-                        title: row.title,
-                        time: row.scheduled_time ?? 'Flexible',
-                        streak: 0,
-                        completedDates: remoteCompletions
-                            .filter((completion) => completion.habit_id === row.id)
-                            .map((completion) => completion.completed_date),
-                        type: 'checkbox',
-                        category: row.category ?? 'personal',
-                        history: {},
-                        fromProgramId: row.from_program_id ?? undefined,
-                    }));
-
-                    useHabitStore.setState({ habits });
-                }
-
-                if (remoteMissions.length > 0) {
-                    const tasks: Task[] = remoteMissions.map((row) => ({
-                        id: row.id,
-                        title: row.title,
-                        category: row.category ?? 'personal',
-                        priority: fromMissionPriority(row.priority ?? 'MEDIUM'),
-                        status: fromMissionStage(row.stage ?? 'BACKLOG'),
-                        completed: row.stage === 'DONE',
-                        size: 'medium',
-                        quadrant: row.quadrant ?? 'q2',
-                        estimatedMinutes: row.estimate ?? undefined,
-                        scheduledDate: row.target_date ?? undefined,
-                        dueDate: row.target_date ?? undefined,
-                        isRecurring: false,
-                        subtasks: [],
-                        createdAt: row.created_at ?? new Date().toISOString(),
-                        updatedAt: row.created_at ?? new Date().toISOString(),
-                    }));
-
-                    useHabitStore.setState({ tasks });
-                }
+                await loadUserData(supabaseUserId);
 
                 const totalXp = typeof profileResult.data?.total_xp === 'number' ? profileResult.data.total_xp : user?.totalXP ?? 0;
 
                 set({
-                    user: user ? { ...user, totalXP: totalXp } : user,
+                    user: user ? {
+                        ...user,
+                        name: profileResult.data?.name ?? user.name,
+                        avatar: profileResult.data?.avatar_url ?? user.avatar,
+                        totalXP: totalXp,
+                    } : user,
                     supabaseProfile: profileResult.data,
                     authError: null,
                 });
@@ -702,6 +483,7 @@ export const useAppStore = create<AppState>()(
                 notificationsEnabled: state.notificationsEnabled,
                 moodCheckEnabled: state.moodCheckEnabled,
                 dailyBriefShown: state.dailyBriefShown,
+                completedTours: state.completedTours,
             }),
         },
     ),

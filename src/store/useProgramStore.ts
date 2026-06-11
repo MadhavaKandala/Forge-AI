@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { toast } from 'sonner';
+import { deactivateEnrollmentInSupabase, syncEnrollmentToSupabase } from '@/lib/syncFromSupabase';
 import { Program, ProgramDay } from '../services/programService';
 import { PROGRAM_TEMPLATES, type ProgramTemplate } from '../services/programService';
 import { useHabitStore } from './useHabitStore';
-import { getCurrentStoreUserId, getUserScopedStoreName } from './useAppStore';
+import { getCurrentStoreUserId, getUserScopedStoreName, useAppStore } from './useAppStore';
 
 export interface ProgramEnrollment {
     id: string;
@@ -42,6 +43,7 @@ interface ProgramState {
     requirementCompletions: RequirementCompletions;
     isLoading: boolean;
     error: string | null;
+    setEnrollments: (enrollments: ProgramEnrollment[]) => void;
     fetchAll: () => Promise<void>;
     fetchActivePrograms: () => Promise<void>;
     fetchAvailablePrograms: () => Promise<void>;
@@ -126,6 +128,11 @@ export const useProgramStore = create<ProgramState>()(
             isLoading: false,
             error: null,
 
+            setEnrollments: (enrollments) => {
+                set({ enrollments });
+                void get().fetchActivePrograms();
+            },
+
             fetchAll: async () => {
                 await get().fetchAvailablePrograms();
                 await get().fetchActivePrograms();
@@ -195,9 +202,8 @@ export const useProgramStore = create<ProgramState>()(
                     return;
                 }
 
-                const enrollmentId = crypto.randomUUID();
                 const enrollment: ProgramEnrollment = {
-                    id: enrollmentId,
+                    id: programId,
                     programId,
                     startedAt: new Date().toISOString(),
                     preferredTime: selectedTime,
@@ -219,8 +225,13 @@ export const useProgramStore = create<ProgramState>()(
                         time: toTimeLabel(requirementTime),
                         type: 'checkbox',
                         category: 'personal',
-                        fromProgramId: enrollmentId,
+                        fromProgramId: programId,
                     });
+                }
+
+                const userId = useAppStore.getState().user?.id;
+                if (userId) {
+                    syncEnrollmentToSupabase(userId, programId, selectedTime, 1, 0);
                 }
 
                 await get().fetchActivePrograms();
@@ -228,6 +239,7 @@ export const useProgramStore = create<ProgramState>()(
             },
 
             unenrollFromProgram: async (enrollmentId: string) => {
+                const enrollment = get().enrollments.find((item) => item.id === enrollmentId);
                 set((state) => {
                     const { [enrollmentId]: _removed, ...requirementCompletions } = state.requirementCompletions;
                     return {
@@ -237,6 +249,10 @@ export const useProgramStore = create<ProgramState>()(
                 });
 
                 useHabitStore.getState().removeHabitsByProgramId(enrollmentId);
+                const userId = useAppStore.getState().user?.id;
+                if (userId && enrollment) {
+                    deactivateEnrollmentInSupabase(userId, enrollment.programId);
+                }
                 await get().fetchActivePrograms();
                 toast.success('Program deactivated.');
             },
@@ -300,6 +316,11 @@ export const useProgramStore = create<ProgramState>()(
                         };
                     }),
                 }));
+                const userId = useAppStore.getState().user?.id;
+                const enrollment = get().enrollments.find((item) => item.programId === programId);
+                if (userId && enrollment) {
+                    syncEnrollmentToSupabase(userId, enrollment.programId, enrollment.preferredTime, enrollment.currentDay, enrollment.streak);
+                }
                 useHabitStore.getState().addXP(20);
                 await get().fetchActivePrograms();
                 toast.success('Requirement completed.');

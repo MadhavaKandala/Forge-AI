@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
+import { Component, useEffect, useState } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
@@ -71,6 +71,26 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
         </>
     );
 };
+
+class AppErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+    state = { hasError: false };
+
+    static getDerivedStateFromError() {
+        return { hasError: true };
+    }
+
+    componentDidCatch(error: Error, info: ErrorInfo) {
+        console.error('App boundary crash:', error, info);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return <AuthPage />;
+        }
+
+        return this.props.children;
+    }
+}
 
 const App = () => {
     const [isCheckingSession, setIsCheckingSession] = useState(true);
@@ -218,37 +238,39 @@ const App = () => {
     }
 
     return (
-        <QueryClientProvider client={queryClient}>
-            <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                {isAuthenticated && onboardingComplete && dailyBriefShown !== new Date().toISOString().split('T')[0] && <DailyBrief />}
-                <HashRouter>
-                    {!isAuthenticated ? (
-                        <UnauthenticatedApp />
-                    ) : (
-                        <Routes>
-                            <Route path="/onboarding" element={onboardingComplete ? <Navigate to="/" replace /> : <OnboardingPage />} />
-                            <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-                            <Route path="/blitz" element={<ProtectedRoute><BlitzFocusPage /></ProtectedRoute>} />
-                            <Route path="/pomodoro" element={<ProtectedRoute><PomodoroPage /></ProtectedRoute>} />
-                            <Route path="/schedule" element={<ProtectedRoute><SchedulePage /></ProtectedRoute>} />
-                            <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />
-                            <Route path="/progress" element={<ProtectedRoute><ProgressPage /></ProtectedRoute>} />
-                            <Route path="/programs" element={<ProtectedRoute><ProgramsPage /></ProtectedRoute>} />
-                            <Route path="/programs/:id" element={<ProtectedRoute><ProgramDetailPage /></ProtectedRoute>} />
-                            <Route path="/what-next" element={<ProtectedRoute><WhatNextPage /></ProtectedRoute>} />
-                            <Route path="/tasks" element={<ProtectedRoute><MissionControlPage /></ProtectedRoute>} />
-                            <Route path="/missions/new" element={<ProtectedRoute><MissionControlPage /></ProtectedRoute>} />
-                            <Route path="/voice" element={<ProtectedRoute><VoicePage /></ProtectedRoute>} />
-                            <Route path="/stats" element={<ProtectedRoute><StatsPage /></ProtectedRoute>} />
-                            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                            <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
-                        </Routes>
-                    )}
-                </HashRouter>
-            </TooltipProvider>
-        </QueryClientProvider>
+        <AppErrorBoundary>
+            <QueryClientProvider client={queryClient}>
+                <TooltipProvider>
+                    <Toaster />
+                    <Sonner />
+                    {isAuthenticated && onboardingComplete && dailyBriefShown !== new Date().toISOString().split('T')[0] && <DailyBrief />}
+                    <HashRouter>
+                        {!isAuthenticated ? (
+                            <UnauthenticatedApp />
+                        ) : (
+                            <Routes>
+                                <Route path="/onboarding" element={onboardingComplete ? <Navigate to="/" replace /> : <OnboardingPage />} />
+                                <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+                                <Route path="/blitz" element={<ProtectedRoute><BlitzFocusPage /></ProtectedRoute>} />
+                                <Route path="/pomodoro" element={<ProtectedRoute><PomodoroPage /></ProtectedRoute>} />
+                                <Route path="/schedule" element={<ProtectedRoute><SchedulePage /></ProtectedRoute>} />
+                                <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />
+                                <Route path="/progress" element={<ProtectedRoute><ProgressPage /></ProtectedRoute>} />
+                                <Route path="/programs" element={<ProtectedRoute><ProgramsPage /></ProtectedRoute>} />
+                                <Route path="/programs/:id" element={<ProtectedRoute><ProgramDetailPage /></ProtectedRoute>} />
+                                <Route path="/what-next" element={<ProtectedRoute><WhatNextPage /></ProtectedRoute>} />
+                                <Route path="/tasks" element={<ProtectedRoute><MissionControlPage /></ProtectedRoute>} />
+                                <Route path="/missions/new" element={<ProtectedRoute><MissionControlPage /></ProtectedRoute>} />
+                                <Route path="/voice" element={<ProtectedRoute><VoicePage /></ProtectedRoute>} />
+                                <Route path="/stats" element={<ProtectedRoute><StatsPage /></ProtectedRoute>} />
+                                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                                <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
+                            </Routes>
+                        )}
+                    </HashRouter>
+                </TooltipProvider>
+            </QueryClientProvider>
+        </AppErrorBoundary>
     );
 };
 

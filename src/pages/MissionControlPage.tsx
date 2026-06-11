@@ -17,9 +17,11 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
+import GuidedTour, { type TourStep } from '@/components/GuidedTour';
 import { NewMissionModal } from '@/components/NewMissionModal';
 import { TaskDetailModal } from '@/components/habit-tracker/TaskDetailModal';
 import { cn } from '@/lib/utils';
+import { useAppStore } from '@/store/useAppStore';
 import { useHabitStore } from '@/store/useHabitStore';
 import { Task, TaskCategory, TaskPriority, TaskStatus } from '@/types/task';
 
@@ -58,6 +60,35 @@ const FILTERS: { id: MissionFilter; label: string }[] = [
     { id: 'personal', label: 'PERSONAL' },
     { id: 'academics', label: 'ACADEMICS' },
     { id: 'diet', label: 'DIET' },
+];
+
+const MISSIONS_TOUR_KEY = 'missions-tour';
+
+const MISSIONS_TOUR_STEPS: TourStep[] = [
+    {
+        targetId: 'smart-input-bar',
+        title: 'AI MISSION PARSER',
+        description: "Type anything like 'finish report today, gym tomorrow' and AI creates structured tasks automatically.",
+        position: 'bottom',
+    },
+    {
+        targetId: 'today-missions-section',
+        title: "TODAY'S MISSIONS",
+        description: 'Your active tasks. Tap START to begin, then DONE to complete and earn XP.',
+        position: 'top',
+    },
+    {
+        targetId: 'backlog-section',
+        title: 'BACKLOG',
+        description: 'Future tasks waiting to be deployed. Tap the arrow to move to today.',
+        position: 'top',
+    },
+    {
+        targetId: 'mission-fab',
+        title: 'NEW MISSION',
+        description: 'Tap + to create a detailed mission with priority, category and due date.',
+        position: 'left',
+    },
 ];
 
 const MISSION_PARSER_SYSTEM_PROMPT = `You are a military mission parser. Extract tasks from
@@ -575,6 +606,7 @@ interface MissionSectionProps {
     onDone: (task: Task) => void;
     onMoveToday: (task: Task) => void;
     onOpenDetail: (task: Task) => void;
+    targetId?: string;
 }
 
 const MissionSection = memo(({
@@ -591,8 +623,9 @@ const MissionSection = memo(({
     onDone,
     onMoveToday,
     onOpenDetail,
+    targetId,
 }: MissionSectionProps) => (
-    <section className="rounded-xl border border-zinc-800 bg-[#141414]">
+    <section id={targetId} className="rounded-xl border border-zinc-800 bg-[#141414]">
         <button
             type="button"
             onClick={onToggle}
@@ -689,12 +722,27 @@ export default function MissionControlPage() {
     const [isManualMissionOpen, setIsManualMissionOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [rewardPulse, setRewardPulse] = useState<{ taskId: string; amount: number } | null>(null);
+    const [showTour, setShowTour] = useState(false);
+
+    const { completedTours, markTourComplete } = useAppStore(
+        useShallow((state) => ({
+            completedTours: state.completedTours,
+            markTourComplete: state.markTourComplete,
+        })),
+    );
 
     const isNewMissionRoute = location.pathname === '/missions/new';
 
     useEffect(() => {
         void fetchTasks();
     }, [fetchTasks]);
+
+    useEffect(() => {
+        if (completedTours.includes(MISSIONS_TOUR_KEY)) return undefined;
+
+        const timer = window.setTimeout(() => setShowTour(true), 1000);
+        return () => window.clearTimeout(timer);
+    }, [completedTours]);
 
     useEffect(() => {
         if (isSmartInputExpanded) {
@@ -988,8 +1036,20 @@ export default function MissionControlPage() {
         setSelectedTask(null);
     }, []);
 
+    const handleTourComplete = useCallback(() => {
+        markTourComplete(MISSIONS_TOUR_KEY);
+        setShowTour(false);
+    }, [markTourComplete]);
+
     return (
         <div className="flex h-screen w-full flex-col overflow-hidden bg-[#0A0A0A] text-white">
+            {showTour && (
+                <GuidedTour
+                    steps={MISSIONS_TOUR_STEPS}
+                    storageKey={MISSIONS_TOUR_KEY}
+                    onComplete={handleTourComplete}
+                />
+            )}
             <header className="shrink-0 px-5 pb-3 pt-6">
                 <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
@@ -1021,7 +1081,7 @@ export default function MissionControlPage() {
                 </div>
             </header>
 
-            <div className="shrink-0 bg-[#0A0A0A]/95 px-5 pb-4">
+            <div id="smart-input-bar" className="shrink-0 bg-[#0A0A0A]/95 px-5 pb-4">
                 <SmartMissionInput
                     isExpanded={isSmartInputExpanded}
                     text={smartText}
@@ -1074,6 +1134,7 @@ export default function MissionControlPage() {
 
                 <div className="flex flex-col gap-3">
                     <MissionSection
+                        targetId="today-missions-section"
                         title="TODAY'S MISSIONS"
                         badgeClassName="bg-[#C8FF00] text-black"
                         emptyState={<EmptyState icon="🎯" title="NO ACTIVE MISSIONS" body="Deploy your first mission using the input above." />}
@@ -1090,6 +1151,7 @@ export default function MissionControlPage() {
                     />
 
                     <MissionSection
+                        targetId="backlog-section"
                         title="BACKLOG"
                         badgeClassName="bg-zinc-800 text-zinc-400"
                         emptyState={<EmptyState title="BACKLOG CLEAR" body="All missions accounted for." />}
@@ -1124,6 +1186,7 @@ export default function MissionControlPage() {
             </main>
 
             <button
+                id="mission-fab"
                 type="button"
                 onClick={handleManualMissionOpen}
                 aria-label="Deploy mission manually"

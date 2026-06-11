@@ -15,6 +15,7 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
+import GuidedTour, { type TourStep } from '@/components/GuidedTour';
 import MoodCheck from '@/components/MoodCheck';
 import MotivationCard from '@/components/MotivationCard';
 import CuratedRoutineRail from '@/components/CuratedRoutineRail';
@@ -97,6 +98,35 @@ interface EmptyStateProps {
     actionLabel?: string;
     onAction?: () => void;
 }
+
+const HOME_TOUR_KEY = 'home-tour';
+
+const HOME_TOUR_STEPS: TourStep[] = [
+    {
+        targetId: 'mood-check-section',
+        title: 'DAILY MODE',
+        description: "Set how you're showing up today. The app adjusts your schedule based on your mood.",
+        position: 'bottom',
+    },
+    {
+        targetId: 'progress-cards',
+        title: "TODAY'S SCORE",
+        description: 'Track habits completed and missions done. Hit 100% to earn bonus XP.',
+        position: 'top',
+    },
+    {
+        targetId: 'active-programs-bar',
+        title: 'ACTIVE PROGRAMS',
+        description: 'Your enrolled programs appear here. Each one auto-fills your daily schedule.',
+        position: 'top',
+    },
+    {
+        targetId: 'daily-ops-section',
+        title: 'DAILY OPS',
+        description: 'Your habits for today, sorted by time. Tap the checkbox to complete each one.',
+        position: 'top',
+    },
+];
 
 const taskPriorityScore = (task: Task): number => {
     const priority = task.priority === 'high' ? 3 : task.priority === 'medium' ? 2 : 1;
@@ -220,6 +250,7 @@ export default function HomePage() {
     const navigate = useNavigate();
     const [isMoodOpen, setIsMoodOpen] = useState(false);
     const [isMoreIntelOpen, setIsMoreIntelOpen] = useState(false);
+    const [showTour, setShowTour] = useState(false);
     const {
         habitUser,
         habits,
@@ -249,9 +280,23 @@ export default function HomePage() {
             initializeDefaults: s.initializeDefaults,
         })),
     );
-    const appUser = useAppStore((s) => s.user);
-    const userGoals = useAppStore((s) => s.userGoals);
-    const moodCheckEnabled = useAppStore((s) => s.moodCheckEnabled);
+    const {
+        appUser,
+        userGoals,
+        moodCheckEnabled,
+        onboardingComplete,
+        completedTours,
+        markTourComplete,
+    } = useAppStore(
+        useShallow((s) => ({
+            appUser: s.user,
+            userGoals: s.userGoals,
+            moodCheckEnabled: s.moodCheckEnabled,
+            onboardingComplete: s.onboardingComplete,
+            completedTours: s.completedTours,
+            markTourComplete: s.markTourComplete,
+        })),
+    );
     const { activePrograms, fetchAll } = useProgramStore(
         useShallow((s) => ({ activePrograms: s.activePrograms, fetchAll: s.fetchAll })),
     );
@@ -274,6 +319,14 @@ export default function HomePage() {
             setIsMoodOpen(true);
         }
     }, [currentMood, moodCheckEnabled]);
+
+    useEffect(() => {
+        if (isMoodOpen || !onboardingComplete || completedTours.includes(HOME_TOUR_KEY)) return undefined;
+
+        setIsMoreIntelOpen(true);
+        const timer = window.setTimeout(() => setShowTour(true), 1000);
+        return () => window.clearTimeout(timer);
+    }, [completedTours, isMoodOpen, onboardingComplete]);
 
     const checkboxHabits = useMemo(
         () => habits.filter((habit) => habit.type === 'checkbox').sort((a, b) => toMinutes(a.time) - toMinutes(b.time)),
@@ -374,6 +427,11 @@ export default function HomePage() {
         });
     }, []);
 
+    const handleTourComplete = useCallback(() => {
+        markTourComplete(HOME_TOUR_KEY);
+        setShowTour(false);
+    }, [markTourComplete]);
+
     const handleOpComplete = useCallback((item: DailyOp) => {
         if (item.completed) {
             toast.info('Op already complete.');
@@ -419,6 +477,13 @@ export default function HomePage() {
     return (
         <div className="min-h-screen bg-[#0A0A0A] px-5 pb-28 pt-7 text-white">
             <AnimatePresence>{isMoodOpen && <MoodCheck onSelect={handleMoodSelect} />}</AnimatePresence>
+            {showTour && (
+                <GuidedTour
+                    steps={HOME_TOUR_STEPS}
+                    storageKey={HOME_TOUR_KEY}
+                    onComplete={handleTourComplete}
+                />
+            )}
 
             <header className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
@@ -449,7 +514,7 @@ export default function HomePage() {
             </header>
 
             <main className="mt-5 flex flex-col gap-5">
-                <section className="rounded-2xl border border-zinc-800 bg-[#141414] p-4">
+                <section id="mood-check-section" className="rounded-2xl border border-zinc-800 bg-[#141414] p-4">
                     <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">DAILY MODE</p>
@@ -560,7 +625,7 @@ export default function HomePage() {
                     )}
                 </section>
 
-                <section className="rounded-2xl border border-zinc-800 bg-[#141414] p-4">
+                <section id="daily-ops-section" className="rounded-2xl border border-zinc-800 bg-[#141414] p-4">
                     <div className="flex items-center justify-between gap-3">
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">TODAY OPS</p>
@@ -621,7 +686,7 @@ export default function HomePage() {
                     </div>
                 </section>
 
-                <section>
+                <section id="progress-cards">
                     <div className="mb-3 flex items-center gap-2">
                         <ListChecks className="h-4 w-4 text-[#C8FF00]" />
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">TACTICAL METRICS</p>
@@ -682,7 +747,7 @@ export default function HomePage() {
                                         )}
                                     </AnimatePresence>
 
-                                    <section className="mt-5">
+                                    <section id="active-programs-bar" className="mt-5">
                                         <div className="mb-3 flex items-center justify-between">
                                             <h2 className="text-xs font-black uppercase tracking-[0.22em] text-zinc-500">ACTIVE PROGRAMS</h2>
                                             <span className="text-[10px] font-black uppercase tracking-[0.16em] text-[#C8FF00]">{activePrograms.length} ACTIVE</span>

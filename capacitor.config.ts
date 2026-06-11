@@ -4,6 +4,9 @@ const config: CapacitorConfig = {
   appId: 'com.hundreddays.app',
   appName: '100 Days Challenge',
   webDir: 'dist',
+  server: {
+    androidScheme: 'https',
+  },
   plugins: {
     GoogleAuth: {
       scopes: ['profile', 'email'],

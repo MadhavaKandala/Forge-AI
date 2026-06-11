@@ -3,6 +3,7 @@ import { AnimatePresence, animate, motion } from 'framer-motion';
 import { Check, Flame, Shield, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
+import GuidedTour, { type TourStep } from '@/components/GuidedTour';
 import { MOOD_CONTENT, MOOD_ORDER, type MoodKey } from '@/lib/moodContent';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
@@ -37,6 +38,35 @@ const FILTERS: { value: DateFilter; label: string }[] = [
     { value: 'today', label: 'TODAY' },
     { value: 'week', label: 'THIS WEEK' },
     { value: 'year', label: 'THIS YEAR' },
+];
+
+const STATS_TOUR_KEY = 'stats-tour';
+
+const STATS_TOUR_STEPS: TourStep[] = [
+    {
+        targetId: 'operator-card',
+        title: 'YOUR LEVEL',
+        description: 'Complete habits and missions to earn XP and level up from RECRUIT to MASTER.',
+        position: 'bottom',
+    },
+    {
+        targetId: 'today-summary',
+        title: "TODAY'S PERFORMANCE",
+        description: "Real-time score of today's habits and missions. Aim for 100% every day.",
+        position: 'top',
+    },
+    {
+        targetId: 'mood-history',
+        title: 'MOOD INTELLIGENCE',
+        description: "Your mood patterns over time. See when you're most consistent and why.",
+        position: 'top',
+    },
+    {
+        targetId: 'consistency-heatmap',
+        title: 'CONSISTENCY MAP',
+        description: 'Your last 30 days at a glance. Brighter green means more habits completed.',
+        position: 'top',
+    },
 ];
 
 const LEVELS: LevelInfo[] = [
@@ -332,6 +362,7 @@ const StatBox = ({ value, label }: { value: number; label: string }) => (
 export default function StatsPage() {
     const [dateFilter, setDateFilter] = useState<DateFilter>('today');
     const [selectedHeatmapDay, setSelectedHeatmapDay] = useState<HeatmapDay | null>(null);
+    const [showTour, setShowTour] = useState(false);
 
     const {
         habitUser,
@@ -350,7 +381,13 @@ export default function StatsPage() {
             initializeDefaults: state.initializeDefaults,
         })),
     );
-    const appUser = useAppStore((state) => state.user);
+    const { appUser, completedTours, markTourComplete } = useAppStore(
+        useShallow((state) => ({
+            appUser: state.user,
+            completedTours: state.completedTours,
+            markTourComplete: state.markTourComplete,
+        })),
+    );
     const { activePrograms, enrollments, fetchAll } = useProgramStore(
         useShallow((state) => ({
             activePrograms: state.activePrograms,
@@ -363,6 +400,13 @@ export default function StatsPage() {
         initializeDefaults();
         void fetchAll();
     }, [fetchAll, initializeDefaults]);
+
+    useEffect(() => {
+        if (completedTours.includes(STATS_TOUR_KEY)) return undefined;
+
+        const timer = window.setTimeout(() => setShowTour(true), 1000);
+        return () => window.clearTimeout(timer);
+    }, [completedTours]);
 
     const today = todayKey();
     const periodRange = useMemo(() => getPeriodRange(dateFilter), [dateFilter]);
@@ -506,6 +550,11 @@ export default function StatsPage() {
         toast.info(`${day.label}: ${day.completed}/${day.total} habits complete.`);
     }, []);
 
+    const handleTourComplete = useCallback(() => {
+        markTourComplete(STATS_TOUR_KEY);
+        setShowTour(false);
+    }, [markTourComplete]);
+
     return (
         <motion.div
             className="min-h-screen bg-[#0A0A0A] px-5 pb-28 pt-7 text-white"
@@ -513,6 +562,13 @@ export default function StatsPage() {
             initial="hidden"
             animate="visible"
         >
+            {showTour && (
+                <GuidedTour
+                    steps={STATS_TOUR_STEPS}
+                    storageKey={STATS_TOUR_KEY}
+                    onComplete={handleTourComplete}
+                />
+            )}
             <motion.header variants={sectionVariants} transition={{ duration: 0.32, ease: 'easeOut' }}>
                 <h1 className="text-2xl font-black uppercase tracking-[0.06em] text-white">INTEL DASHBOARD</h1>
                 <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">
@@ -522,6 +578,7 @@ export default function StatsPage() {
 
             <main className="mt-6 flex flex-col gap-7">
                 <motion.section
+                    id="operator-card"
                     variants={sectionVariants}
                     transition={{ duration: 0.32, ease: 'easeOut' }}
                     className="rounded-2xl border border-zinc-800 border-l-4 border-l-[#C8FF00] bg-[#1C1C1C] p-4 shadow-[0_0_28px_rgba(200,255,0,0.07)]"
@@ -560,7 +617,7 @@ export default function StatsPage() {
                     </div>
                 </motion.section>
 
-                <motion.section variants={sectionVariants} transition={{ duration: 0.32, ease: 'easeOut' }}>
+                <motion.section id="today-summary" variants={sectionVariants} transition={{ duration: 0.32, ease: 'easeOut' }}>
                     <SectionLabel>TODAY&apos;S PERFORMANCE</SectionLabel>
                     <div className="mt-3 grid grid-cols-2 gap-3">
                         <TodayStatCard
@@ -644,7 +701,7 @@ export default function StatsPage() {
                         transition={{ duration: 0.2, ease: 'easeOut' }}
                         className="flex flex-col gap-7"
                     >
-                        <motion.section variants={sectionVariants} initial="hidden" animate="visible" transition={{ duration: 0.32, ease: 'easeOut' }}>
+                        <motion.section id="mood-history" variants={sectionVariants} initial="hidden" animate="visible" transition={{ duration: 0.32, ease: 'easeOut' }}>
                             <SectionLabel>MOOD INTELLIGENCE</SectionLabel>
                             <div className="mt-3 rounded-2xl border border-zinc-800 bg-[#1C1C1C] p-4">
                                 <div className="flex items-center justify-between gap-4">
@@ -773,7 +830,7 @@ export default function StatsPage() {
                     </motion.div>
                 </AnimatePresence>
 
-                <motion.section variants={sectionVariants} transition={{ duration: 0.32, ease: 'easeOut' }}>
+                <motion.section id="consistency-heatmap" variants={sectionVariants} transition={{ duration: 0.32, ease: 'easeOut' }}>
                     <SectionLabel subtext="Last 30 days">CONSISTENCY MAP</SectionLabel>
                     <div className="mt-3 rounded-2xl border border-zinc-800 bg-[#1C1C1C] p-4">
                         <div className="grid grid-cols-6 gap-0.5">

@@ -14,10 +14,12 @@ import {
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 import CreateProgramModal from '@/components/CreateProgramModal';
+import GuidedTour, { type TourStep } from '@/components/GuidedTour';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { type Program, type ProgramTemplate } from '@/services/programService';
+import { useAppStore } from '@/store/useAppStore';
 import { type ProgramEnrollment, useProgramStore } from '@/store/useProgramStore';
 
 type ProgramUiCategory = 'fitness' | 'coding' | 'work' | 'wellness' | 'custom';
@@ -30,6 +32,29 @@ const CATEGORY_FILTERS: { id: CategoryFilter; label: string }[] = [
     { id: 'work', label: 'WORK' },
     { id: 'wellness', label: 'WELLNESS' },
     { id: 'custom', label: 'CUSTOM' },
+];
+
+const PROGRAMS_TOUR_KEY = 'programs-tour';
+
+const PROGRAMS_TOUR_STEPS: TourStep[] = [
+    {
+        targetId: 'programs-grid',
+        title: 'CHOOSE YOUR PROGRAM',
+        description: 'Each program is a structured challenge. Activating one automatically adds daily habits to your schedule.',
+        position: 'top',
+    },
+    {
+        targetId: 'active-programs-section',
+        title: 'ACTIVE PROGRAMS',
+        description: 'Your running programs show here with day count and streak progress.',
+        position: 'bottom',
+    },
+    {
+        targetId: 'create-program-card',
+        title: 'BUILD YOUR OWN',
+        description: 'Create a custom program for any goal - work projects, study plans, anything.',
+        position: 'top',
+    },
 ];
 
 const PROGRAM_CATEGORY_BY_TYPE: Record<string, Exclude<ProgramUiCategory, 'custom'>> = {
@@ -183,13 +208,27 @@ export default function ProgramsPage() {
     const [selectedTime, setSelectedTime] = useState('09:00');
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [pulseProgramId, setPulseProgramId] = useState<string | null>(null);
+    const [showTour, setShowTour] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const dateKey = useMemo(todayKey, []);
     const timeSlots = useMemo(buildTimeSlots, []);
+    const { completedTours, markTourComplete } = useAppStore(
+        useShallow((state) => ({
+            completedTours: state.completedTours,
+            markTourComplete: state.markTourComplete,
+        })),
+    );
 
     useEffect(() => {
         void fetchAll();
     }, [fetchAll]);
+
+    useEffect(() => {
+        if (completedTours.includes(PROGRAMS_TOUR_KEY)) return undefined;
+
+        const timer = window.setTimeout(() => setShowTour(true), 1000);
+        return () => window.clearTimeout(timer);
+    }, [completedTours]);
 
     useEffect(() => {
         if (isSearchOpen) {
@@ -288,6 +327,11 @@ export default function ProgramsPage() {
         toast.info('Program detail closed.');
     }, []);
 
+    const handleTourComplete = useCallback(() => {
+        markTourComplete(PROGRAMS_TOUR_KEY);
+        setShowTour(false);
+    }, [markTourComplete]);
+
     const isRequirementComplete = useCallback((enrollmentId: string, requirement: string) => (
         requirementCompletions[enrollmentId]?.[dateKey]?.includes(requirement) ?? false
     ), [dateKey, requirementCompletions]);
@@ -303,6 +347,13 @@ export default function ProgramsPage() {
 
     return (
         <div className="min-h-screen bg-[#0A0A0A] px-5 pb-28 pt-7 text-white">
+            {showTour && (
+                <GuidedTour
+                    steps={PROGRAMS_TOUR_STEPS}
+                    storageKey={PROGRAMS_TOUR_KEY}
+                    onComplete={handleTourComplete}
+                />
+            )}
             <header className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                     <h1 className="text-2xl font-black uppercase tracking-[0.08em] text-white">PROGRAMS</h1>
@@ -363,7 +414,7 @@ export default function ProgramsPage() {
             </AnimatePresence>
 
             <main className="mt-6 flex flex-col gap-7">
-                <section>
+                <section id="active-programs-section">
                     <SectionLabel neon>ACTIVE PROGRAMS</SectionLabel>
                     <div className="mt-3">
                         {activeRows.length === 0 ? (
@@ -426,7 +477,7 @@ export default function ProgramsPage() {
                     </div>
                 </section>
 
-                <section>
+                <section id="programs-grid">
                     <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
                         {CATEGORY_FILTERS.map((filter) => (
                             <button
@@ -531,6 +582,7 @@ export default function ProgramsPage() {
                 </section>
 
                 <motion.button
+                    id="create-program-card"
                     type="button"
                     onClick={handleOpenCreate}
                     whileTap={{ scale: 0.98 }}

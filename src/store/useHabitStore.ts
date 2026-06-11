@@ -3,7 +3,14 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { toast } from 'sonner';
 import { Task, TaskCategory, TaskPriority, TaskStatus, EisenhowerQuadrant, CreateTaskDTO } from '@/types/task';
 import { MoodKey } from '@/lib/moodContent';
-import { getCurrentStoreUserId, getUserScopedStoreName } from './useAppStore';
+import {
+    deleteHabitFromSupabase,
+    deleteMissionFromSupabase,
+    syncHabitCompletionToSupabase,
+    syncHabitToSupabase,
+    syncMissionToSupabase,
+} from '@/lib/syncFromSupabase';
+import { getCurrentStoreUserId, getUserScopedStoreName, useAppStore } from './useAppStore';
 import { encryptData, decryptData } from '@/lib/encryption';
 
 export type HabitType = 'checkbox' | 'numeric' | 'timer';
@@ -105,11 +112,13 @@ interface HabitState {
     updateTaskStage: (taskId: string, stage: TaskStatus) => void;
     deleteTask: (taskId: string) => void;
     fetchTasks: () => Promise<void>;
+    setTasks: (tasks: Task[]) => void;
 
     // Schedule/Habit Actions
     addHabit: (habit: Omit<Habit, 'id' | 'streak' | 'completedDates' | 'history'> & { fromProgramId?: string }) => void;
     removeHabitsByProgramId: (programId: string) => void;
     fetchHabits: () => Promise<void>;
+    setHabits: (habits: Habit[]) => void;
     initializeDefaults: () => void;
     markFreshStart: () => void;
     addScheduleItem: (item: Omit<ScheduleItem, 'id'>) => void;
@@ -209,6 +218,10 @@ export const useHabitStore = create<HabitState>()(
                         if (earnedShield) {
                             toast.success(`Shield earned. ${Math.min(3, get().streakShields)} shields armed.`);
                         }
+                    }
+                    const userId = useAppStore.getState().user?.id;
+                    if (userId) {
+                        syncHabitCompletionToSupabase(userId, habitId, dateStr);
                     }
                 }
 
@@ -331,23 +344,38 @@ export const useHabitStore = create<HabitState>()(
                 set({ selectedDate: date });
             },
 
-            addHabit: (newHabit) => set((state) => ({
-                habits: [
-                    ...state.habits,
-                    {
-                        ...newHabit,
-                        id: crypto.randomUUID(),
-                        streak: 0,
-                        completedDates: [],
-                        history: {},
-                        fromProgramId: newHabit.fromProgramId
-                    }
-                ]
-            })),
+            addHabit: (newHabit) => {
+                const habit: Habit = {
+                    ...newHabit,
+                    id: crypto.randomUUID(),
+                    streak: 0,
+                    completedDates: [],
+                    history: {},
+                    fromProgramId: newHabit.fromProgramId,
+                };
 
-            removeHabitsByProgramId: (programId) => set((state) => ({
-                habits: state.habits.filter((habit) => habit.fromProgramId !== programId)
-            })),
+                set((state) => ({
+                    habits: [...state.habits, habit]
+                }));
+
+                const userId = useAppStore.getState().user?.id;
+                if (userId) {
+                    syncHabitToSupabase(userId, habit);
+                }
+            },
+
+            removeHabitsByProgramId: (programId) => {
+                const userId = useAppStore.getState().user?.id;
+                const removedHabits = get().habits.filter((habit) => habit.fromProgramId === programId);
+
+                set((state) => ({
+                    habits: state.habits.filter((habit) => habit.fromProgramId !== programId)
+                }));
+
+                if (userId) {
+                    removedHabits.forEach((habit) => deleteHabitFromSupabase(userId, habit.id));
+                }
+            },
 
             // Task Actions
             addTask: async (taskData) => {
@@ -384,6 +412,10 @@ export const useHabitStore = create<HabitState>()(
                     set((state) => ({
                         tasks: [newTask, ...state.tasks.filter(t => !t.id.startsWith('local-'))]
                     }));
+                    const userId = useAppStore.getState().user?.id;
+                    if (userId) {
+                        syncMissionToSupabase(userId, newTask);
+                    }
 
                     // Refresh suggester
                     import('./useSuggesterStore').then(({ useSuggesterStore }) => {
@@ -395,7 +427,7 @@ export const useHabitStore = create<HabitState>()(
                     // Fallback: add with local ID if DB fails
                     const localTask: Task = {
                         ...taskData,
-                        id: `local-${crypto.randomUUID()}`,
+                        id: crypto.randomUUID(),
                         size,
                         priority,
                         status,
@@ -406,10 +438,15 @@ export const useHabitStore = create<HabitState>()(
                         updatedAt: new Date().toISOString()
                     };
                     set((state) => ({ tasks: [localTask, ...state.tasks] }));
+                    const userId = useAppStore.getState().user?.id;
+                    if (userId) {
+                        syncMissionToSupabase(userId, localTask);
+                    }
                 }
             },
 
             toggleTask: (taskId) => set((state) => {
+                let syncedTask: Task | null = null;
                 const updatedTasks = state.tasks.map(t => {
                     if (t.id === taskId) {
                         const newCompleted = !t.completed;
@@ -420,10 +457,15 @@ export const useHabitStore = create<HabitState>()(
                                 .catch(err => console.error("Failed to sync task toggle:", err));
                         });
 
-                        return { ...t, completed: newCompleted, status: newStatus };
+                        syncedTask = { ...t, completed: newCompleted, status: newStatus };
+                        return syncedTask;
                     }
                     return t;
                 });
+                const userId = useAppStore.getState().user?.id;
+                if (userId && syncedTask) {
+                    syncMissionToSupabase(userId, syncedTask);
+                }
                 // Refresh suggester
                 import('./useSuggesterStore').then(({ useSuggesterStore }) => {
                     useSuggesterStore.getState().getSuggestion();
@@ -431,16 +473,22 @@ export const useHabitStore = create<HabitState>()(
                 return { tasks: updatedTasks };
             }),
 
-            updateTask: (taskId, updates) => set((state) => {
+            updateTask: (taskId, updates) => {
+                const existingTask = get().tasks.find((task) => task.id === taskId);
                 import('@/services/taskService').then(({ taskService }) => {
                     taskService.updateTask(taskId, updates)
                         .catch(err => console.error("Failed to sync task update:", err));
                 });
 
-                return {
+                set((state) => ({
                     tasks: state.tasks.map(t => t.id === taskId ? { ...t, ...updates } : t)
-                };
-            }),
+                }));
+
+                const userId = useAppStore.getState().user?.id;
+                if (userId && existingTask) {
+                    syncMissionToSupabase(userId, { ...existingTask, ...updates });
+                }
+            },
 
             updateTaskStage: (taskId, stage) => {
                 const targetTask = get().tasks.find((task) => task.id === taskId);
@@ -458,7 +506,8 @@ export const useHabitStore = create<HabitState>()(
                 }
             },
 
-            deleteTask: (taskId) => set((state) => {
+            deleteTask: (taskId) => {
+                const userId = useAppStore.getState().user?.id;
                 import('@/services/taskService').then(({ taskService }) => {
                     taskService.deleteTask(taskId)
                         .catch(err => console.error("Failed to sync task deletion:", err));
@@ -468,8 +517,11 @@ export const useHabitStore = create<HabitState>()(
                         useSuggesterStore.getState().getSuggestion();
                     });
                 });
-                return { tasks: state.tasks.filter(t => t.id !== taskId) };
-            }),
+                set((state) => ({ tasks: state.tasks.filter(t => t.id !== taskId) }));
+                if (userId) {
+                    deleteMissionFromSupabase(userId, taskId);
+                }
+            },
 
             fetchTasks: async () => {
                 try {
@@ -508,9 +560,13 @@ export const useHabitStore = create<HabitState>()(
                 }
             },
 
+            setTasks: (tasks) => set({ tasks }),
+
             fetchHabits: async () => {
                 console.log("Habits synchronized");
             },
+
+            setHabits: (habits) => set({ habits }),
 
             initializeDefaults: () => set((state) => {
                 if (state.onboardingDataChoice !== 'unset') return {};
