@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="guidelines.css"></head>
+<body>
+  <div class="pg-header">
+    <div class="mark">
+      <svg class="logo-mark" width="40" height="40" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+        <rect width="48" height="48" rx="8"/><path d="M14 10 H34 L24 22 H34 L18 38 L24 24 H14 Z"/>
+      </svg>
+      <div>
+        <div class="pg-title disp">UI Components</div>
+        <div class="pg-kicker">Buttons, fields &amp; status</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="eyebrow">THE FORGE</div>
+      <div class="eyebrow lime">V1 — BRAND GUIDELINES</div>
+    </div>
+  </div>
+
+  <div class="pg-body" style="flex:1">
+    <div class="card">
+      <h3>Buttons</h3>
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <button class="btn btn-primary">Start Session</button>
+        <button class="btn btn-secondary">View Program</button>
+        <button class="btn btn-ghost">Skip Today</button>
+        <button class="btn btn-disabled">Locked</button>
+      </div>
+    </div>
+
+    <div class="grid cols-2">
+      <div class="card orange" style="display:flex;flex-direction:column;gap:12px">
+        <h3>Input Field</h3>
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:4px;padding:14px 16px;display:flex;flex-direction:column;gap:4px">
+          <span class="eyebrow" style="font-size:10px">Working Weight (kg)</span>
+          <span style="font-size:18px;font-weight:600" class="mono-num">82.5</span>
+        </div>
+        <p>Surface-2 fill, 1px border, label as eyebrow above value. Focus state: border becomes Lime.</p>
+      </div>
+      <div class="card gray" style="display:flex;flex-direction:column;gap:12px">
+        <h3>Tags &amp; Status</h3>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <span class="tag">Active</span>
+          <span class="tag orange">Today</span>
+          <span class="tag gray">Locked</span>
+        </div>
+        <p>Pills carry status only — single word, uppercase, tracked. Color = state, never decoration.</p>
+      </div>
+    </div>
+
+    <div class="card" style="flex:1;display:flex;flex-direction:column;gap:14px">
+      <h3>Streak &amp; Progress</h3>
+      <div style="display:flex;gap:24px;align-items:center">
+        <div>
+          <div class="eyebrow">01 // Streak</div>
+          <div class="disp lime" style="font-size:64px">47</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+          <div class="kv" style="border:none;padding:0"><span class="k">Week 5 of 8 — Hypertrophy Block</span><span class="v">62%</span></div>
+          <div class="bar"><span style="width:62%"></span></div>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <span style="width:14px;height:14px;border-radius:2px;background:#d7ff33"></span>
+            <span style="width:14px;height:14px;border-radius:2px;background:#d7ff33"></span>
+            <span style="width:14px;height:14px;border-radius:2px;background:#d7ff33"></span>
+            <span style="width:14px;height:14px;border-radius:2px;background:#ff5a2e"></span>
+            <span style="width:14px;height:14px;border-radius:2px;background:#1c1c1c;border:1px solid #2a2a2a"></span>
+            <span style="width:14px;height:14px;border-radius:2px;background:#1c1c1c;border:1px solid #2a2a2a"></span>
+            <span style="width:14px;height:14px;border-radius:2px;background:#1c1c1c;border:1px solid #2a2a2a"></span>
+          </div>
+        </div>
+      </div>
+      <p>Streak numerals always Display/900/Lime. Progress bars fill in Lime on a Surface-2 track. Day-grids use Lime (done), Orange (today), Surface-2 (upcoming) — never red for "upcoming."</p>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>FORGE AI — FORGED DAILY, NEVER FINISHED</span>
+    <span class="lime">14 / 15</span>
+  </div>
+</body></html>

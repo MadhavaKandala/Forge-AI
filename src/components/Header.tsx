@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Flame, Zap } from 'lucide-react';
 import { useChallenges } from '@/hooks/useChallenges';
 import { Challenge } from '@/types/challenge';
+import forgeLogo from '@/assets/forge-logo.png';
 
 interface HeaderProps {
   onCreateChallenge: () => void;
@@ -29,13 +30,11 @@ export function Header({ onCreateChallenge, challengeCount, challenges = [] }: H
           {/* Logo & Brand */}
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
-                <Flame className="w-5 h-5 text-orange-500" />
-              </div>
+              <img src={forgeLogo} alt="Forge AI" className="w-10 h-10 rounded-xl" />
             </div>
             <div>
-              <h1 className="font-bold text-lg leading-tight tracking-tight">100 Days</h1>
-              <p className="text-[11px] text-muted-foreground">Challenge Tracker</p>
+              <h1 className="font-bold text-lg leading-tight tracking-tight">FORGE AI</h1>
+              <p className="text-[11px] text-muted-foreground">Command Center</p>
             </div>
           </div>
 

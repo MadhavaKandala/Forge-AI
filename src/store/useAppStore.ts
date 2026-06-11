@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Capacitor } from '@capacitor/core';
 
 import { loadUserData, syncAllHabitsToSupabase, syncAllMissionsToSupabase } from '@/lib/syncFromSupabase';
-import { supabase } from '@/lib/supabase';
+import { clearSupabaseAuthStorage, supabase } from '@/lib/supabase';
 
 const GOOGLE_WEB_CLIENT_ID = '275760652639-4flj5gar1op7tfsr5gkkcd13t8t4t2im.apps.googleusercontent.com';
 
@@ -39,6 +39,33 @@ const toAppUser = (user: {
     totalXP: profile?.total_xp ?? 0,
 });
 
+const deriveNameFromEmail = (email?: string | null) => {
+    const localPart = email?.split('@')[0]?.trim();
+    if (!localPart) return 'Operator';
+
+    return localPart
+        .replace(/[._-]+/g, ' ')
+        .replace(/\d+/g, '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .join(' ') || 'Operator';
+};
+
+const getFallbackProfileName = (email?: string | null, googleName?: string | null) => {
+    const emailName = deriveNameFromEmail(email);
+    if (emailName !== 'Operator') return emailName;
+    return googleName?.trim() || 'Operator';
+};
+
+const navigateToAuthRoot = () => {
+    if (typeof window === 'undefined') return;
+
+    window.location.replace('/#/');
+    window.setTimeout(() => window.location.reload(), 50);
+};
+
 interface AppState {
     isAuthenticated: boolean;
     user: AppUser | null;
@@ -61,6 +88,7 @@ interface AppState {
     checkSession: () => Promise<boolean>;
     setOnboardingComplete: () => void;
     completeOnboarding: (settings: {
+        displayName: string;
         userGoals: string[];
         userSubcategories: string[];
         wakeTime: string;
@@ -205,6 +233,11 @@ export const useAppStore = create<AppState>()(
                         };
 
                     await GoogleAuth.initialize(googleAuthConfig);
+                    try {
+                        await GoogleAuth.signOut();
+                    } catch {
+                        // The user may not have a cached Google session yet.
+                    }
 
                     const googleUser = await GoogleAuth.signIn();
                     const idToken = googleUser.authentication?.idToken;
@@ -232,7 +265,8 @@ export const useAppStore = create<AppState>()(
                     const profile = {
                         id: data.user.id,
                         email: googleProfile.email ?? data.user.email ?? '',
-                        name: supabaseProfile?.name ?? googleProfile.displayName ?? googleProfile.name ?? 'Operator',
+                        name: supabaseProfile?.name
+                            ?? getFallbackProfileName(googleProfile.email ?? data.user.email, googleProfile.displayName ?? googleProfile.name),
                         avatar: supabaseProfile?.avatar_url ?? googleProfile.imageUrl ?? '',
                         totalXP: typeof supabaseProfile?.total_xp === 'number' ? supabaseProfile.total_xp : 0,
                     };
@@ -278,9 +312,18 @@ export const useAppStore = create<AppState>()(
                 useScheduleStore.persist.setOptions({ name: getUserScopedStoreName('schedule-store', 'guest') });
                 useVoiceStore.persist.setOptions({ name: getUserScopedStoreName('voice-store', 'guest') });
                 useAppStore.persist.setOptions({ name: getUserScopedStoreName('app-store', 'guest') });
+                clearSupabaseAuthStorage();
 
                 try {
                     const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+                    const googleAuthConfig = Capacitor.isNativePlatform()
+                        ? { scopes: ['profile', 'email'], grantOfflineAccess: false }
+                        : {
+                            clientId: GOOGLE_WEB_CLIENT_ID,
+                            scopes: ['profile', 'email'],
+                            grantOfflineAccess: false,
+                        };
+                    await GoogleAuth.initialize(googleAuthConfig);
                     await GoogleAuth.signOut();
                 } catch (e) {
                     console.log('Google signout error:', e);
@@ -291,6 +334,7 @@ export const useAppStore = create<AppState>()(
                 } catch (e) {
                     console.log('Supabase signout error:', e);
                 }
+                clearSupabaseAuthStorage();
 
                 useHabitStore.getState().clearAll();
                 useTaskStore.getState().clearAll();
@@ -314,7 +358,7 @@ export const useAppStore = create<AppState>()(
                     completedTours: [],
                 });
                 toast.success('Logged out. See you tomorrow.');
-                window.location.href = '/';
+                navigateToAuthRoot();
             },
 
             checkSession: async () => {
@@ -384,12 +428,38 @@ export const useAppStore = create<AppState>()(
             },
 
             setOnboardingComplete: () => set({ onboardingComplete: true }),
-            completeOnboarding: ({ userGoals, userSubcategories, wakeTime }) => set({
-                userGoals,
-                userSubcategories,
-                wakeTime,
-                onboardingComplete: true,
-            }),
+            completeOnboarding: ({ displayName, userGoals, userSubcategories, wakeTime }) => {
+                const name = displayName.trim() || deriveNameFromEmail(get().user?.email);
+                const { supabaseUserId, user } = get();
+
+                set({
+                    user: user ? { ...user, name } : user,
+                    userGoals,
+                    userSubcategories,
+                    wakeTime,
+                    onboardingComplete: true,
+                });
+
+                if (supabaseUserId) {
+                    supabase.from('profiles').upsert({
+                        id: supabaseUserId,
+                        email: user?.email ?? null,
+                        name,
+                        avatar_url: user?.avatar ?? null,
+                        total_xp: user?.totalXP ?? 0,
+                    }, { onConflict: 'id' }).then(({ error }) => {
+                        if (error) console.error('profile sync failed:', error);
+                    });
+                }
+
+                void syncHabitProfile({
+                    id: user?.id ?? supabaseUserId ?? 'local',
+                    email: user?.email ?? '',
+                    name,
+                    avatar: user?.avatar ?? '',
+                    totalXP: user?.totalXP ?? 0,
+                });
+            },
             resetOnboarding: () => set({
                 onboardingComplete: false,
                 userGoals: [],

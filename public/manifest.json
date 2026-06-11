@@ -1,11 +1,11 @@
 {
-  "name": "100-days-challenge-tracker",
-  "short_name": "100 Days",
-  "description": "Track your 100-day challenges with daily check-ins, streak motivation, and milestone achievements.",
+  "name": "Forge AI",
+  "short_name": "Forge AI",
+  "description": "Your personal operating system. Track habits, missions, programs, and daily ops.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1a1a2e",
-  "theme_color": "#f97316",
+  "background_color": "#0A0A0A",
+  "theme_color": "#0A0A0A",
   "orientation": "portrait-primary",
   "icons": [
     {
@@ -25,10 +25,10 @@
   "screenshots": [],
   "shortcuts": [
     {
-      "name": "Check In",
-      "short_name": "Check In",
-      "description": "Quick check-in to your challenges",
-      "url": "/?action=checkin",
+      "name": "Command Center",
+      "short_name": "HQ",
+      "description": "Open your daily command center",
+      "url": "/",
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     }
   ]

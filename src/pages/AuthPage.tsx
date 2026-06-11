@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '../store/useAppStore';
+import forgeLogo from '@/assets/forge-logo.png';
 
 export default function AuthPage() {
     const { authError, clearAuthError, signInWithGoogle } = useAppStore(
@@ -34,6 +35,16 @@ export default function AuthPage() {
             fontFamily: 'sans-serif',
         }}>
             <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+                <img
+                    src={forgeLogo}
+                    alt="Forge AI"
+                    style={{
+                        width: '96px',
+                        height: '96px',
+                        borderRadius: '24px',
+                        marginBottom: '24px',
+                    }}
+                />
                 <h1 style={{ color: '#C8FF00', fontSize: '42px', fontWeight: 900, margin: 0 }}>
                     FORGE AI
                 </h1>

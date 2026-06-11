@@ -43,6 +43,12 @@
       "skillPath": "skills/kiss-cam/SKILL.md",
       "computedHash": "b0219502acf82bf925e9f58a4eb6669cb53ae7dfbeba790906e8b960346ff1df"
     },
+    "language-swap": {
+      "source": "Pika-Labs/Pika-Plugins",
+      "sourceType": "github",
+      "skillPath": "skills/language-swap/SKILL.md",
+      "computedHash": "f22bc2ac1b14e8dce746ce5e9cece824050b107049b30a097e77edddf3c3e4cb"
+    },
     "podcast": {
       "source": "Pika-Labs/Pika-Plugins",
       "sourceType": "github",

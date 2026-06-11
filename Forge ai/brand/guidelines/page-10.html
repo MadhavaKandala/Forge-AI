@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="guidelines.css"></head>
+<body>
+  <div class="pg-header">
+    <div class="mark">
+      <svg class="logo-mark" width="40" height="40" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+        <rect width="48" height="48" rx="8"/><path d="M14 10 H34 L24 22 H34 L18 38 L24 24 H14 Z"/>
+      </svg>
+      <div>
+        <div class="pg-title disp">Surfaces &amp; States</div>
+        <div class="pg-kicker">Elevation &amp; semantic color</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="eyebrow">THE FORGE</div>
+      <div class="eyebrow lime">V1 — BRAND GUIDELINES</div>
+    </div>
+  </div>
+
+  <div class="pg-body" style="display:grid;grid-template-columns:1fr 1.3fr;gap:18px;flex:1">
+    <div class="card" style="display:flex;flex-direction:column;gap:14px">
+      <h3>Surface Elevation</h3>
+      <div style="flex:1;display:flex;flex-direction:column;gap:10px">
+        <div style="flex:1;background:#0a0a0a;border:1px solid var(--border);border-radius:4px;display:flex;align-items:center;padding:0 16px;font-size:11px;letter-spacing:0.15em;text-transform:uppercase">— BG #0A0A0A — page canvas</div>
+        <div style="flex:1;background:#151515;border:1px solid var(--border);border-radius:4px;display:flex;align-items:center;padding:0 16px;font-size:11px;letter-spacing:0.15em;text-transform:uppercase">— SURFACE #151515 — cards, panels</div>
+        <div style="flex:1;background:#1c1c1c;border:1px solid var(--border);border-radius:4px;display:flex;align-items:center;padding:0 16px;font-size:11px;letter-spacing:0.15em;text-transform:uppercase">— SURFACE-2 #1C1C1C — inputs, wells</div>
+        <div style="flex:1;background:#1c1c1c;border:1px solid #2a2a2a;border-radius:4px;display:flex;align-items:center;padding:0 16px;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gray)">— BORDER #2A2A2A — hairlines, dividers</div>
+      </div>
+      <p>Each step up adds ~5% lightness. No shadows for elevation — only flat fills and 1px borders, consistent with a single-light-source world.</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div class="card">
+        <h3>Semantic States</h3>
+        <div class="grid cols-4">
+          <div class="swatch" style="height:90px;background:#d7ff33;color:#0a0a0a"><div class="name">Success</div><div class="hex">#D7FF33</div></div>
+          <div class="swatch" style="height:90px;background:#ff5a2e;color:#0a0a0a"><div class="name">Heat</div><div class="hex">#FF5A2E</div></div>
+          <div class="swatch" style="height:90px;background:#ff3b3b;color:#0a0a0a"><div class="name">Missed</div><div class="hex">#FF3B3B</div></div>
+          <div class="swatch" style="height:90px;background:#5a5a5a;color:#f3f3ee"><div class="name">Inactive</div><div class="hex">#5A5A5A</div></div>
+        </div>
+      </div>
+      <div class="card orange" style="flex:1">
+        <h3>Usage</h3>
+        <div class="kv"><span class="k">Streak active / completed session</span><span class="v lime">Lime</span></div>
+        <div class="kv"><span class="k">Today / current focus</span><span class="v orange">Orange</span></div>
+        <div class="kv"><span class="k">Streak broken / rest skipped</span><span class="v" style="color:#ff3b3b">Red</span></div>
+        <div class="kv"><span class="k">Future / locked / not yet</span><span class="v dim">Gray</span></div>
+      </div>
+      <div class="card gray">
+        <h3>Contrast Minimums (WCAG AA)</h3>
+        <div class="kv"><span class="k">Bone White on Black</span><span class="v">13.6 : 1</span></div>
+        <div class="kv"><span class="k">Lime on Black</span><span class="v">15.1 : 1</span></div>
+        <div class="kv"><span class="k">Gray label on Black</span><span class="v">4.6 : 1</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>FORGE AI — FORGED DAILY, NEVER FINISHED</span>
+    <span class="lime">10 / 15</span>
+  </div>
+</body></html>
