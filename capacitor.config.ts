@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.hundreddays.app',
-  appName: '100 Days Challenge',
+  appName: 'Forge AI',
   webDir: 'dist',
   server: {
     androidScheme: 'https',
