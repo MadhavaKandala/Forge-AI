@@ -51,7 +51,7 @@ export const SchedulePage: React.FC = () => {
     );
 
     return (
-        <div className="container mx-auto p-4 max-w-md pb-24 min-h-screen bg-background">
+        <div className="container mx-auto p-4 max-w-md pb-24 min-h-screen bg-background pt-safe">
             <div className="flex items-center justify-between mb-6">
                 <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
                     <ArrowLeft className="h-6 w-6" />

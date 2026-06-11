@@ -55,7 +55,7 @@ export const PomodoroPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#09090b] text-white flex flex-col items-center selection:bg-[#dfff4f] selection:text-black">
+        <div className="min-h-screen bg-[#09090b] text-white flex flex-col items-center pt-safe selection:bg-[#dfff4f] selection:text-black">
             {/* Ambient Background Glow */}
             <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-500/10 blur-[120px] rounded-full pointer-events-none"></div>
             <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none"></div>

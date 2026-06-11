@@ -145,7 +145,7 @@ const VoicePage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#0A0A0A] text-white px-6 py-10 flex flex-col items-center">
+        <div className="min-h-screen bg-[#0A0A0A] text-white px-6 py-10 pt-safe flex flex-col items-center">
             <h1 className="text-xl font-black tracking-[0.18em] uppercase text-[#C8FF00]">VOICE</h1>
             <p className="mt-2 text-sm text-zinc-400 uppercase tracking-[0.12em]">Say your mission</p>
 

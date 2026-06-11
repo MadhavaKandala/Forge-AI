@@ -557,7 +557,7 @@ export default function StatsPage() {
 
     return (
         <motion.div
-            className="min-h-screen bg-[#0A0A0A] px-5 pb-28 pt-7 text-white"
+            className="min-h-screen bg-[#0A0A0A] px-5 pb-28 pt-14 pt-safe text-white"
             variants={pageVariants}
             initial="hidden"
             animate="visible"

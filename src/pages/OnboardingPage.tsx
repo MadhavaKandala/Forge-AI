@@ -335,7 +335,7 @@ export const OnboardingPage: React.FC = () => {
     }, [activatedPrograms, completeOnboarding, enrollInProgram, navigate, returnTo, selectedGoals, selectedSubcategories, wakeTime]);
 
     return (
-        <div className="min-h-screen bg-[#0A0A0A] px-5 py-6 text-white">
+        <div className="min-h-screen bg-[#0A0A0A] px-5 py-6 pt-safe text-white">
             <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-md flex-col">
                 <ProgressDots step={step} />
 

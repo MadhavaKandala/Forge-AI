@@ -14,7 +14,7 @@ export default function ProgressPage() {
     const statusColor = getStatusColor(stats.status);
 
     return (
-        <main className="min-h-screen bg-[#0A0A0A] px-5 pb-28 pt-8 text-white">
+        <main className="min-h-screen bg-[#0A0A0A] px-5 pb-28 pt-14 pt-safe text-white">
             <header className="flex items-center gap-3">
                 <button type="button" onClick={() => navigate(-1)} className="grid h-10 w-10 place-items-center rounded-xl border border-zinc-800 bg-[#141414]">
                     <ArrowLeft className="h-5 w-5" />
